@@ -1,5 +1,7 @@
+use binread::BinRead;
 use chrono::Utc;
 use clap::Parser;
+use std::fmt::Debug;
 use std::fs;
 
 /// Randomize dmw3
@@ -10,6 +12,52 @@ struct Arguments {
     /// randomization seed
     #[clap(long, default_value_t = Utc::now().timestamp().try_into().unwrap())]
     seed: u64,
+}
+
+#[derive(BinRead, Debug)]
+struct enemyStats {
+    digimonId: u16,
+
+    droppableItem: u16,
+
+    #[br(offset = 0xe)]
+    str: i16,
+
+    #[br(offset = 0x10)]
+    def: i16,
+
+    #[br(offset = 0x12)]
+    spt: i16,
+
+    #[br(offset = 0x14)]
+    wis: i16,
+
+    #[br(offset = 0x16)]
+    spd: i16,
+
+    #[br(offset = 0x18)]
+    fir: i16,
+
+    #[br(offset = 0x1a)]
+    fir_res: i16,
+
+    #[br(offset = 0x1c)]
+    wtr_res: i16,
+
+    #[br(offset = 0x1e)]
+    ice_res: i16,
+
+    #[br(offset = 0x20)]
+    wnd_res: i16,
+
+    #[br(offset = 0x22)]
+    thd_res: i16,
+
+    #[br(offset = 0x24)]
+    mch_res: i16,
+
+    #[br(offset = 0x26)]
+    drk_res: i16,
 }
 
 fn main() {
