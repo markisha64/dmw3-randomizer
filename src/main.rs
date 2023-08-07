@@ -112,12 +112,12 @@ fn main() {
         })
         .unwrap();
 
-    let mut enemyStatsReader = Cursor::new(&file_buffer[enemy_stats_index..]);
+    let mut enemy_stats_reader = Cursor::new(&file_buffer[enemy_stats_index..]);
 
     let mut enemy_stats_arr: Vec<EnemyStats> = Vec::new();
 
     loop {
-        let stats = EnemyStats::read(&mut enemyStatsReader);
+        let stats = EnemyStats::read(&mut enemy_stats_reader);
         let unwrapped: EnemyStats;
 
         match stats {
