@@ -17,7 +17,7 @@ struct Arguments {
     /// iso path
     path: std::path::PathBuf,
     /// randomization seed
-    #[clap(long, default_value_t = Utc::now().timestamp().try_into().unwrap())]
+    #[clap(long, default_value_t = Utc::now().timestamp() as u64)]
     seed: u64,
 }
 
@@ -174,7 +174,7 @@ fn main() {
     // Fisher-Yates shuffles
     let len = encounter_data_arr.len();
     for i in 0..(len - 2) {
-        let uniform: usize = rng.next_u64().try_into().unwrap();
+        let uniform: usize = rng.next_u64() as usize;
         let j = i + uniform % (len - i - 1);
 
         encounter_data_arr_copy.swap(i, j);
