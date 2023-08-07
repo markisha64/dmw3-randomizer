@@ -112,12 +112,12 @@ fn main() {
         })
         .unwrap();
 
-    let mut reader = Cursor::new(&file_buffer[enemy_stats_index..]);
+    let mut enemyStatsReader = Cursor::new(&file_buffer[enemy_stats_index..]);
 
-    let mut EnemyStatsArr: Vec<EnemyStats> = Vec::new();
+    let mut enemy_stats_arr: Vec<EnemyStats> = Vec::new();
 
     loop {
-        let stats = EnemyStats::read(&mut reader);
+        let stats = EnemyStats::read(&mut enemyStatsReader);
         let unwrapped: EnemyStats;
 
         match stats {
@@ -129,8 +129,37 @@ fn main() {
             break;
         }
 
-        EnemyStatsArr.push(unwrapped);
+        enemy_stats_arr.push(unwrapped);
     }
+
+    let encounter_data_index = file_buffer
+        .windows(16)
+        .position(|window| {
+            window == b"\x66\x01\x00\x00\x0c\x00\x30\x03\x0f\x27\x10\x00\x7c\x00\x00\x00"
+        })
+        .unwrap();
+
+    let mut encounter_data_reader = Cursor::new(&file_buffer[encounter_data_index..]);
+
+    let mut encounter_data_arr: Vec<EncounterData> = Vec::new();
+
+    loop {
+        let encounter = EncounterData::read(&mut encounter_data_reader);
+        let unwrapped;
+
+        match encounter {
+            Ok(enc) => unwrapped = enc,
+            Err(_) => panic!("Binread error"),
+        }
+
+        if unwrapped.digimon_id == 0 {
+            break;
+        }
+
+        encounter_data_arr.push(unwrapped);
+    }
+
+    println!("{:?}", encounter_data_arr[0]);
 
     println!("{enemy_stats_index}");
 }
