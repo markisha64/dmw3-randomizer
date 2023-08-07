@@ -1,6 +1,9 @@
 use binread::{io::Cursor, BinRead};
 use chrono::Utc;
 use clap::Parser;
+use rand_xoshiro::rand_core::RngCore;
+use rand_xoshiro::rand_core::SeedableRng;
+use rand_xoshiro::Xoshiro256StarStar;
 use std::fmt::Debug;
 use std::fs;
 
@@ -14,7 +17,7 @@ struct Arguments {
     seed: u64,
 }
 
-#[derive(BinRead, Debug)]
+#[derive(BinRead, Debug, Clone, Copy)]
 struct EnemyStats {
     digimon_id: u16,
 
@@ -87,7 +90,7 @@ struct EnemyStats {
     unk21: u16,
 }
 
-#[derive(BinRead, Debug)]
+#[derive(BinRead, Debug, Clone, Copy)]
 struct EncounterData {
     digimon_id: u32,
 
@@ -159,7 +162,56 @@ fn main() {
         encounter_data_arr.push(unwrapped);
     }
 
-    println!("{:?}", encounter_data_arr[0]);
+    let mut enemy_stats_arr_copy = enemy_stats_arr.clone();
+    let encounter_data_arr_copy = encounter_data_arr.clone();
 
-    println!("{enemy_stats_index}");
+    let mut rng = Xoshiro256StarStar::seed_from_u64(args.seed);
+
+    // Fisher-Yates shuffles
+    let len = encounter_data_arr.len();
+    for i in 0..(len - 2) {
+        let uniform: usize = rng.next_u64().try_into().unwrap();
+        let j = i + uniform % (len - i - 1);
+
+        encounter_data_arr.swap(i, j);
+    }
+
+    for i in 0..len {
+        let old_encounter = encounter_data_arr[i];
+        let mut new_encounter = encounter_data_arr_copy[i];
+
+        let enemy_stats = enemy_stats_arr_copy
+            .iter_mut()
+            .find(|&&mut estat| estat.digimon_id as u32 == new_encounter.digimon_id)
+            .unwrap();
+
+        // base stats
+        enemy_stats.str = enemy_stats.str * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.def = enemy_stats.def * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.spt = enemy_stats.spt * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.wis = enemy_stats.wis * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.spd = enemy_stats.spd * old_encounter.lv as i16 / new_encounter.lv as i16;
+
+        // resistances
+        enemy_stats.fir_res =
+            enemy_stats.fir_res * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.wtr_res =
+            enemy_stats.wtr_res * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.wnd_res =
+            enemy_stats.wnd_res * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.thd_res =
+            enemy_stats.thd_res * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.mch_res =
+            enemy_stats.mch_res * old_encounter.lv as i16 / new_encounter.lv as i16;
+        enemy_stats.drk_res =
+            enemy_stats.drk_res * old_encounter.lv as i16 / new_encounter.lv as i16;
+
+        // hp and mp
+        new_encounter.max_hp = new_encounter.max_hp * old_encounter.lv / new_encounter.lv;
+        new_encounter.max_mp = new_encounter.max_mp * old_encounter.lv / new_encounter.lv;
+    }
+
+    // let mut write_buf = file_buffer.clone();
+
+    // write_buf[enemy_stats_index..(enemy_stats_index + enemy_stats_arr.len() * 0x46)].copy_from_slice()
 }
