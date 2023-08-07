@@ -250,5 +250,5 @@ fn main() {
 
     let mut file = File::create(filename).unwrap();
 
-    file.write_all(&mut write_buf);
+    let _ = file.write_all(&mut write_buf);
 }
