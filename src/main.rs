@@ -15,10 +15,10 @@ struct Arguments {
 }
 
 #[derive(BinRead, Debug)]
-struct enemyStats {
-    digimonId: u16,
+struct EnemyStats {
+    digimon_id: u16,
 
-    droppableItem: u16,
+    droppable_item: u16,
 
     unk1: u16,
 
@@ -88,14 +88,14 @@ struct enemyStats {
 }
 
 #[derive(BinRead, Debug)]
-struct encounterData {
-    digimonId: u32,
+struct EncounterData {
+    digimon_id: u32,
 
     lv: u16,
 
-    maxHp: u16,
+    max_hp: u16,
 
-    maxMp: u16,
+    max_mp: u16,
 
     x: u16,
 }
@@ -114,22 +114,22 @@ fn main() {
 
     let mut reader = Cursor::new(&file_buffer[enemy_stats_index..]);
 
-    let mut enemyStatsArr: Vec<enemyStats> = Vec::new();
+    let mut EnemyStatsArr: Vec<EnemyStats> = Vec::new();
 
     loop {
-        let stats = enemyStats::read(&mut reader);
-        let unwrapped: enemyStats;
+        let stats = EnemyStats::read(&mut reader);
+        let unwrapped: EnemyStats;
 
         match stats {
             Ok(stat) => unwrapped = stat,
             Err(_) => panic!("Binread error"),
         }
 
-        if unwrapped.digimonId == 0 {
+        if unwrapped.digimon_id == 0 {
             break;
         }
 
-        enemyStatsArr.push(unwrapped);
+        EnemyStatsArr.push(unwrapped);
     }
 
     println!("{enemy_stats_index}");
