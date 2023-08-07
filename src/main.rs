@@ -1,4 +1,5 @@
-use binread::{io::Cursor, BinRead};
+use binread::BinRead;
+use binwrite::BinWrite;
 use chrono::Utc;
 use clap::Parser;
 use rand_xoshiro::rand_core::RngCore;
@@ -6,6 +7,9 @@ use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::fmt::Debug;
 use std::fs;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io::Cursor;
 
 /// Randomize dmw3
 #[derive(Parser)]
@@ -17,7 +21,7 @@ struct Arguments {
     seed: u64,
 }
 
-#[derive(BinRead, Debug, Clone, Copy)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 struct EnemyStats {
     digimon_id: u16,
 
@@ -90,7 +94,7 @@ struct EnemyStats {
     unk21: u16,
 }
 
-#[derive(BinRead, Debug, Clone, Copy)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 struct EncounterData {
     digimon_id: u32,
 
@@ -163,7 +167,7 @@ fn main() {
     }
 
     let mut enemy_stats_arr_copy = enemy_stats_arr.clone();
-    let encounter_data_arr_copy = encounter_data_arr.clone();
+    let mut encounter_data_arr_copy = encounter_data_arr.clone();
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(args.seed);
 
@@ -173,7 +177,7 @@ fn main() {
         let uniform: usize = rng.next_u64().try_into().unwrap();
         let j = i + uniform % (len - i - 1);
 
-        encounter_data_arr.swap(i, j);
+        encounter_data_arr_copy.swap(i, j);
     }
 
     for i in 0..len {
@@ -224,7 +228,27 @@ fn main() {
             / new_encounter.lv as u32) as u16;
     }
 
-    // let mut write_buf = file_buffer.clone();
+    let mut write_buf = file_buffer.clone();
 
-    // write_buf[enemy_stats_index..(enemy_stats_index + enemy_stats_arr.len() * 0x46)].copy_from_slice()
+    let mut enemy_stats_buf = vec![];
+    let mut encounter_data_buf = vec![];
+
+    enemy_stats_arr_copy.write(&mut enemy_stats_buf).unwrap();
+    encounter_data_arr_copy
+        .write(&mut encounter_data_buf)
+        .unwrap();
+
+    write_buf[enemy_stats_index..(enemy_stats_index + enemy_stats_arr.len() * 0x46)]
+        .copy_from_slice(&mut enemy_stats_buf);
+
+    write_buf[encounter_data_index..(encounter_data_index + encounter_data_arr.len() * 0xc)]
+        .copy_from_slice(&mut encounter_data_buf);
+
+    let filename = format!("dmw3-{x}.iso", x = args.seed);
+
+    println!("randomizing into {filename}");
+
+    let mut file = File::create(filename).unwrap();
+
+    file.write_all(&mut write_buf);
 }
