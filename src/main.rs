@@ -87,6 +87,19 @@ struct enemyStats {
     unk21: u16,
 }
 
+#[derive(BinRead, Debug)]
+struct encounterData {
+    digimonId: u32,
+
+    lv: u16,
+
+    maxHp: u16,
+
+    maxMp: u16,
+
+    x: u16,
+}
+
 fn main() {
     let args = Arguments::parse();
 
