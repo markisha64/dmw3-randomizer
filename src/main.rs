@@ -1,4 +1,4 @@
-use binread::BinRead;
+use binread::{io::Cursor, BinRead};
 use chrono::Utc;
 use clap::Parser;
 use std::fmt::Debug;
@@ -20,44 +20,71 @@ struct enemyStats {
 
     droppableItem: u16,
 
-    #[br(offset = 0xe)]
+    unk1: u16,
+
+    unk2: u16,
+
+    unk3: u16,
+
+    unk4: u16,
+
+    unk5: u16,
+
     str: i16,
 
-    #[br(offset = 0x10)]
     def: i16,
 
-    #[br(offset = 0x12)]
     spt: i16,
 
-    #[br(offset = 0x14)]
     wis: i16,
 
-    #[br(offset = 0x16)]
     spd: i16,
 
-    #[br(offset = 0x18)]
-    fir: i16,
-
-    #[br(offset = 0x1a)]
     fir_res: i16,
 
-    #[br(offset = 0x1c)]
     wtr_res: i16,
 
-    #[br(offset = 0x1e)]
     ice_res: i16,
 
-    #[br(offset = 0x20)]
     wnd_res: i16,
 
-    #[br(offset = 0x22)]
     thd_res: i16,
 
-    #[br(offset = 0x24)]
     mch_res: i16,
 
-    #[br(offset = 0x26)]
     drk_res: i16,
+
+    psn_rate: u16,
+
+    par_rate: u16,
+
+    cnf_rate: u16,
+
+    slp_rate: u16,
+
+    ko_rate: u16,
+
+    unk11: u16,
+
+    unk12: u16,
+
+    unk13: u16,
+
+    unk14: u16,
+
+    unk15: u16,
+
+    unk16: u16,
+
+    unk17: u16,
+
+    unk18: u16,
+
+    unk19: u16,
+
+    unk20: u16,
+
+    unk21: u16,
 }
 
 fn main() {
@@ -71,6 +98,26 @@ fn main() {
             window == b"\x20\x00\x00\x00\x02\x00\x3a\x00\xDC\x00\x00\x00\x00\x00\x32\x00"
         })
         .unwrap();
+
+    let mut reader = Cursor::new(&file_buffer[enemy_stats_index..]);
+
+    let mut enemyStatsArr: Vec<enemyStats> = Vec::new();
+
+    loop {
+        let stats = enemyStats::read(&mut reader);
+        let unwrapped: enemyStats;
+
+        match stats {
+            Ok(stat) => unwrapped = stat,
+            Err(_) => panic!("Binread error"),
+        }
+
+        if unwrapped.digimonId == 0 {
+            break;
+        }
+
+        enemyStatsArr.push(unwrapped);
+    }
 
     println!("{enemy_stats_index}");
 }
