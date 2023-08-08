@@ -17,10 +17,10 @@ struct Arguments {
     /// iso path
     path: std::path::PathBuf,
     /// randomization seed (defaults to current timestamp)
-    #[clap(long, default_value_t = Utc::now().timestamp() as u64)]
+    #[clap(short, long, default_value_t = Utc::now().timestamp() as u64)]
     seed: u64,
     /// keep cardmon unshuffled
-    #[clap(long, default_value_t = true)]
+    #[clap(short, long, default_value_t = true)]
     cardmon: bool,
 }
 
