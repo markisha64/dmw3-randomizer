@@ -16,7 +16,7 @@ use std::io::Cursor;
 struct Arguments {
     /// iso path
     path: std::path::PathBuf,
-    /// randomization seed
+    /// randomization seed (defaults to current timestamp)
     #[clap(long, default_value_t = Utc::now().timestamp() as u64)]
     seed: u64,
 }
