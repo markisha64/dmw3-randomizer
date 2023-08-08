@@ -22,6 +22,9 @@ struct Arguments {
     /// keep cardmon unshuffled
     #[clap(short, long, default_value_t = true)]
     cardmon: bool,
+    /// shuffles
+    #[clap(long, default_value_t = 5)]
+    shuffles: u8,
 }
 
 const CARDMON_MIN: u16 = 0x1c9;
@@ -177,24 +180,27 @@ fn main() {
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(args.seed);
 
-    // Fisher-Yates shuffles
     let len = encounter_data_arr.len();
-    for i in 0..(len - 2) {
-        let uniform: usize = rng.next_u64() as usize;
-        let j = i + uniform % (len - i - 1);
 
-        let digimon_id_1 = encounter_data_arr_copy[i].digimon_id as u16;
-        let digimon_id_2 = encounter_data_arr_copy[j].digimon_id as u16;
+    // Fisher-Yates shuffles
+    for _ in 0..args.shuffles {
+        for i in 0..(len - 2) {
+            let uniform: usize = rng.next_u64() as usize;
+            let j = i + uniform % (len - i - 1);
 
-        // skip if cardmon
-        if args.cardmon
-            && ((CARDMON_MIN <= digimon_id_1 && digimon_id_1 <= CARDMON_MAX)
-                || (CARDMON_MIN <= digimon_id_2 && digimon_id_2 <= CARDMON_MAX))
-        {
-            continue;
+            let digimon_id_1 = encounter_data_arr_copy[i].digimon_id as u16;
+            let digimon_id_2 = encounter_data_arr_copy[j].digimon_id as u16;
+
+            // skip if cardmon
+            if args.cardmon
+                && ((CARDMON_MIN <= digimon_id_1 && digimon_id_1 <= CARDMON_MAX)
+                    || (CARDMON_MIN <= digimon_id_2 && digimon_id_2 <= CARDMON_MAX))
+            {
+                continue;
+            }
+
+            encounter_data_arr_copy.swap(i, j);
         }
-
-        encounter_data_arr_copy.swap(i, j);
     }
 
     for i in 0..len {
