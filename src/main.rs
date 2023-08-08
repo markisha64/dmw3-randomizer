@@ -169,8 +169,6 @@ fn main() {
     let mut encounter_data_arr_copy = encounter_data_arr.clone();
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(args.seed);
-
-    // Fisher-Yates shuffles
     let len = encounter_data_arr.len();
     for i in 0..(len - 2) {
         let uniform: usize = rng.next_u64() as usize;
@@ -194,11 +192,16 @@ fn main() {
 
     let mut write_buf = file_buffer.clone();
 
+    let mut enemy_stats_buf = vec![];
     let mut encounter_data_buf = vec![];
 
+    enemy_stats_arr_copy.write(&mut enemy_stats_buf).unwrap();
     encounter_data_arr_copy
         .write(&mut encounter_data_buf)
         .unwrap();
+
+    write_buf[enemy_stats_index..(enemy_stats_index + enemy_stats_arr.len() * 0x46)]
+        .copy_from_slice(&mut enemy_stats_buf);
 
     write_buf[encounter_data_index..(encounter_data_index + encounter_data_arr.len() * 0xc)]
         .copy_from_slice(&mut encounter_data_buf);
