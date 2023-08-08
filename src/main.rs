@@ -22,6 +22,9 @@ struct Arguments {
     /// keep cardmon unshuffled
     #[clap(short, long, default_value_t = true)]
     cardmon: bool,
+    /// keep bosses unshuffled
+    #[clap(short, long, default_value_t = true)]
+    bosses: bool,
     /// shuffles
     #[clap(long, default_value_t = 5)]
     shuffles: u8,
@@ -29,6 +32,15 @@ struct Arguments {
 
 const CARDMON_MIN: u16 = 0x1c9;
 const CARDMON_MAX: u16 = 0x1d0;
+const BOSSES: [u16; 26] = [
+    0x46, 0x7c, 0x8d, 0xb2, 0x151, 0x164, 0x166, 0x1b3, 0x1ba, 0x1bb, 0x1bc, 0x1bd, 0x1be, 0x1bf,
+    0x1c0, 0x1c1, 0x1c2, 0x1c3, 0x1c4, 0x1c5, 0x1c6, 0x1c7, 0x1c8, 0x1d1, 0x1d2, 0x1d3,
+];
+
+fn skip(digimon_id: u16, args: &Arguments) -> bool {
+    return (args.cardmon && (CARDMON_MIN <= digimon_id && digimon_id >= CARDMON_MAX))
+        || (args.bosses && BOSSES.contains(&digimon_id));
+}
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 struct EnemyStats {
@@ -119,7 +131,7 @@ struct EncounterData {
 fn main() {
     let args = Arguments::parse();
 
-    let file_buffer = fs::read(args.path).unwrap();
+    let file_buffer = fs::read(&args.path).unwrap();
 
     let enemy_stats_index = file_buffer
         .windows(16)
@@ -191,11 +203,7 @@ fn main() {
             let digimon_id_1 = encounter_data_arr_copy[i].digimon_id as u16;
             let digimon_id_2 = encounter_data_arr_copy[j].digimon_id as u16;
 
-            // skip if cardmon
-            if args.cardmon
-                && ((CARDMON_MIN <= digimon_id_1 && digimon_id_1 <= CARDMON_MAX)
-                    || (CARDMON_MIN <= digimon_id_2 && digimon_id_2 <= CARDMON_MAX))
-            {
+            if skip(digimon_id_1 as u16, &args) || skip(digimon_id_2 as u16, &args) {
                 continue;
             }
 
@@ -209,8 +217,7 @@ fn main() {
 
         let digimon_id_1 = old_encounter.digimon_id as u16;
 
-        // skip if cardmon
-        if args.cardmon && CARDMON_MIN <= digimon_id_1 && digimon_id_1 <= CARDMON_MAX {
+        if skip(digimon_id_1 as u16, &args) {
             continue;
         }
 
