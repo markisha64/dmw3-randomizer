@@ -35,7 +35,7 @@ Follow these steps to get started with the Digimon World 3 Randomizer:
 
 ## Configuration
    ```shell
-   cargo run --release --help
+   cargo run --release -- --help
    
    ```
 
