@@ -19,7 +19,13 @@ struct Arguments {
     /// randomization seed (defaults to current timestamp)
     #[clap(long, default_value_t = Utc::now().timestamp() as u64)]
     seed: u64,
+    /// keep cardmon unshuffled
+    #[clap(long, default_value_t = true)]
+    cardmon: bool,
 }
+
+const CARDMON_MIN: u16 = 0x1c9;
+const CARDMON_MAX: u16 = 0x1d0;
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 struct EnemyStats {
@@ -177,12 +183,30 @@ fn main() {
         let uniform: usize = rng.next_u64() as usize;
         let j = i + uniform % (len - i - 1);
 
+        let digimon_id_1 = encounter_data_arr_copy[i].digimon_id as u16;
+        let digimon_id_2 = encounter_data_arr_copy[j].digimon_id as u16;
+
+        // skip if cardmon
+        if args.cardmon
+            && ((CARDMON_MIN <= digimon_id_1 && digimon_id_1 <= CARDMON_MAX)
+                || (CARDMON_MIN <= digimon_id_2 && digimon_id_2 <= CARDMON_MAX))
+        {
+            continue;
+        }
+
         encounter_data_arr_copy.swap(i, j);
     }
 
     for i in 0..len {
         let old_encounter = &encounter_data_arr[i];
         let new_encounter = &mut encounter_data_arr_copy[i];
+
+        let digimon_id_1 = old_encounter.digimon_id as u16;
+
+        // skip if cardmon
+        if args.cardmon && CARDMON_MIN <= digimon_id_1 && digimon_id_1 <= CARDMON_MAX {
+            continue;
+        }
 
         // hp and mp
         new_encounter.max_hp = (new_encounter.max_hp as u32 * old_encounter.lv as u32
