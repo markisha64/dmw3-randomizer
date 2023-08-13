@@ -318,8 +318,6 @@ fn main() {
     let bin = format!("dmw3-{x}.bin", x = args.seed);
     let cue = format!("dmw3-{x}.cue", x = args.seed);
 
-    println!("randomizing into {bin}");
-
     let mut new_stats = File::create(STATS_FILE).unwrap();
     let mut new_encounters = File::create(ENCOUNTERS_FILE).unwrap();
 
@@ -335,14 +333,16 @@ fn main() {
 
     match Command::new("mkpsxiso")
         .arg("-o")
-        .arg(bin)
+        .arg(&bin)
         .arg("-c")
-        .arg(cue)
+        .arg(&cue)
         .arg("./out.xml")
         .arg("-y")
-        .spawn()
+        .output()
     {
         Err(_) => panic!("Error repacking"),
         _ => {}
     }
+
+    println!("randomized into {bin}");
 }
