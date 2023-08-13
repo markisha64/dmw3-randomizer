@@ -16,7 +16,10 @@ The Digimon World 3 Randomizer is a tool developed in Rust that allows players t
 
 Follow these steps to get started with the Digimon World 3 Randomizer:
 
-1. **Prerequisites**: Make sure you have Rust installed on your system. If not, you can download and install it from [https://www.rust-lang.org/](https://www.rust-lang.org/).
+1. **Prerequisites**: 
+   Make sure you have Rust installed on your system. If not, you can download and install it from [https://www.rust-lang.org/](https://www.rust-lang.org/).
+   You also need [mkpsxiso](https://github.com/markisha64/mkpsxiso) installed and available in PATH. (currently my fork isn't merged into remote so you'll have to build mkpsxiso yourself)
+   ~700MB of extra storage (for extracted files)
 
 2. **Clone the Repository**: Clone this repository to your local machine using the following command:
    ```shell

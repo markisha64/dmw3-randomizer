@@ -18,5 +18,7 @@ Cargo.lock
 
 /target
 
-# generated isos
+# generated files
 dmw3*
+out.xml
+extract/*

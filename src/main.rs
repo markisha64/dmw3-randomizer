@@ -10,6 +10,9 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::Cursor;
+use std::path::Path;
+use std::process::Command;
+use std::str;
 
 /// Randomize dmw3
 #[derive(Parser)]
@@ -36,6 +39,9 @@ const BOSSES: [u16; 26] = [
     0x46, 0x7c, 0x8d, 0xb2, 0x151, 0x164, 0x166, 0x1b3, 0x1ba, 0x1bb, 0x1bc, 0x1bd, 0x1be, 0x1bf,
     0x1c0, 0x1c1, 0x1c2, 0x1c3, 0x1c4, 0x1c5, 0x1c6, 0x1c7, 0x1c8, 0x1d1, 0x1d2, 0x1d3,
 ];
+
+const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
+const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
 
 fn skip(digimon_id: u16, args: &Arguments) -> bool {
     return (args.cardmon && (CARDMON_MIN <= digimon_id && digimon_id >= CARDMON_MAX))
@@ -131,16 +137,34 @@ struct EncounterData {
 fn main() {
     let args = Arguments::parse();
 
-    let file_buffer = fs::read(&args.path).unwrap();
+    match Command::new("dumpsxiso")
+        .arg("-x")
+        .arg("extract/")
+        .arg("-s")
+        .arg("out.xml")
+        .arg("-pt")
+        .arg(&args.path)
+        .output()
+    {
+        Err(_) => panic!("Error extracting"),
+        _ => {}
+    }
 
-    let enemy_stats_index = file_buffer
+    if !Path::new("./out.xml").exists() {
+        panic!("Error extracting");
+    }
+
+    let stats_buf = fs::read(STATS_FILE).unwrap();
+    let encounter_buf = fs::read(ENCOUNTERS_FILE).unwrap();
+
+    let enemy_stats_index = stats_buf
         .windows(16)
         .position(|window| {
             window == b"\x20\x00\x00\x00\x02\x00\x3a\x00\xDC\x00\x00\x00\x00\x00\x32\x00"
         })
         .unwrap();
 
-    let mut enemy_stats_reader = Cursor::new(&file_buffer[enemy_stats_index..]);
+    let mut enemy_stats_reader = Cursor::new(&stats_buf[enemy_stats_index..]);
 
     let mut enemy_stats_arr: Vec<EnemyStats> = Vec::new();
 
@@ -160,14 +184,14 @@ fn main() {
         enemy_stats_arr.push(unwrapped);
     }
 
-    let encounter_data_index = file_buffer
+    let encounter_data_index = encounter_buf
         .windows(16)
         .position(|window| {
             window == b"\x66\x01\x00\x00\x0c\x00\x30\x03\x0f\x27\x10\x00\x7c\x00\x00\x00"
         })
         .unwrap();
 
-    let mut encounter_data_reader = Cursor::new(&file_buffer[encounter_data_index..]);
+    let mut encounter_data_reader = Cursor::new(&encounter_buf[encounter_data_index..]);
 
     let mut encounter_data_arr: Vec<EncounterData> = Vec::new();
 
@@ -273,7 +297,8 @@ fn main() {
         enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_avg_res as i32 / avg_res) as i16;
     }
 
-    let mut write_buf = file_buffer.clone();
+    let mut write_stats_buf = stats_buf.clone();
+    let mut write_encounters_buf = encounter_buf.clone();
 
     let mut enemy_stats_buf = vec![];
     let mut encounter_data_buf = vec![];
@@ -283,17 +308,41 @@ fn main() {
         .write(&mut encounter_data_buf)
         .unwrap();
 
-    write_buf[enemy_stats_index..(enemy_stats_index + enemy_stats_arr.len() * 0x46)]
+    write_stats_buf[enemy_stats_index..(enemy_stats_index + enemy_stats_arr.len() * 0x46)]
         .copy_from_slice(&mut enemy_stats_buf);
 
-    write_buf[encounter_data_index..(encounter_data_index + encounter_data_arr.len() * 0xc)]
+    write_encounters_buf
+        [encounter_data_index..(encounter_data_index + encounter_data_arr.len() * 0xc)]
         .copy_from_slice(&mut encounter_data_buf);
 
-    let filename = format!("dmw3-{x}.iso", x = args.seed);
+    let bin = format!("dmw3-{x}.bin", x = args.seed);
+    let cue = format!("dmw3-{x}.cue", x = args.seed);
 
-    println!("randomizing into {filename}");
+    println!("randomizing into {bin}");
 
-    let mut file = File::create(filename).unwrap();
+    let mut new_stats = File::create(STATS_FILE).unwrap();
+    let mut new_encounters = File::create(ENCOUNTERS_FILE).unwrap();
 
-    let _ = file.write_all(&mut write_buf);
+    match new_stats.write_all(&write_stats_buf) {
+        Err(_) => panic!("Error writing stats"),
+        _ => {}
+    }
+
+    match new_encounters.write_all(&write_encounters_buf) {
+        Err(_) => panic!("Error writing encounters"),
+        _ => {}
+    }
+
+    match Command::new("mkpsxiso")
+        .arg("-o")
+        .arg(bin)
+        .arg("-c")
+        .arg(cue)
+        .arg("./out.xml")
+        .arg("-y")
+        .spawn()
+    {
+        Err(_) => panic!("Error repacking"),
+        _ => {}
+    }
 }
