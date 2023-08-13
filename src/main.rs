@@ -2,6 +2,7 @@ use binread::BinRead;
 use binwrite::BinWrite;
 use chrono::Utc;
 use clap::Parser;
+use clap::ValueEnum;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
@@ -15,7 +16,7 @@ use std::process::Command;
 use std::str;
 
 /// Randomize dmw3
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 struct Arguments {
     /// iso path
     path: std::path::PathBuf,
@@ -23,14 +24,28 @@ struct Arguments {
     #[clap(short, long, default_value_t = Utc::now().timestamp() as u64)]
     seed: u64,
     /// keep cardmon unshuffled
-    #[clap(short, long, default_value_t = true)]
+    #[clap(short, long)]
     cardmon: bool,
     /// keep bosses unshuffled
-    #[clap(short, long, default_value_t = true)]
+    #[clap(short, long)]
     bosses: bool,
     /// shuffles
     #[clap(long, default_value_t = 5)]
     shuffles: u8,
+    /// tnt ball strategy
+    #[clap(long)]
+    #[arg(value_enum, default_value_t = TNTStrategy::Swap)]
+    tnt: TNTStrategy,
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
+enum TNTStrategy {
+    /// fully random where triceramon will be
+    Shuffle,
+    /// keep triceramon in place
+    Keep,
+    /// make it so that the digimon that replaces triceramon has TNT Ball
+    Swap,
 }
 
 const CARDMON_MIN: u16 = 0x1c9;
@@ -39,13 +54,15 @@ const BOSSES: [u16; 26] = [
     0x46, 0x7c, 0x8d, 0xb2, 0x151, 0x164, 0x166, 0x1b3, 0x1ba, 0x1bb, 0x1bc, 0x1bd, 0x1be, 0x1bf,
     0x1c0, 0x1c1, 0x1c2, 0x1c3, 0x1c4, 0x1c5, 0x1c6, 0x1c7, 0x1c8, 0x1d1, 0x1d2, 0x1d3,
 ];
+const TRICERAMON_ID: u16 = 0xcb;
 
 const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
 const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
 
 fn skip(digimon_id: u16, args: &Arguments) -> bool {
     return (args.cardmon && (CARDMON_MIN <= digimon_id && digimon_id >= CARDMON_MAX))
-        || (args.bosses && BOSSES.contains(&digimon_id));
+        || (args.bosses && BOSSES.contains(&digimon_id))
+        || (args.tnt == TNTStrategy::Keep && digimon_id == TRICERAMON_ID);
 }
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
@@ -54,7 +71,7 @@ struct EnemyStats {
 
     droppable_item: u16,
 
-    unk1: u16,
+    drop_rate: u16,
 
     unk2: u16,
 
@@ -295,6 +312,37 @@ fn main() {
         enemy_stats.thd_res = (enemy_stats.thd_res as i32 * expect_avg_res as i32 / avg_res) as i16;
         enemy_stats.mch_res = (enemy_stats.mch_res as i32 * expect_avg_res as i32 / avg_res) as i16;
         enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+    }
+
+    if args.tnt == TNTStrategy::Swap {
+        let tric = enemy_stats_arr_copy
+            .iter()
+            .find(|&x| x.digimon_id == TRICERAMON_ID)
+            .unwrap();
+
+        let mut titem = tric.droppable_item;
+        let mut tdrop = tric.drop_rate;
+
+        let tric_index = encounter_data_arr
+            .iter()
+            .position(|&x| x.digimon_id as u16 == TRICERAMON_ID && x.lv == 6 && x.x == 16)
+            .unwrap();
+
+        let swapped = enemy_stats_arr_copy
+            .iter_mut()
+            .find(|&&mut x| x.digimon_id == encounter_data_arr_copy[tric_index].digimon_id as u16)
+            .unwrap();
+
+        std::mem::swap(&mut titem, &mut swapped.droppable_item);
+        std::mem::swap(&mut tdrop, &mut swapped.drop_rate);
+
+        let tricm = enemy_stats_arr_copy
+            .iter_mut()
+            .find(|&&mut x| x.digimon_id == TRICERAMON_ID)
+            .unwrap();
+
+        std::mem::swap(&mut titem, &mut tricm.droppable_item);
+        std::mem::swap(&mut tdrop, &mut tricm.drop_rate);
     }
 
     let mut write_stats_buf = stats_buf.clone();
