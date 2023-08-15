@@ -36,6 +36,9 @@ struct Arguments {
     #[clap(long)]
     #[arg(value_enum, default_value_t = TNTStrategy::Swap)]
     tnt: TNTStrategy,
+    /// randomize parties (currently you won't be able to preview)
+    #[clap(long)]
+    rp: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
@@ -56,6 +59,7 @@ const BOSSES: [u16; 26] = [
 ];
 const TRICERAMON_ID: u16 = 0xcb;
 
+const MAIN_EXECUTABLE: &str = "./extract/SLES_039.36";
 const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
 const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
 
@@ -228,6 +232,12 @@ fn main() {
         encounter_data_arr.push(unwrapped);
     }
 
+    let main_buf = fs::read(MAIN_EXECUTABLE).unwrap();
+    let parties_index = main_buf
+        .windows(9)
+        .position(|window| -> bool { window == b"\x00\x06\x07\x02\x03\x06\x01\x05\x07" })
+        .unwrap();
+
     let mut enemy_stats_arr_copy = enemy_stats_arr.clone();
     let mut encounter_data_arr_copy = encounter_data_arr.clone();
 
@@ -249,6 +259,24 @@ fn main() {
             }
 
             encounter_data_arr_copy.swap(i, j);
+        }
+    }
+
+    let mut parties: [u8; 9] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+    let mut all_digimon: [u8; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    let rindex = (rng.next_u64() % 7) as usize;
+    if args.rp {
+        for i in 0..3 {
+            for j in 0..7 {
+                let uniform = rng.next_u64() as usize;
+                let k = j + uniform % (8 - j);
+
+                all_digimon.swap(j, k);
+            }
+
+            for j in 0..3 {
+                parties[i * 3 + j] = all_digimon[rindex + j];
+            }
         }
     }
 
@@ -347,6 +375,7 @@ fn main() {
 
     let mut write_stats_buf = stats_buf.clone();
     let mut write_encounters_buf = encounter_buf.clone();
+    let mut write_main_buf = main_buf.clone();
 
     let mut enemy_stats_buf = vec![];
     let mut encounter_data_buf = vec![];
@@ -355,6 +384,8 @@ fn main() {
     encounter_data_arr_copy
         .write(&mut encounter_data_buf)
         .unwrap();
+
+    write_main_buf[parties_index..(parties_index + 9)].copy_from_slice(&mut parties);
 
     write_stats_buf[enemy_stats_index..(enemy_stats_index + enemy_stats_arr.len() * 0x46)]
         .copy_from_slice(&mut enemy_stats_buf);
@@ -366,8 +397,14 @@ fn main() {
     let bin = format!("dmw3-{x}.bin", x = args.seed);
     let cue = format!("dmw3-{x}.cue", x = args.seed);
 
+    let mut new_main_executable = File::create(MAIN_EXECUTABLE).unwrap();
     let mut new_stats = File::create(STATS_FILE).unwrap();
     let mut new_encounters = File::create(ENCOUNTERS_FILE).unwrap();
+
+    match new_main_executable.write_all(&write_main_buf) {
+        Err(_) => panic!("Error writing main executable"),
+        _ => {}
+    }
 
     match new_stats.write_all(&write_stats_buf) {
         Err(_) => panic!("Error writing stats"),
