@@ -64,7 +64,7 @@ const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
 const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
 
 fn skip(digimon_id: u16, args: &Arguments) -> bool {
-    return (args.cardmon && (CARDMON_MIN <= digimon_id && digimon_id >= CARDMON_MAX))
+    return (args.cardmon && (CARDMON_MIN <= digimon_id && digimon_id <= CARDMON_MAX))
         || (args.bosses && BOSSES.contains(&digimon_id))
         || (args.tnt == TNTStrategy::Keep && digimon_id == TRICERAMON_ID);
 }
