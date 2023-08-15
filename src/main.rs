@@ -305,8 +305,8 @@ fn main() {
 
         let min_lv = encounters.iter().min_by(|&x, &y| x.lv.cmp(&y.lv)).unwrap();
 
-        let expect_avg_stats = 50 + min_lv.lv * 10;
-        let expect_avg_res = 100 + min_lv.lv * 2;
+        let expect_avg_stats = 36 + min_lv.lv * 10;
+        let expect_avg_res = 87 + min_lv.lv * 2;
 
         let avg_stats: i32 = (enemy_stats.str as i32
             + enemy_stats.def as i32
