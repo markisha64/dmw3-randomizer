@@ -10,11 +10,11 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::Cursor;
 use std::path::Path;
-use std::process::Command;
 
 mod cli;
 mod consts;
 mod json;
+mod mkpsxiso;
 
 fn skip(digimon_id: u16, preset: &json::Preset) -> bool {
     return (preset.cardmon
@@ -114,15 +114,7 @@ fn main() {
 
     let preset = json::load_preset(&args.preset);
 
-    match Command::new("dumpsxiso")
-        .arg("-x")
-        .arg("extract/")
-        .arg("-s")
-        .arg("out.xml")
-        .arg("-pt")
-        .arg(&args.path)
-        .output()
-    {
+    match mkpsxiso::extract(&args) {
         Err(_) => panic!("Error extracting"),
         _ => {}
     }
@@ -372,15 +364,7 @@ fn main() {
         _ => {}
     }
 
-    match Command::new("mkpsxiso")
-        .arg("-o")
-        .arg(&bin)
-        .arg("-c")
-        .arg(&cue)
-        .arg("./out.xml")
-        .arg("-y")
-        .output()
-    {
+    match mkpsxiso::build(&bin, &cue) {
         Err(_) => panic!("Error repacking"),
         _ => {}
     }
