@@ -14,6 +14,7 @@ use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
 use std::str;
+mod json;
 
 /// Randomize dmw3
 #[derive(Parser, Debug)]
