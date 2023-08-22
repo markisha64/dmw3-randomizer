@@ -1,20 +1,21 @@
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::fs;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct Options {
+pub struct Preset {
     #[serde(default = "default_seed")]
-    seed: u64,
+    pub seed: u64,
     #[serde(default = "default_bool_true")]
-    cardmon: bool,
+    pub cardmon: bool,
     #[serde(default = "default_bool_true")]
-    bosses: bool,
+    pub bosses: bool,
     #[serde(default = "default_shuffles")]
-    shuffles: u8,
+    pub shuffles: u8,
     #[serde(default = "default_bool_true")]
-    rp: bool,
+    pub rp: bool,
     #[serde(default = "TNTStrategy::default")]
-    strategy: TNTStrategy,
+    pub strategy: TNTStrategy,
 }
 
 fn default_seed() -> u64 {
@@ -29,9 +30,9 @@ fn default_shuffles() -> u8 {
     5
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "lowercase")]
-enum TNTStrategy {
+pub enum TNTStrategy {
     Shuffle,
     Keep,
     Swap,
@@ -40,5 +41,18 @@ enum TNTStrategy {
 impl TNTStrategy {
     fn default() -> Self {
         TNTStrategy::Swap
+    }
+}
+
+pub fn load_preset(path: &Option<std::path::PathBuf>) -> Box<Preset> {
+    match path {
+        Some(path) => {
+            let json_str = fs::read_to_string(path).unwrap();
+
+            let preset: Preset = serde_json::from_str(json_str.as_str()).unwrap();
+
+            Box::new(preset)
+        }
+        None => Box::new(serde_json::from_str("{}").unwrap()),
     }
 }

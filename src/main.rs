@@ -1,8 +1,6 @@
 use binread::BinRead;
 use binwrite::BinWrite;
-use chrono::Utc;
 use clap::Parser;
-use clap::ValueEnum;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
@@ -19,37 +17,11 @@ mod json;
 /// Randomize dmw3
 #[derive(Parser, Debug)]
 struct Arguments {
-    /// iso path
+    /// bin path
     path: std::path::PathBuf,
-    /// randomization seed (defaults to current timestamp)
-    #[clap(short, long, default_value_t = Utc::now().timestamp() as u64)]
-    seed: u64,
-    /// keep cardmon unshuffled
-    #[clap(short, long)]
-    cardmon: bool,
-    /// keep bosses unshuffled
-    #[clap(short, long)]
-    bosses: bool,
-    /// shuffles
-    #[clap(long, default_value_t = 5)]
-    shuffles: u8,
-    /// tnt ball strategy
+    /// randomizer preset json
     #[clap(long)]
-    #[arg(value_enum, default_value_t = TNTStrategy::Swap)]
-    tnt: TNTStrategy,
-    /// randomize parties (currently you won't be able to preview)
-    #[clap(long)]
-    rp: bool,
-}
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-enum TNTStrategy {
-    /// fully random where triceramon will be
-    Shuffle,
-    /// keep triceramon in place
-    Keep,
-    /// make it so that the digimon that replaces triceramon has TNT Ball
-    Swap,
+    preset: Option<std::path::PathBuf>,
 }
 
 const CARDMON_MIN: u16 = 0x1c9;
@@ -64,10 +36,10 @@ const MAIN_EXECUTABLE: &str = "./extract/SLES_039.36";
 const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
 const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
 
-fn skip(digimon_id: u16, args: &Arguments) -> bool {
-    return (args.cardmon && (CARDMON_MIN <= digimon_id && digimon_id <= CARDMON_MAX))
-        || (args.bosses && BOSSES.contains(&digimon_id))
-        || (args.tnt == TNTStrategy::Keep && digimon_id == TRICERAMON_ID);
+fn skip(digimon_id: u16, preset: &json::Preset) -> bool {
+    return (preset.cardmon && (CARDMON_MIN <= digimon_id && digimon_id <= CARDMON_MAX))
+        || (preset.bosses && BOSSES.contains(&digimon_id))
+        || (preset.strategy == json::TNTStrategy::Keep && digimon_id == TRICERAMON_ID);
 }
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
@@ -159,6 +131,8 @@ struct EncounterData {
 fn main() {
     let args = Arguments::parse();
 
+    let preset = json::load_preset(&args.preset);
+
     match Command::new("dumpsxiso")
         .arg("-x")
         .arg("extract/")
@@ -242,12 +216,12 @@ fn main() {
     let mut enemy_stats_arr_copy = enemy_stats_arr.clone();
     let mut encounter_data_arr_copy = encounter_data_arr.clone();
 
-    let mut rng = Xoshiro256StarStar::seed_from_u64(args.seed);
+    let mut rng = Xoshiro256StarStar::seed_from_u64(preset.seed);
 
     let len = encounter_data_arr.len();
 
     // Fisher-Yates shuffles
-    for _ in 0..args.shuffles {
+    for _ in 0..preset.shuffles {
         for i in 0..(len - 2) {
             let uniform: usize = rng.next_u64() as usize;
             let j = i + uniform % (len - i - 1);
@@ -255,7 +229,7 @@ fn main() {
             let digimon_id_1 = encounter_data_arr_copy[i].digimon_id as u16;
             let digimon_id_2 = encounter_data_arr_copy[j].digimon_id as u16;
 
-            if skip(digimon_id_1 as u16, &args) || skip(digimon_id_2 as u16, &args) {
+            if skip(digimon_id_1 as u16, &preset) || skip(digimon_id_2 as u16, &preset) {
                 continue;
             }
 
@@ -266,7 +240,7 @@ fn main() {
     let mut parties: [u8; 9] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     let mut all_digimon: [u8; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     let rindex = (rng.next_u64() % 7) as usize;
-    if args.rp {
+    if preset.rp {
         for i in 0..3 {
             for j in 0..7 {
                 let uniform = rng.next_u64() as usize;
@@ -287,7 +261,7 @@ fn main() {
 
         let digimon_id_1 = old_encounter.digimon_id as u16;
 
-        if skip(digimon_id_1 as u16, &args) {
+        if skip(digimon_id_1 as u16, &preset) {
             continue;
         }
 
@@ -343,7 +317,7 @@ fn main() {
         enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_avg_res as i32 / avg_res) as i16;
     }
 
-    if args.tnt == TNTStrategy::Swap {
+    if preset.strategy == json::TNTStrategy::Swap {
         let tric = enemy_stats_arr_copy
             .iter()
             .find(|&x| x.digimon_id == TRICERAMON_ID)
@@ -395,8 +369,8 @@ fn main() {
         [encounter_data_index..(encounter_data_index + encounter_data_arr.len() * 0xc)]
         .copy_from_slice(&mut encounter_data_buf);
 
-    let bin = format!("dmw3-{x}.bin", x = args.seed);
-    let cue = format!("dmw3-{x}.cue", x = args.seed);
+    let bin = format!("dmw3-{x}.bin", x = preset.seed);
+    let cue = format!("dmw3-{x}.cue", x = preset.seed);
 
     let mut new_main_executable = File::create(MAIN_EXECUTABLE).unwrap();
     let mut new_stats = File::create(STATS_FILE).unwrap();
