@@ -12,18 +12,9 @@ use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
 
+mod cli;
 mod consts;
 mod json;
-
-/// Randomize dmw3
-#[derive(Parser, Debug)]
-struct Arguments {
-    /// bin path
-    path: std::path::PathBuf,
-    /// randomizer preset json
-    #[clap(long)]
-    preset: Option<std::path::PathBuf>,
-}
 
 fn skip(digimon_id: u16, preset: &json::Preset) -> bool {
     return (preset.cardmon
@@ -119,7 +110,7 @@ struct EncounterData {
 }
 
 fn main() {
-    let args = Arguments::parse();
+    let args = cli::Arguments::parse();
 
     let preset = json::load_preset(&args.preset);
 
