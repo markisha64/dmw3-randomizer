@@ -11,7 +11,8 @@ use std::io::prelude::*;
 use std::io::Cursor;
 use std::path::Path;
 use std::process::Command;
-use std::str;
+
+mod consts;
 mod json;
 
 /// Randomize dmw3
@@ -24,22 +25,11 @@ struct Arguments {
     preset: Option<std::path::PathBuf>,
 }
 
-const CARDMON_MIN: u16 = 0x1c9;
-const CARDMON_MAX: u16 = 0x1d0;
-const BOSSES: [u16; 26] = [
-    0x46, 0x7c, 0x8d, 0xb2, 0x151, 0x164, 0x166, 0x1b4, 0x1ba, 0x1bb, 0x1bc, 0x1bd, 0x1be, 0x1bf,
-    0x1c0, 0x1c1, 0x1c2, 0x1c3, 0x1c4, 0x1c5, 0x1c6, 0x1c7, 0x1c8, 0x1d1, 0x1d2, 0x1d3,
-];
-const TRICERAMON_ID: u16 = 0xcb;
-
-const MAIN_EXECUTABLE: &str = "./extract/SLES_039.36";
-const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
-const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
-
 fn skip(digimon_id: u16, preset: &json::Preset) -> bool {
-    return (preset.cardmon && (CARDMON_MIN <= digimon_id && digimon_id <= CARDMON_MAX))
-        || (preset.bosses && BOSSES.contains(&digimon_id))
-        || (preset.strategy == json::TNTStrategy::Keep && digimon_id == TRICERAMON_ID);
+    return (preset.cardmon
+        && (consts::CARDMON_MIN <= digimon_id && digimon_id <= consts::CARDMON_MAX))
+        || (preset.bosses && consts::BOSSES.contains(&digimon_id))
+        || (preset.strategy == json::TNTStrategy::Keep && digimon_id == consts::TRICERAMON_ID);
 }
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
@@ -150,8 +140,8 @@ fn main() {
         panic!("Error extracting");
     }
 
-    let stats_buf = fs::read(STATS_FILE).unwrap();
-    let encounter_buf = fs::read(ENCOUNTERS_FILE).unwrap();
+    let stats_buf = fs::read(consts::STATS_FILE).unwrap();
+    let encounter_buf = fs::read(consts::ENCOUNTERS_FILE).unwrap();
 
     let enemy_stats_index = stats_buf
         .windows(16)
@@ -207,7 +197,7 @@ fn main() {
         encounter_data_arr.push(unwrapped);
     }
 
-    let main_buf = fs::read(MAIN_EXECUTABLE).unwrap();
+    let main_buf = fs::read(consts::MAIN_EXECUTABLE).unwrap();
     let parties_index = main_buf
         .windows(9)
         .position(|window| -> bool { window == b"\x00\x06\x07\x02\x03\x06\x01\x05\x07" })
@@ -320,7 +310,7 @@ fn main() {
     if preset.strategy == json::TNTStrategy::Swap {
         let tric = enemy_stats_arr_copy
             .iter()
-            .find(|&x| x.digimon_id == TRICERAMON_ID)
+            .find(|&x| x.digimon_id == consts::TRICERAMON_ID)
             .unwrap();
 
         let mut titem = tric.droppable_item;
@@ -328,7 +318,7 @@ fn main() {
 
         let tric_index = encounter_data_arr
             .iter()
-            .position(|&x| x.digimon_id as u16 == TRICERAMON_ID && x.lv == 6 && x.x == 16)
+            .position(|&x| x.digimon_id as u16 == consts::TRICERAMON_ID && x.lv == 6 && x.x == 16)
             .unwrap();
 
         let swapped = enemy_stats_arr_copy
@@ -341,7 +331,7 @@ fn main() {
 
         let tricm = enemy_stats_arr_copy
             .iter_mut()
-            .find(|&&mut x| x.digimon_id == TRICERAMON_ID)
+            .find(|&&mut x| x.digimon_id == consts::TRICERAMON_ID)
             .unwrap();
 
         std::mem::swap(&mut titem, &mut tricm.droppable_item);
@@ -372,9 +362,9 @@ fn main() {
     let bin = format!("dmw3-{x}.bin", x = preset.seed);
     let cue = format!("dmw3-{x}.cue", x = preset.seed);
 
-    let mut new_main_executable = File::create(MAIN_EXECUTABLE).unwrap();
-    let mut new_stats = File::create(STATS_FILE).unwrap();
-    let mut new_encounters = File::create(ENCOUNTERS_FILE).unwrap();
+    let mut new_main_executable = File::create(consts::MAIN_EXECUTABLE).unwrap();
+    let mut new_stats = File::create(consts::STATS_FILE).unwrap();
+    let mut new_encounters = File::create(consts::ENCOUNTERS_FILE).unwrap();
 
     match new_main_executable.write_all(&write_main_buf) {
         Err(_) => panic!("Error writing main executable"),
