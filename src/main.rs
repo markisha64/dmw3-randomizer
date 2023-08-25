@@ -213,7 +213,7 @@ fn main() {
     let mut parties: [u8; 9] = [0, 0, 0, 0, 0, 0, 0, 0, 0];
     let mut all_digimon: [u8; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     let rindex = (rng.next_u64() % 7) as usize;
-    if preset.rp {
+    if preset.randomize_parties {
         for i in 0..3 {
             for j in 0..7 {
                 let uniform = rng.next_u64() as usize;

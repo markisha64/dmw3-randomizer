@@ -1,0 +1,8 @@
+{
+	"seed": 64,
+	"cardmon": true,
+	"bosses": true,
+	"shuffles": 5,
+	"randomizeParties": true,
+	"strategy": "swap"
+}

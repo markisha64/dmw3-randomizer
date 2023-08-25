@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Preset {
     #[serde(default = "default_seed")]
     pub seed: u64,
@@ -13,7 +14,7 @@ pub struct Preset {
     #[serde(default = "default_shuffles")]
     pub shuffles: u8,
     #[serde(default = "default_bool_true")]
-    pub rp: bool,
+    pub randomize_parties: bool,
     #[serde(default = "TNTStrategy::default")]
     pub strategy: TNTStrategy,
 }
