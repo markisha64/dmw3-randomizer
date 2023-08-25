@@ -21,11 +21,23 @@ fn skip(digimon_id: u16, preset: &Preset) -> bool {
         || (preset.strategy == TNTStrategy::Keep && digimon_id == consts::TRICERAMON_ID);
 }
 
-// struct Files {}
+struct Object<T> {
+    buf: Vec<u8>,
+    original: Vec<T>,
+    modified: Vec<T>,
+    index: usize,
+}
 
-pub fn patch(preset: &Preset) {
+struct Objects {
+    enemy_stats: Object<EnemyStats>,
+    encounters: Object<EncounterData>,
+    parties: Object<u8>,
+}
+
+fn read_objects() -> Objects {
     let stats_buf = fs::read(consts::STATS_FILE).unwrap();
     let encounter_buf = fs::read(consts::ENCOUNTERS_FILE).unwrap();
+    let main_buf = fs::read(consts::MAIN_EXECUTABLE).unwrap();
 
     let enemy_stats_index = stats_buf
         .windows(16)
@@ -81,18 +93,100 @@ pub fn patch(preset: &Preset) {
         encounter_data_arr.push(unwrapped);
     }
 
-    let main_buf = fs::read(consts::MAIN_EXECUTABLE).unwrap();
     let parties_index = main_buf
         .windows(9)
         .position(|window| -> bool { window == b"\x00\x06\x07\x02\x03\x06\x01\x05\x07" })
         .unwrap();
 
-    let mut enemy_stats_arr_copy = enemy_stats_arr.clone();
-    let mut encounter_data_arr_copy = encounter_data_arr.clone();
+    let enemy_stats_arr_copy = enemy_stats_arr.clone();
+    let encounter_data_arr_copy = encounter_data_arr.clone();
+
+    let enemy_stats_object = Object {
+        buf: stats_buf,
+        original: enemy_stats_arr,
+        modified: enemy_stats_arr_copy,
+        index: enemy_stats_index,
+    };
+
+    let encounters_object = Object {
+        buf: encounter_buf,
+        original: encounter_data_arr,
+        modified: encounter_data_arr_copy,
+        index: encounter_data_index,
+    };
+
+    let parties_object: Object<u8> = Object {
+        buf: main_buf.clone(),
+        original: main_buf[parties_index..parties_index + 9].to_vec(),
+        modified: main_buf[parties_index..parties_index + 9].to_vec(),
+        index: parties_index,
+    };
+
+    Objects {
+        enemy_stats: enemy_stats_object,
+        encounters: encounters_object,
+        parties: parties_object,
+    }
+}
+
+fn write_objects(objects: &Objects) -> Result<(), ()> {
+    let mut write_stats_buf = objects.enemy_stats.buf.clone();
+    let mut write_encounters_buf = objects.encounters.buf.clone();
+    let mut write_main_buf = objects.parties.buf.clone();
+
+    let mut enemy_stats_buf = vec![];
+    let mut encounter_data_buf = vec![];
+
+    let modified_enemy_stats = &objects.enemy_stats.modified;
+    let modified_encounters = &objects.encounters.modified;
+    let mut modified_parties = &objects.parties.modified;
+
+    modified_enemy_stats.write(&mut enemy_stats_buf).unwrap();
+    modified_encounters.write(&mut encounter_data_buf).unwrap();
+
+    let parties_index = objects.parties.index;
+    let enemy_stats_index = objects.enemy_stats.index;
+    let encounter_data_index = objects.encounters.index;
+
+    write_main_buf[parties_index..(parties_index + 9)].copy_from_slice(&mut modified_parties);
+
+    write_stats_buf[enemy_stats_index..(enemy_stats_index + modified_enemy_stats.len() * 0x46)]
+        .copy_from_slice(&mut enemy_stats_buf);
+
+    write_encounters_buf
+        [encounter_data_index..(encounter_data_index + modified_encounters.len() * 0xc)]
+        .copy_from_slice(&mut encounter_data_buf);
+
+    let mut new_main_executable = File::create(consts::MAIN_EXECUTABLE).unwrap();
+    let mut new_stats = File::create(consts::STATS_FILE).unwrap();
+    let mut new_encounters = File::create(consts::ENCOUNTERS_FILE).unwrap();
+
+    match new_main_executable.write_all(&write_main_buf) {
+        Err(_) => return Err(()),
+        _ => {}
+    }
+
+    match new_stats.write_all(&write_stats_buf) {
+        Err(_) => return Err(()),
+        _ => {}
+    }
+
+    match new_encounters.write_all(&write_encounters_buf) {
+        Err(_) => return Err(()),
+        _ => {}
+    }
+
+    Ok(())
+}
+
+pub fn patch(preset: &Preset) {
+    let mut objects = read_objects();
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(preset.seed);
 
-    let len = encounter_data_arr.len();
+    let len = objects.encounters.original.len();
+    let modified_encounters = &mut objects.encounters.modified;
+    let encounters = &objects.encounters.original;
 
     // Fisher-Yates shuffles
     for _ in 0..preset.shuffles {
@@ -100,14 +194,14 @@ pub fn patch(preset: &Preset) {
             let uniform: usize = rng.next_u64() as usize;
             let j = i + uniform % (len - i - 1);
 
-            let digimon_id_1 = encounter_data_arr_copy[i].digimon_id as u16;
-            let digimon_id_2 = encounter_data_arr_copy[j].digimon_id as u16;
+            let digimon_id_1 = modified_encounters[i].digimon_id as u16;
+            let digimon_id_2 = modified_encounters[j].digimon_id as u16;
 
             if skip(digimon_id_1 as u16, &preset) || skip(digimon_id_2 as u16, &preset) {
                 continue;
             }
 
-            encounter_data_arr_copy.swap(i, j);
+            modified_encounters.swap(i, j);
         }
     }
 
@@ -130,8 +224,8 @@ pub fn patch(preset: &Preset) {
     }
 
     for i in 0..len {
-        let old_encounter = &encounter_data_arr[i];
-        let new_encounter = &mut encounter_data_arr_copy[i];
+        let old_encounter = &encounters[i];
+        let new_encounter = &mut modified_encounters[i];
 
         let digimon_id_1 = old_encounter.digimon_id as u16;
 
@@ -146,8 +240,10 @@ pub fn patch(preset: &Preset) {
         new_encounter.lv = old_encounter.lv;
     }
 
-    for enemy_stats in &mut enemy_stats_arr_copy {
-        let encounters: Vec<&EncounterData> = encounter_data_arr_copy
+    let modified_enemy_stats = &mut objects.enemy_stats.modified;
+
+    for enemy_stats in &mut *modified_enemy_stats {
+        let encounters: Vec<&EncounterData> = modified_encounters
             .iter()
             .filter(|&x| x.digimon_id == enemy_stats.digimon_id as u32)
             .collect();
@@ -192,7 +288,7 @@ pub fn patch(preset: &Preset) {
     }
 
     if preset.strategy == TNTStrategy::Swap {
-        let tric = enemy_stats_arr_copy
+        let tric = modified_enemy_stats
             .iter()
             .find(|&x| x.digimon_id == consts::TRICERAMON_ID)
             .unwrap();
@@ -200,65 +296,30 @@ pub fn patch(preset: &Preset) {
         let mut titem = tric.droppable_item;
         let mut tdrop = tric.drop_rate;
 
-        let tric_index = encounter_data_arr
+        let tric_index = encounters
             .iter()
             .position(|&x| x.digimon_id as u16 == consts::TRICERAMON_ID && x.lv == 6 && x.x == 16)
             .unwrap();
 
-        let swapped = enemy_stats_arr_copy
+        let swapped = modified_enemy_stats
             .iter_mut()
-            .find(|&&mut x| x.digimon_id == encounter_data_arr_copy[tric_index].digimon_id as u16)
+            .find(|&&mut x| x.digimon_id == modified_encounters[tric_index].digimon_id as u16)
             .unwrap();
 
         std::mem::swap(&mut titem, &mut swapped.droppable_item);
         std::mem::swap(&mut tdrop, &mut swapped.drop_rate);
 
-        let tricm = enemy_stats_arr_copy
+        let tricm = modified_enemy_stats
             .iter_mut()
             .find(|&&mut x| x.digimon_id == consts::TRICERAMON_ID)
             .unwrap();
 
         std::mem::swap(&mut titem, &mut tricm.droppable_item);
         std::mem::swap(&mut tdrop, &mut tricm.drop_rate);
-    }
 
-    let mut write_stats_buf = stats_buf.clone();
-    let mut write_encounters_buf = encounter_buf.clone();
-    let mut write_main_buf = main_buf.clone();
-
-    let mut enemy_stats_buf = vec![];
-    let mut encounter_data_buf = vec![];
-
-    enemy_stats_arr_copy.write(&mut enemy_stats_buf).unwrap();
-    encounter_data_arr_copy
-        .write(&mut encounter_data_buf)
-        .unwrap();
-
-    write_main_buf[parties_index..(parties_index + 9)].copy_from_slice(&mut parties);
-
-    write_stats_buf[enemy_stats_index..(enemy_stats_index + enemy_stats_arr.len() * 0x46)]
-        .copy_from_slice(&mut enemy_stats_buf);
-
-    write_encounters_buf
-        [encounter_data_index..(encounter_data_index + encounter_data_arr.len() * 0xc)]
-        .copy_from_slice(&mut encounter_data_buf);
-
-    let mut new_main_executable = File::create(consts::MAIN_EXECUTABLE).unwrap();
-    let mut new_stats = File::create(consts::STATS_FILE).unwrap();
-    let mut new_encounters = File::create(consts::ENCOUNTERS_FILE).unwrap();
-
-    match new_main_executable.write_all(&write_main_buf) {
-        Err(_) => panic!("Error writing main executable"),
-        _ => {}
-    }
-
-    match new_stats.write_all(&write_stats_buf) {
-        Err(_) => panic!("Error writing stats"),
-        _ => {}
-    }
-
-    match new_encounters.write_all(&write_encounters_buf) {
-        Err(_) => panic!("Error writing encounters"),
-        _ => {}
+        match write_objects(&objects) {
+            Err(_) => panic!("Error writing objects"),
+            _ => (),
+        }
     }
 }
