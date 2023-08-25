@@ -1,17 +1,29 @@
+use std::path::Path;
 use std::process::Command;
 use std::process::Output;
 
 use super::cli::Arguments;
 
-pub fn extract(args: &Arguments) -> std::io::Result<Output> {
-    Command::new("dumpsxiso")
+pub fn extract(args: &Arguments) -> Result<(), ()> {
+    let res = Command::new("dumpsxiso")
         .arg("-x")
         .arg("extract/")
         .arg("-s")
         .arg("out.xml")
         .arg("-pt")
         .arg(&args.path)
-        .output()
+        .output();
+
+    match res {
+        Ok(_) => {
+            if !Path::new("./out.xml").exists() {
+                return Err(());
+            }
+
+            Ok(())
+        }
+        Err(_) => Err(()),
+    }
 }
 
 pub fn build(bin: &str, cue: &str) -> std::io::Result<Output> {

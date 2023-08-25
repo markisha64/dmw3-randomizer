@@ -1,5 +1,4 @@
 use clap::Parser;
-use std::path::Path;
 
 mod cli;
 mod consts;
@@ -17,10 +16,6 @@ fn main() {
     match mkpsxiso::extract(&args) {
         Err(_) => panic!("Error extracting"),
         _ => {}
-    }
-
-    if !Path::new("./out.xml").exists() {
-        panic!("Error extracting");
     }
 
     patch(&preset);
