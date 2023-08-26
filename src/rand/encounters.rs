@@ -2,18 +2,18 @@ use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use super::super::consts;
-use super::super::json::{Preset, TNTStrategy};
+use super::super::json::{Encounters, Randomizer, TNTStrategy};
 use super::structs::EncounterData;
 use super::Objects;
 
-fn skip(digimon_id: u16, preset: &Preset) -> bool {
+fn skip(digimon_id: u16, preset: &Encounters) -> bool {
     return (preset.cardmon
         && (consts::CARDMON_MIN <= digimon_id && digimon_id <= consts::CARDMON_MAX))
         || (preset.bosses && consts::BOSSES.contains(&digimon_id))
         || (preset.strategy == TNTStrategy::Keep && digimon_id == consts::TRICERAMON_ID);
 }
 
-pub fn patch(preset: &Preset, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let len = objects.encounters.original.len();
     let modified_encounters = &mut objects.encounters.modified;
     let encounters = &objects.encounters.original;
@@ -27,7 +27,9 @@ pub fn patch(preset: &Preset, objects: &mut Objects, rng: &mut Xoshiro256StarSta
             let digimon_id_1 = modified_encounters[i].digimon_id as u16;
             let digimon_id_2 = modified_encounters[j].digimon_id as u16;
 
-            if skip(digimon_id_1 as u16, &preset) || skip(digimon_id_2 as u16, &preset) {
+            if skip(digimon_id_1 as u16, &preset.encounters)
+                || skip(digimon_id_2 as u16, &preset.encounters)
+            {
                 continue;
             }
 
@@ -38,7 +40,7 @@ pub fn patch(preset: &Preset, objects: &mut Objects, rng: &mut Xoshiro256StarSta
     let parties = &mut objects.parties.modified;
     let mut all_digimon: [u8; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
     let rindex = (rng.next_u64() % 7) as usize;
-    if preset.randomize_parties {
+    if preset.encounters.randomize_parties {
         for i in 0..3 {
             for j in 0..7 {
                 let uniform = rng.next_u64() as usize;
@@ -59,7 +61,7 @@ pub fn patch(preset: &Preset, objects: &mut Objects, rng: &mut Xoshiro256StarSta
 
         let digimon_id_1 = old_encounter.digimon_id as u16;
 
-        if skip(digimon_id_1 as u16, &preset) {
+        if skip(digimon_id_1 as u16, &preset.encounters) {
             continue;
         }
 
@@ -117,7 +119,7 @@ pub fn patch(preset: &Preset, objects: &mut Objects, rng: &mut Xoshiro256StarSta
         enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_avg_res as i32 / avg_res) as i16;
     }
 
-    if preset.strategy == TNTStrategy::Swap {
+    if preset.encounters.strategy == TNTStrategy::Swap {
         let tric = modified_enemy_stats
             .iter()
             .find(|&x| x.digimon_id == consts::TRICERAMON_ID)

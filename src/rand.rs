@@ -173,9 +173,9 @@ fn write_objects(objects: &Objects) -> Result<(), ()> {
 pub fn patch(preset: &Preset) {
     let mut objects = read_objects();
 
-    let mut rng = Xoshiro256StarStar::seed_from_u64(preset.seed);
+    let mut rng = Xoshiro256StarStar::seed_from_u64(preset.randomizer.seed);
 
-    encounters::patch(preset, &mut objects, &mut rng);
+    encounters::patch(&preset.randomizer, &mut objects, &mut rng);
 
     match write_objects(&objects) {
         Err(_) => panic!("Error writing objects"),

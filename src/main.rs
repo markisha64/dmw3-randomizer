@@ -20,8 +20,8 @@ fn main() {
 
     patch(&preset);
 
-    let bin = format!("dmw3-{x}.bin", x = preset.seed);
-    let cue = format!("dmw3-{x}.cue", x = preset.seed);
+    let bin = format!("dmw3-{x}.bin", x = preset.randomizer.seed);
+    let cue = format!("dmw3-{x}.cue", x = preset.randomizer.seed);
 
     match mkpsxiso::build(&bin, &cue) {
         Err(_) => panic!("Error repacking"),
