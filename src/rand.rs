@@ -26,6 +26,24 @@ struct Object<T> {
     original: Vec<T>,
     modified: Vec<T>,
     index: usize,
+    slen: usize,
+}
+
+trait WriteObjects {
+    fn write_buf(&self) -> Vec<u8>;
+}
+
+impl<T: BinWrite> WriteObjects for Object<T> {
+    fn write_buf(&self) -> Vec<u8> {
+        let mut write_buf = self.buf.clone();
+        let mut buf = vec![];
+
+        self.modified.write(&mut buf).unwrap();
+        write_buf[self.index..(self.index + self.slen * self.original.len())]
+            .copy_from_slice(&mut buf);
+
+        write_buf
+    }
 }
 
 struct Objects {
@@ -106,6 +124,7 @@ fn read_objects() -> Objects {
         original: enemy_stats_arr,
         modified: enemy_stats_arr_copy,
         index: enemy_stats_index,
+        slen: 0x46,
     };
 
     let encounters_object = Object {
@@ -113,6 +132,7 @@ fn read_objects() -> Objects {
         original: encounter_data_arr,
         modified: encounter_data_arr_copy,
         index: encounter_data_index,
+        slen: 0xc,
     };
 
     let parties_object: Object<u8> = Object {
@@ -120,6 +140,7 @@ fn read_objects() -> Objects {
         original: main_buf[parties_index..parties_index + 9].to_vec(),
         modified: main_buf[parties_index..parties_index + 9].to_vec(),
         index: parties_index,
+        slen: 0x1,
     };
 
     Objects {
@@ -130,32 +151,9 @@ fn read_objects() -> Objects {
 }
 
 fn write_objects(objects: &Objects) -> Result<(), ()> {
-    let mut write_stats_buf = objects.enemy_stats.buf.clone();
-    let mut write_encounters_buf = objects.encounters.buf.clone();
-    let mut write_main_buf = objects.parties.buf.clone();
-
-    let mut enemy_stats_buf = vec![];
-    let mut encounter_data_buf = vec![];
-
-    let modified_enemy_stats = &objects.enemy_stats.modified;
-    let modified_encounters = &objects.encounters.modified;
-    let mut modified_parties = &objects.parties.modified;
-
-    modified_enemy_stats.write(&mut enemy_stats_buf).unwrap();
-    modified_encounters.write(&mut encounter_data_buf).unwrap();
-
-    let parties_index = objects.parties.index;
-    let enemy_stats_index = objects.enemy_stats.index;
-    let encounter_data_index = objects.encounters.index;
-
-    write_main_buf[parties_index..(parties_index + 9)].copy_from_slice(&mut modified_parties);
-
-    write_stats_buf[enemy_stats_index..(enemy_stats_index + modified_enemy_stats.len() * 0x46)]
-        .copy_from_slice(&mut enemy_stats_buf);
-
-    write_encounters_buf
-        [encounter_data_index..(encounter_data_index + modified_encounters.len() * 0xc)]
-        .copy_from_slice(&mut encounter_data_buf);
+    let write_stats_buf = objects.enemy_stats.write_buf();
+    let write_encounters_buf = objects.encounters.write_buf();
+    let write_main_buf = objects.parties.write_buf();
 
     let mut new_main_executable = File::create(consts::MAIN_EXECUTABLE).unwrap();
     let mut new_stats = File::create(consts::STATS_FILE).unwrap();
