@@ -10,13 +10,13 @@ pub struct EnemyStats {
 
     pub drop_rate: u16,
 
-    unk2: u16,
+    some_index: u16,
 
     unk3: u16,
 
-    unk4: u16,
+    move_1: u16,
 
-    unk5: u16,
+    move_2: u16,
 
     pub str: i16,
 
@@ -52,27 +52,17 @@ pub struct EnemyStats {
 
     pub ko_rate: u16,
 
-    unk11: u16,
+    digimon_type: u16,
 
-    unk12: u16,
+    moveset_1: Moveset,
 
-    unk13: u16,
+    moveset_2: Moveset,
 
-    unk14: u16,
+    moveset_3: Moveset,
 
-    unk15: u16,
+    moveset_4: Moveset,
 
-    unk16: u16,
-
-    unk17: u16,
-
-    unk18: u16,
-
-    unk19: u16,
-
-    unk20: u16,
-
-    unk21: u16,
+    counter_moveset: Moveset,
 }
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
@@ -86,4 +76,11 @@ pub struct EncounterData {
     pub max_mp: u16,
 
     pub x: u16,
+}
+
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
+struct Moveset {
+    action: u8,
+    comparator: u8,
+    value: u16,
 }
