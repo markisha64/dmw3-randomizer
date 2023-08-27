@@ -45,16 +45,63 @@ struct Bufs {
 
 pub struct Objects {
     bufs: Bufs,
+    executable: Executable,
     pub enemy_stats: Object<EnemyStats>,
     pub encounters: Object<EncounterData>,
     pub parties: Object<u8>,
     pub scaling: Object<Scaling>,
 }
 
+enum Executable {
+    PAL,
+    USA,
+    JAP,
+}
+
+impl Executable {
+    fn as_str(&self) -> &'static str {
+        match self {
+            Executable::PAL => "./extract/SLES_039.36",
+            Executable::USA => "./extract/SLUS_014.36",
+            Executable::JAP => "./extract/SLPS_034.46",
+        }
+    }
+
+    fn from_str(string: &str) -> Option<Executable> {
+        match string {
+            "SLES_039.36" => Some(Executable::PAL),
+            "SLUS_014.36" => Some(Executable::USA),
+            "SLPS_034.46" => Some(Executable::JAP),
+            _ => None,
+        }
+    }
+}
+
 fn read_objects() -> Objects {
+    let itr = fs::read_dir("./extract").unwrap();
+
+    let executable_opt = itr
+        .map(|x| -> Option<Executable> {
+            let dir_entry = x.unwrap();
+
+            Executable::from_str(dir_entry.file_name().into_string().unwrap().as_str())
+        })
+        .find(|x| match x {
+            Some(_) => true,
+            None => false,
+        });
+
+    let executable = match executable_opt {
+        Some(x) => match x {
+            Some(y) => y,
+            None => panic!("can't find extracted executable"),
+        },
+        None => panic!("can't find extracted executable"),
+    };
+
     let stats_buf = fs::read(consts::STATS_FILE).unwrap();
     let encounter_buf = fs::read(consts::ENCOUNTERS_FILE).unwrap();
-    let main_buf = fs::read(consts::MAIN_EXECUTABLE).unwrap();
+    let main_buf = fs::read(executable.as_str()).unwrap();
 
     let enemy_stats_index = stats_buf
         .windows(16)
@@ -169,6 +216,7 @@ fn read_objects() -> Objects {
     };
 
     Objects {
+        executable,
         bufs: Bufs {
             encounter_buf,
             stats_buf,
@@ -189,7 +237,7 @@ fn write_objects(objects: &mut Objects) -> Result<(), ()> {
     objects.parties.write_buf(&mut objects.bufs.main_buf);
     objects.scaling.write_buf(&mut objects.bufs.main_buf);
 
-    let mut new_main_executable = File::create(consts::MAIN_EXECUTABLE).unwrap();
+    let mut new_main_executable = File::create(objects.executable.as_str()).unwrap();
     let mut new_stats = File::create(consts::STATS_FILE).unwrap();
     let mut new_encounters = File::create(consts::ENCOUNTERS_FILE).unwrap();
 

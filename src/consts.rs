@@ -6,6 +6,5 @@ pub const BOSSES: [u16; 26] = [
 ];
 pub const TRICERAMON_ID: u16 = 0xcb;
 
-pub const MAIN_EXECUTABLE: &str = "./extract/SLES_039.36";
 pub const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
 pub const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
