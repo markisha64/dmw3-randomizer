@@ -8,9 +8,9 @@ The Digimon World 3 Randomizer is a tool developed in Rust that allows players t
 - Randomize wild Digimon encounters throughout the game.
 - Generate a randomized ROM file ready to be played on your favorite emulator.
 
-## Known working versions
+## Versions
 
- - PAL(Europe)
+Support is added for all 3 versions, if you notice any problems, fill out an issue.
 
 ## Getting Started
 
