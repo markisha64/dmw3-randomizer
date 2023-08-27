@@ -175,7 +175,9 @@ pub fn patch(preset: &Preset) {
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(preset.randomizer.seed);
 
-    encounters::patch(&preset.randomizer, &mut objects, &mut rng);
+    if preset.randomizer.encounters.enabled {
+        encounters::patch(&preset.randomizer, &mut objects, &mut rng);
+    }
 
     match write_objects(&objects) {
         Err(_) => panic!("Error writing objects"),

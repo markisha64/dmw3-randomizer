@@ -3,6 +3,7 @@
 		"seed": 64,
 		"shuffles": 5,
 		"encounters": {
+			"enabled": true,
 			"cardmon": true,
 			"bosses": true,
 			"randomizeParties": true,

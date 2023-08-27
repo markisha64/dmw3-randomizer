@@ -24,6 +24,8 @@ pub struct Randomizer {
 #[serde(rename_all = "camelCase")]
 pub struct Encounters {
     #[serde(default = "default_bool_true")]
+    pub enabled: bool,
+    #[serde(default = "default_bool_true")]
     pub cardmon: bool,
     #[serde(default = "default_bool_true")]
     pub bosses: bool,
