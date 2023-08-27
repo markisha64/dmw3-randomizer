@@ -8,6 +8,12 @@
 			"bosses": true,
 			"randomizeParties": true,
 			"strategy": "swap"
-		}	
+		},
+		"parties": {
+			"enabled": true
+		}
+	},
+	"fixes": {
+		"scaling": true
 	}
 }

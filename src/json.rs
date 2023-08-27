@@ -7,6 +7,8 @@ use std::fs;
 pub struct Preset {
     #[serde(default = "default_randomizer")]
     pub randomizer: Randomizer,
+    #[serde(default = "default_fixes")]
+    pub fixes: Fixes,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -18,6 +20,8 @@ pub struct Randomizer {
     pub shuffles: u8,
     #[serde(default = "default_encounters")]
     pub encounters: Encounters,
+    #[serde(default = "default_parties")]
+    pub parties: Parties,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,17 +33,37 @@ pub struct Encounters {
     pub cardmon: bool,
     #[serde(default = "default_bool_true")]
     pub bosses: bool,
-    #[serde(default = "default_bool_true")]
-    pub randomize_parties: bool,
     #[serde(default = "TNTStrategy::default")]
     pub strategy: TNTStrategy,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct Parties {
+    #[serde(default = "default_bool_true")]
+    pub enabled: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub struct Fixes {
+    #[serde(default = "default_bool_true")]
+    pub scaling: bool,
 }
 
 fn default_randomizer() -> Randomizer {
     serde_json::from_str("{}").unwrap()
 }
 
+fn default_fixes() -> Fixes {
+    serde_json::from_str("{}").unwrap()
+}
+
 fn default_encounters() -> Encounters {
+    serde_json::from_str("{}").unwrap()
+}
+
+fn default_parties() -> Parties {
     serde_json::from_str("{}").unwrap()
 }
 

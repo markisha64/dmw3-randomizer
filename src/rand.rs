@@ -11,11 +11,12 @@ use super::consts;
 use super::json::Preset;
 
 mod encounters;
+mod fixes;
+mod parties;
 pub mod structs;
-use structs::{EncounterData, EnemyStats};
+use structs::{EncounterData, EnemyStats, Scaling};
 
 pub struct Object<T> {
-    pub buf: Vec<u8>,
     pub original: Vec<T>,
     pub modified: Vec<T>,
     index: usize,
@@ -23,26 +24,31 @@ pub struct Object<T> {
 }
 
 trait WriteObjects {
-    fn write_buf(&self) -> Vec<u8>;
+    fn write_buf(&self, source_buf: &mut Vec<u8>);
 }
 
 impl<T: BinWrite> WriteObjects for Object<T> {
-    fn write_buf(&self) -> Vec<u8> {
-        let mut write_buf = self.buf.clone();
+    fn write_buf(&self, write_buf: &mut Vec<u8>) {
         let mut buf = vec![];
 
         self.modified.write(&mut buf).unwrap();
         write_buf[self.index..(self.index + self.slen * self.original.len())]
             .copy_from_slice(&mut buf);
-
-        write_buf
     }
 }
 
+struct Bufs {
+    stats_buf: Vec<u8>,
+    encounter_buf: Vec<u8>,
+    main_buf: Vec<u8>,
+}
+
 pub struct Objects {
+    bufs: Bufs,
     pub enemy_stats: Object<EnemyStats>,
     pub encounters: Object<EncounterData>,
     pub parties: Object<u8>,
+    pub scaling: Object<Scaling>,
 }
 
 fn read_objects() -> Objects {
@@ -104,6 +110,27 @@ fn read_objects() -> Objects {
         encounter_data_arr.push(unwrapped);
     }
 
+    let scaling_index = main_buf
+        .windows(16)
+        .position(|window| -> bool {
+            window == b"\x7f\x01\x30\x00\x2c\x00\x29\x00\x22\x00\x21\x00\x01\x00\x55\x00"
+        })
+        .unwrap();
+
+    let mut scaling_reader = Cursor::new(&main_buf[scaling_index..]);
+
+    let mut scaling_arr: Vec<Scaling> = Vec::new();
+    scaling_arr.reserve(9);
+
+    for _ in 0..9 {
+        let scaling = Scaling::read(&mut scaling_reader);
+
+        match scaling {
+            Ok(scal) => scaling_arr.push(scal),
+            Err(_) => panic!("Binread error"),
+        }
+    }
+
     let parties_index = main_buf
         .windows(9)
         .position(|window| -> bool { window == b"\x00\x06\x07\x02\x03\x06\x01\x05\x07" })
@@ -111,9 +138,9 @@ fn read_objects() -> Objects {
 
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
+    let scaling_copy = scaling_arr.clone();
 
     let enemy_stats_object = Object {
-        buf: stats_buf,
         original: enemy_stats_arr,
         modified: enemy_stats_arr_copy,
         index: enemy_stats_index,
@@ -121,7 +148,6 @@ fn read_objects() -> Objects {
     };
 
     let encounters_object = Object {
-        buf: encounter_buf,
         original: encounter_data_arr,
         modified: encounter_data_arr_copy,
         index: encounter_data_index,
@@ -129,40 +155,55 @@ fn read_objects() -> Objects {
     };
 
     let parties_object: Object<u8> = Object {
-        buf: main_buf.clone(),
         original: main_buf[parties_index..parties_index + 9].to_vec(),
         modified: main_buf[parties_index..parties_index + 9].to_vec(),
         index: parties_index,
         slen: 0x1,
     };
 
+    let scaling_object: Object<Scaling> = Object {
+        original: scaling_arr,
+        modified: scaling_copy,
+        index: scaling_index,
+        slen: 0x58,
+    };
+
     Objects {
+        bufs: Bufs {
+            encounter_buf,
+            stats_buf,
+            main_buf,
+        },
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
         parties: parties_object,
+        scaling: scaling_object,
     }
 }
 
-fn write_objects(objects: &Objects) -> Result<(), ()> {
-    let write_stats_buf = objects.enemy_stats.write_buf();
-    let write_encounters_buf = objects.encounters.write_buf();
-    let write_main_buf = objects.parties.write_buf();
+fn write_objects(objects: &mut Objects) -> Result<(), ()> {
+    objects.enemy_stats.write_buf(&mut objects.bufs.stats_buf);
+    objects
+        .encounters
+        .write_buf(&mut objects.bufs.encounter_buf);
+    objects.parties.write_buf(&mut objects.bufs.main_buf);
+    objects.scaling.write_buf(&mut objects.bufs.main_buf);
 
     let mut new_main_executable = File::create(consts::MAIN_EXECUTABLE).unwrap();
     let mut new_stats = File::create(consts::STATS_FILE).unwrap();
     let mut new_encounters = File::create(consts::ENCOUNTERS_FILE).unwrap();
 
-    match new_main_executable.write_all(&write_main_buf) {
+    match new_main_executable.write_all(&objects.bufs.main_buf) {
         Err(_) => return Err(()),
         _ => {}
     }
 
-    match new_stats.write_all(&write_stats_buf) {
+    match new_stats.write_all(&objects.bufs.stats_buf) {
         Err(_) => return Err(()),
         _ => {}
     }
 
-    match new_encounters.write_all(&write_encounters_buf) {
+    match new_encounters.write_all(&objects.bufs.encounter_buf) {
         Err(_) => return Err(()),
         _ => {}
     }
@@ -179,7 +220,15 @@ pub fn patch(preset: &Preset) {
         encounters::patch(&preset.randomizer, &mut objects, &mut rng);
     }
 
-    match write_objects(&objects) {
+    if preset.randomizer.parties.enabled {
+        parties::patch(&preset.randomizer, &mut objects, &mut rng);
+    }
+
+    if preset.fixes.scaling {
+        fixes::scaling(&mut objects);
+    }
+
+    match write_objects(&mut objects) {
         Err(_) => panic!("Error writing objects"),
         _ => (),
     }

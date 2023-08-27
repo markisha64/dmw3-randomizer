@@ -37,24 +37,6 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    let parties = &mut objects.parties.modified;
-    let mut all_digimon: [u8; 9] = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    let rindex = (rng.next_u64() % 7) as usize;
-    if preset.encounters.randomize_parties {
-        for i in 0..3 {
-            for j in 0..7 {
-                let uniform = rng.next_u64() as usize;
-                let k = j + uniform % (8 - j);
-
-                all_digimon.swap(j, k);
-            }
-
-            for j in 0..3 {
-                parties[i * 3 + j] = all_digimon[rindex + j];
-            }
-        }
-    }
-
     for i in 0..len {
         let old_encounter = &encounters[i];
         let new_encounter = &mut modified_encounters[i];

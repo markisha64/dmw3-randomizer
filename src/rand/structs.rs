@@ -84,3 +84,26 @@ struct Moveset {
     comparator: u8,
     value: u16,
 }
+
+#[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct Scaling {
+    #[br(count = 0x3e)]
+    unk_arr: Vec<u8>,
+
+    exp_modifier: u8,
+
+    unk: u16,
+
+    hp_modifier: u8,
+
+    mp_modifier: u8,
+
+    #[br(count = 6)]
+    pub stat_offsets: Vec<u8>,
+
+    #[br(count = 7)]
+    pub res_offsets: Vec<u8>,
+
+    #[br(count = 8)]
+    unk_arr_1: Vec<u8>,
+}
