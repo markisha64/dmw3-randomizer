@@ -13,8 +13,9 @@ use super::json::Preset;
 mod encounters;
 mod fixes;
 mod parties;
+mod shops;
 pub mod structs;
-use structs::{EncounterData, EnemyStats, Scaling};
+use structs::{EncounterData, EnemyStats, Pointer, Scaling, Shop};
 
 pub struct Object<T> {
     pub original: Vec<T>,
@@ -41,15 +42,19 @@ struct Bufs {
     stats_buf: Vec<u8>,
     encounter_buf: Vec<u8>,
     main_buf: Vec<u8>,
+    shops_buf: Vec<u8>,
 }
 
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
+    // overlay_address_pointer: Pointer,
     pub enemy_stats: Object<EnemyStats>,
     pub encounters: Object<EncounterData>,
     pub parties: Object<u8>,
     pub scaling: Object<Scaling>,
+    pub shops: Object<Shop>,
+    pub shop_items: Object<u16>,
 }
 
 enum Executable {
@@ -102,6 +107,15 @@ fn read_objects() -> Objects {
     let stats_buf = fs::read(consts::STATS_FILE).unwrap();
     let encounter_buf = fs::read(consts::ENCOUNTERS_FILE).unwrap();
     let main_buf = fs::read(executable.as_str()).unwrap();
+    let shops_buf = fs::read(consts::SHOPS_FILE).unwrap();
+
+    let overlay_address = Pointer {
+        value: consts::OVERLAYADDRESS,
+    };
+
+    let overlay = Pointer::from(
+        &main_buf[overlay_address.to_index() as usize..overlay_address.to_index() as usize + 4],
+    );
 
     let enemy_stats_index = stats_buf
         .windows(16)
@@ -156,6 +170,44 @@ fn read_objects() -> Objects {
 
         encounter_data_arr.push(unwrapped);
     }
+
+    let shops_index = shops_buf
+        .windows(8)
+        .position(|window| window == b"\x00\x00\x00\x00\x0b\x00\x00\x00")
+        .unwrap()
+        + 4;
+
+    let mut shops_reader = Cursor::new(&shops_buf[shops_index..]);
+
+    let mut shops_arr: Vec<Shop> = Vec::new();
+    shops_arr.reserve(consts::SHOPS_LEN);
+
+    for _ in 0..consts::SHOPS_LEN {
+        let shop = Shop::read(&mut shops_reader);
+
+        match shop {
+            Ok(s) => shops_arr.push(s),
+            Err(_) => panic!("Binread error"),
+        }
+    }
+
+    let front_index = shops_arr
+        .first()
+        .unwrap()
+        .items
+        .to_index_overlay(overlay.value as u32) as usize;
+
+    let back_shop = shops_arr.last().unwrap();
+
+    let back_index =
+        (back_shop.item_count + back_shop.items.to_index_overlay(overlay.value as u32)) as usize;
+
+    let shop_items_arr: Vec<u16> = shops_buf[front_index..back_index]
+        .to_vec()
+        .chunks_exact(2)
+        .into_iter()
+        .map(|a| u16::from_ne_bytes([a[0], a[1]]))
+        .collect();
 
     let scaling_index = main_buf
         .windows(16)
@@ -215,17 +267,35 @@ fn read_objects() -> Objects {
         slen: 0x58,
     };
 
+    let shops_object: Object<Shop> = Object {
+        original: shops_arr.clone(),
+        modified: shops_arr.clone(),
+        index: shops_index,
+        slen: 0x8,
+    };
+
+    let shop_items_object: Object<u16> = Object {
+        original: shop_items_arr.clone(),
+        modified: shop_items_arr.clone(),
+        index: front_index,
+        slen: 0x2,
+    };
+
     Objects {
         executable,
+        // overlay_address_pointer: overlay,
         bufs: Bufs {
             encounter_buf,
             stats_buf,
             main_buf,
+            shops_buf,
         },
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
         parties: parties_object,
         scaling: scaling_object,
+        shops: shops_object,
+        shop_items: shop_items_object,
     }
 }
 
@@ -236,10 +306,12 @@ fn write_objects(objects: &mut Objects) -> Result<(), ()> {
         .write_buf(&mut objects.bufs.encounter_buf);
     objects.parties.write_buf(&mut objects.bufs.main_buf);
     objects.scaling.write_buf(&mut objects.bufs.main_buf);
+    objects.shop_items.write_buf(&mut objects.bufs.shops_buf);
 
     let mut new_main_executable = File::create(objects.executable.as_str()).unwrap();
     let mut new_stats = File::create(consts::STATS_FILE).unwrap();
     let mut new_encounters = File::create(consts::ENCOUNTERS_FILE).unwrap();
+    let mut new_shops = File::create(consts::SHOPS_FILE).unwrap();
 
     match new_main_executable.write_all(&objects.bufs.main_buf) {
         Err(_) => return Err(()),
@@ -252,6 +324,11 @@ fn write_objects(objects: &mut Objects) -> Result<(), ()> {
     }
 
     match new_encounters.write_all(&objects.bufs.encounter_buf) {
+        Err(_) => return Err(()),
+        _ => {}
+    }
+
+    match new_shops.write_all(&objects.bufs.shops_buf) {
         Err(_) => return Err(()),
         _ => {}
     }
@@ -274,6 +351,10 @@ pub fn patch(preset: &Preset) {
 
     if preset.fixes.scaling {
         fixes::scaling(&mut objects);
+    }
+
+    if preset.randomizer.shops.enabled {
+        shops::patch(&mut objects, &mut rng);
     }
 
     match write_objects(&mut objects) {

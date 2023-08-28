@@ -8,3 +8,8 @@ pub const TRICERAMON_ID: u16 = 0xcb;
 
 pub const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
 pub const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
+pub const SHOPS_FILE: &str = "./extract/AAA/PRO/STITSHOP.PRO";
+
+pub const SHOPS_LEN: usize = 30;
+
+pub const OVERLAYADDRESS: u32 = 0x800100c4;

@@ -11,6 +11,9 @@
 		},
 		"parties": {
 			"enabled": true
+		},
+		"shops": {
+			"enabled": true
 		}
 	},
 	"fixes": {

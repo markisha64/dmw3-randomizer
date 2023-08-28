@@ -107,3 +107,40 @@ pub struct Scaling {
     #[br(count = 8)]
     unk_arr_1: Vec<u8>,
 }
+
+#[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct Shop {
+    pub item_count: u32,
+    pub items: Pointer,
+}
+
+#[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct Pointer {
+    pub value: u32,
+}
+
+impl Pointer {
+    pub fn to_index(&self) -> u32 {
+        self.value - 0x8000f800
+    }
+
+    pub fn to_index_overlay(&self, index: u32) -> u32 {
+        self.value - index
+    }
+
+    // pub fn from_index(index: u32) -> u32 {
+    //     index + 0x8000f800
+    // }
+
+    // pub fn from_index_overlay(index: u32, overlay: u32) -> u32 {
+    //     index + overlay
+    // }
+}
+
+impl From<&[u8]> for Pointer {
+    fn from(buf: &[u8]) -> Self {
+        Pointer {
+            value: u32::from_ne_bytes([buf[0], buf[1], buf[2], buf[3]]),
+        }
+    }
+}
