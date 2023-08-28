@@ -13,7 +13,8 @@
 			"enabled": true
 		},
 		"shops": {
-			"enabled": true
+			"enabled": true,
+			"limitShopItems": 8
 		}
 	},
 	"fixes": {

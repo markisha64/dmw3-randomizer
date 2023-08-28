@@ -307,6 +307,7 @@ fn write_objects(objects: &mut Objects) -> Result<(), ()> {
     objects.parties.write_buf(&mut objects.bufs.main_buf);
     objects.scaling.write_buf(&mut objects.bufs.main_buf);
     objects.shop_items.write_buf(&mut objects.bufs.shops_buf);
+    objects.shops.write_buf(&mut objects.bufs.shops_buf);
 
     let mut new_main_executable = File::create(objects.executable.as_str()).unwrap();
     let mut new_stats = File::create(consts::STATS_FILE).unwrap();
@@ -354,7 +355,7 @@ pub fn patch(preset: &Preset) {
     }
 
     if preset.randomizer.shops.enabled {
-        shops::patch(&mut objects, &mut rng);
+        shops::patch(&preset.randomizer.shops, &mut objects, &mut rng);
     }
 
     match write_objects(&mut objects) {

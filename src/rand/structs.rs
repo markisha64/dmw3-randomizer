@@ -114,7 +114,7 @@ pub struct Shop {
     pub items: Pointer,
 }
 
-#[derive(BinRead, Debug, Clone, BinWrite)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct Pointer {
     pub value: u32,
 }

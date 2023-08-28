@@ -51,6 +51,8 @@ pub struct Parties {
 pub struct Shops {
     #[serde(default = "default_bool_true")]
     pub enabled: bool,
+    #[serde(default = "default_shop_limit")]
+    pub limit_shop_items: Option<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -58,6 +60,10 @@ pub struct Shops {
 pub struct Fixes {
     #[serde(default = "default_bool_true")]
     pub scaling: bool,
+}
+
+fn default_shop_limit() -> Option<u8> {
+    Some(8)
 }
 
 fn default_randomizer() -> Randomizer {
