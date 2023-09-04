@@ -4,14 +4,14 @@ use std::process::Output;
 
 use super::cli::Arguments;
 
-pub fn extract(args: &Arguments) -> Result<(), ()> {
+pub fn extract(path: &std::path::PathBuf) -> Result<(), ()> {
     let res = Command::new("dumpsxiso")
         .arg("-x")
         .arg("extract/")
         .arg("-s")
         .arg("out.xml")
         .arg("-pt")
-        .arg(&args.path)
+        .arg(&path)
         .output();
 
     match res {
