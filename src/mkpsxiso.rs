@@ -2,8 +2,6 @@ use std::path::Path;
 use std::process::Command;
 use std::process::Output;
 
-use super::cli::Arguments;
-
 pub fn extract(path: &std::path::PathBuf) -> Result<(), ()> {
     let res = Command::new("dumpsxiso")
         .arg("-x")
