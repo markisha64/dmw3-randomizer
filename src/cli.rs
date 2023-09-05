@@ -8,4 +8,7 @@ pub struct Arguments {
     /// randomizer preset json
     #[clap(long)]
     pub preset: Option<std::path::PathBuf>,
+    /// randomizer seed (overrides preset)
+    #[clap(long)]
+    pub seed: Option<u64>,
 }

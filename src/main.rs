@@ -13,9 +13,14 @@ mod gui;
 fn main() {
     let args = cli::Arguments::parse();
 
-    match args.path {
+    match &args.path {
         Some(path) => {
-            let preset = json::load_preset(&args.preset);
+            let mut preset = json::load_preset(&args.preset);
+
+            preset.randomizer.seed = match &args.seed {
+                Some(seed) => *seed,
+                None => preset.randomizer.seed,
+            };
 
             match mkpsxiso::extract(&path) {
                 Err(_) => panic!("Error extracting"),

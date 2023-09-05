@@ -7,6 +7,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::Cursor;
 
+use super::cli::Arguments;
 use super::consts;
 use super::json::Preset;
 
