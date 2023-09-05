@@ -1,0 +1,42 @@
+.inline {
+	display: inline;
+}
+
+.file-upload {
+	border: 1px solid #000000;
+	border-radius: 5px;
+	min-width: 120px;
+	text-align: center;
+	cursor: pointer;
+}
+
+.randomize {
+	border: 1px solid #000000;
+	border-radius: 5px;
+	min-width: 120px;
+	text-align: center;
+}
+
+.center {
+	display: flex;
+	justify-content: space-around;
+}
+
+input[type="file"] {
+	display: none;
+}
+
+input[type="button"] {
+	display: none;
+}
+
+input {
+	border: 1px solid #000000;
+	border-radius: 5px;
+	text-align: center;
+	width: 120px;
+}
+
+html {
+	padding: 2px;
+}
