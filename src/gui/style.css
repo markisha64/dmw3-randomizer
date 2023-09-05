@@ -6,6 +6,7 @@
 	border: 1px solid #000000;
 	border-radius: 5px;
 	min-width: 120px;
+	min-height: 20px;
 	text-align: center;
 	cursor: pointer;
 }
@@ -14,12 +15,18 @@
 	border: 1px solid #000000;
 	border-radius: 5px;
 	min-width: 120px;
+	min-height: 20px;
 	text-align: center;
 }
 
 .center {
 	display: flex;
 	justify-content: space-around;
+}
+
+.left {
+	display: flex;
+	justify-content: flex-start;
 }
 
 input[type="file"] {
@@ -35,6 +42,7 @@ input {
 	border-radius: 5px;
 	text-align: center;
 	width: 120px;
+	min-height: 20px;
 }
 
 html {

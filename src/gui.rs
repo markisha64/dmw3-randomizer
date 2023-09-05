@@ -4,6 +4,7 @@ use dioxus_desktop::{Config, WindowBuilder};
 use super::cli::Arguments;
 use std::path::PathBuf;
 
+mod checkbox;
 mod randomize;
 
 pub fn launch() {
@@ -37,12 +38,12 @@ fn app(cx: Scope) -> Element {
             rel: "stylesheet"
         },
         div {
-            r#class: "inline",
+            class: "inline",
             div {
-                r#class: "center",
+                class: "center",
                 label {
                     r#for: "file-upload",
-                    r#class: "file-upload",
+                    class: "file-upload",
                     "{file_name_cl}"
                 },
                 input {
@@ -61,24 +62,49 @@ fn app(cx: Scope) -> Element {
                         }
                     },
                 },
-                input {
-                    r#type: "number",
-                    value: "{seed}",
-                    onchange: move |x| {
-                        if x.data.value == "" {
-                            state.write().seed = Some(64);
-                        } else {
-                            state.write().seed = Some(x.data.value.parse::<u64>().unwrap());
+                div {
+                    label {
+                        r#for: "seed",
+                        "Seed"
+                    },
+                    input {
+                        r#type: "number",
+                        id: "seed",
+                        value: "{seed}",
+                        onchange: move |x| {
+                            if x.data.value == "" {
+                                state.write().seed = Some(64);
+                            } else {
+                                state.write().seed = Some(x.data.value.parse::<u64>().unwrap());
+                            }
                         }
-                    }
+                    },
                 },
                 randomize::randomize {}
             }
         },
         div {
-            r#class: "inline",
-            input { },
-                input { },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Encounters",
+                    id: "encounters.enabled",
+                    onchange: |_| {}
+                }
+            },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Cardmon",
+                    id: "encounters.cardmon",
+                    onchange: |_| {}
+                },
+                checkbox::checkbox {
+                    label: "Bosses",
+                    id: "encounters.bosses",
+                    onchange: |_| {}
+                },
+            }
         }
     })
 }
