@@ -101,6 +101,7 @@ fn app(cx: Scope) -> Element {
                 },
                 checkbox::checkbox {
                     label: "Bosses",
+                    checked: true,
                     id: "encounters.bosses",
                     onchange: |_| {}
                 },
