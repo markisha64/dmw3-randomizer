@@ -1,10 +1,13 @@
 use dioxus::prelude::*;
 use dioxus_desktop::{Config, WindowBuilder};
 
+use crate::json::Preset;
+
 use super::cli::Arguments;
 use std::path::PathBuf;
 
 mod checkbox;
+mod encounters;
 mod randomize;
 
 pub fn launch() {
@@ -16,6 +19,8 @@ pub fn launch() {
 
 fn app(cx: Scope) -> Element {
     use_shared_state_provider::<Arguments>(cx, || Arguments::default());
+    use_shared_state_provider::<Preset>(cx, || serde_json::from_str("{}").unwrap());
+
     let state = use_shared_state::<Arguments>(cx).unwrap();
 
     let read_state = state.read();
@@ -83,29 +88,6 @@ fn app(cx: Scope) -> Element {
                 randomize::randomize {}
             }
         },
-        div {
-            div {
-                class: "left",
-                checkbox::checkbox {
-                    label: "Encounters",
-                    id: "encounters.enabled",
-                    onchange: |_| {}
-                }
-            },
-            div {
-                class: "left",
-                checkbox::checkbox {
-                    label: "Cardmon",
-                    id: "encounters.cardmon",
-                    onchange: |_| {}
-                },
-                checkbox::checkbox {
-                    label: "Bosses",
-                    checked: true,
-                    id: "encounters.bosses",
-                    onchange: |_| {}
-                },
-            }
-        }
+        encounters::encounters {}
     })
 }
