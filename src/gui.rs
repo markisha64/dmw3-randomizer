@@ -16,12 +16,19 @@ pub fn launch() {
 fn app(cx: Scope) -> Element {
     use_shared_state_provider::<Arguments>(cx, || Arguments::default());
     let state = use_shared_state::<Arguments>(cx).unwrap();
+
     let read_state = state.read();
+
     let file_name = (*read_state).path.clone();
 
     let file_name_cl = match &file_name {
         Some(file) => file.file_name().unwrap().to_str().unwrap(),
         None => "Rom file",
+    };
+
+    let seed = match read_state.seed {
+        Some(s) => s,
+        None => 64,
     };
 
     cx.render(rsx! {
@@ -54,7 +61,17 @@ fn app(cx: Scope) -> Element {
                         }
                     },
                 },
-                input { },
+                input {
+                    r#type: "number",
+                    value: "{seed}",
+                    onchange: move |x| {
+                        if x.data.value == "" {
+                            state.write().seed = Some(64);
+                        } else {
+                            state.write().seed = Some(x.data.value.parse::<u64>().unwrap());
+                        }
+                    }
+                },
                 randomize::randomize {}
             }
         },
