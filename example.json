@@ -6,7 +6,6 @@
 			"enabled": true,
 			"cardmon": true,
 			"bosses": true,
-			"randomizeParties": true,
 			"strategy": "swap"
 		},
 		"parties": {
