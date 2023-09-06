@@ -10,6 +10,7 @@ mod checkbox;
 mod encounters;
 mod parties;
 mod randomize;
+mod shops;
 
 pub fn launch() {
     dioxus_desktop::launch_cfg(
@@ -91,5 +92,6 @@ fn app(cx: Scope) -> Element {
         },
         encounters::encounters {},
         parties::parties {}
+        shops::shops {}
     })
 }
