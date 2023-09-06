@@ -106,6 +106,16 @@ pub enum TNTStrategy {
     Swap,
 }
 
+impl From<u8> for TNTStrategy {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => TNTStrategy::Shuffle,
+            1 => TNTStrategy::Keep,
+            _ => TNTStrategy::Swap,
+        }
+    }
+}
+
 impl TNTStrategy {
     fn default() -> Self {
         TNTStrategy::Swap
