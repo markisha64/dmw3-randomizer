@@ -8,6 +8,7 @@ use std::path::PathBuf;
 
 mod checkbox;
 mod encounters;
+mod parties;
 mod randomize;
 
 pub fn launch() {
@@ -88,6 +89,7 @@ fn app(cx: Scope) -> Element {
                 randomize::randomize {}
             }
         },
-        encounters::encounters {}
+        encounters::encounters {},
+        parties::parties {}
     })
 }
