@@ -113,8 +113,6 @@ pub fn randomize(cx: Scope) -> Element {
                                         _ => {}
                                     }
 
-                                    println!("randomized into {bin}");
-
                                     set_percent.send(Steps::Input);
                                 },
                                 None => {}
