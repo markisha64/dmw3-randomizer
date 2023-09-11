@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 
-use super::super::json::Preset;
+use crate::json::Preset;
 
-use super::checkbox;
+use crate::gui::checkbox;
 
 pub fn shops(cx: Scope) -> Element {
     let preset_state = use_shared_state::<Preset>(cx).unwrap();

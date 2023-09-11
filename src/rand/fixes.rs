@@ -1,4 +1,4 @@
-use super::Objects;
+use crate::rand::Objects;
 
 pub fn scaling(objects: &mut Objects) {
     for scaling in &mut objects.scaling.modified {

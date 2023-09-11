@@ -1,8 +1,8 @@
-use super::Objects;
+use crate::rand::Objects;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use super::super::json::Shops;
+use crate::json::Shops;
 use std::collections::BTreeSet;
 
 pub fn patch(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {

@@ -3,7 +3,7 @@ use dioxus_desktop::{Config, WindowBuilder};
 
 use crate::json::Preset;
 
-use super::cli::Arguments;
+use crate::cli::Arguments;
 use std::path::PathBuf;
 
 mod checkbox;

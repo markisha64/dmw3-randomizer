@@ -1,10 +1,9 @@
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use super::super::consts;
-use super::super::json::{Encounters, Randomizer, TNTStrategy};
-use super::structs::EncounterData;
-use super::Objects;
+use crate::consts;
+use crate::json::{Encounters, Randomizer, TNTStrategy};
+use crate::rand::{structs::EncounterData, Objects};
 
 fn skip(digimon_id: u16, preset: &Encounters) -> bool {
     return (preset.cardmon

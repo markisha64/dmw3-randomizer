@@ -7,8 +7,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::Cursor;
 
-use super::consts;
-use super::json::Preset;
+use crate::consts;
+use crate::json::Preset;
 
 mod encounters;
 mod fixes;

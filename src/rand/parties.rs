@@ -1,8 +1,8 @@
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use super::super::json::Randomizer;
-use super::Objects;
+use crate::json::Randomizer;
+use crate::rand::Objects;
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let parties = &mut objects.parties.modified;
