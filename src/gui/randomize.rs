@@ -94,6 +94,11 @@ pub fn randomize(cx: Scope) -> Element {
                                         None => preset.randomizer.seed,
                                     };
 
+                                    let file_name = match args.output {
+                                        Some(name) => name,
+                                        None => String::from("{preset.randomizer.seed}")
+                                    };
+
                                     match mkpsxiso::extract(&path) {
                                         Err(_) => panic!("Error extracting"),
                                         _ => {}
@@ -105,10 +110,7 @@ pub fn randomize(cx: Scope) -> Element {
 
                                     set_percent.send(Steps::Packaging);
 
-                                    let bin = format!("dmw3-{x}.bin", x = preset.randomizer.seed);
-                                    let cue = format!("dmw3-{x}.cue", x = preset.randomizer.seed);
-
-                                    match mkpsxiso::build(&bin, &cue) {
+                                    match mkpsxiso::build(&file_name) {
                                         Err(_) => panic!("Error repacking"),
                                         _ => {}
                                     }

@@ -24,7 +24,10 @@ pub fn extract(path: &std::path::PathBuf) -> Result<(), ()> {
     }
 }
 
-pub fn build(bin: &str, cue: &str) -> std::io::Result<Output> {
+pub fn build(file_name: &str) -> std::io::Result<Output> {
+    let bin = format!("{}.bin", file_name);
+    let cue = format!("{}.cue", file_name);
+
     Command::new("mkpsxiso")
         .arg("-o")
         .arg(&bin)

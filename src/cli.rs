@@ -12,6 +12,9 @@ pub struct Arguments {
     /// randomizer seed (overrides preset)
     #[clap(long)]
     pub seed: Option<u64>,
+    /// output file name
+    #[clap(short, long)]
+    pub output: Option<String>,
 }
 
 impl Default for Arguments {
@@ -20,6 +23,7 @@ impl Default for Arguments {
             path: None,
             preset: None,
             seed: Some(Utc::now().timestamp() as u64),
+            output: None,
         }
     }
 }
