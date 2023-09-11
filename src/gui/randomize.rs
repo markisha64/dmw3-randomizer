@@ -59,7 +59,10 @@ pub fn randomize(cx: Scope) -> Element {
             if state.randomizing()  {
                 rsx! {
                     div {
-                        r#style: "background-color: #000000; height: 100%; width:{percent}%;"
+                        r#style: "height: 100%; width:{percent}%;",
+                        div {
+                            class: "progress"
+                        }
                     }
                 }
             } else {

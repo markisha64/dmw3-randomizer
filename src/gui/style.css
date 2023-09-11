@@ -29,6 +29,24 @@
 	justify-content: flex-start;
 }
 
+
+.progress {
+	background-color: #000000;
+	height: 100%;
+	animation: progressBar 3s ease-in-out;
+	animation-fill-mode: both;
+}
+
+@keyframes progressBar {
+	0% {
+		width: 0;
+	}
+
+	100% {
+		width: 100%;
+	}
+}
+
 input[type="file"] {
 	display: none;
 }
