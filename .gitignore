@@ -19,6 +19,7 @@ Cargo.lock
 /target
 
 # generated files
-dmw3*
+*.bin
+*.cue
 out.xml
 extract/*

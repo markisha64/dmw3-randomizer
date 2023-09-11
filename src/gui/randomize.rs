@@ -96,7 +96,7 @@ pub fn randomize(cx: Scope) -> Element {
 
                                     let file_name = match args.output {
                                         Some(name) => name,
-                                        None => String::from("{preset.randomizer.seed}")
+                                        None => format!("{}", preset.randomizer.seed)
                                     };
 
                                     match mkpsxiso::extract(&path) {
