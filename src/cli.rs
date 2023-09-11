@@ -2,7 +2,7 @@ use chrono::Utc;
 use clap::Parser;
 
 /// Randomize dmw3
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 pub struct Arguments {
     /// bin path
     pub path: Option<std::path::PathBuf>,

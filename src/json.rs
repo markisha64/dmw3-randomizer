@@ -2,7 +2,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::fs;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Preset {
     #[serde(default = "default_randomizer")]
@@ -11,7 +11,7 @@ pub struct Preset {
     pub fixes: Fixes,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Randomizer {
     #[serde(default = "default_seed")]
@@ -26,7 +26,7 @@ pub struct Randomizer {
     pub shops: Shops,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Encounters {
     #[serde(default = "default_bool_true")]
@@ -39,14 +39,14 @@ pub struct Encounters {
     pub strategy: TNTStrategy,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Parties {
     #[serde(default = "default_bool_true")]
     pub enabled: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Shops {
     #[serde(default = "default_bool_true")]
@@ -55,7 +55,7 @@ pub struct Shops {
     pub limit_shop_items: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub struct Fixes {
     #[serde(default = "default_bool_true")]
@@ -98,7 +98,7 @@ fn default_shuffles() -> u8 {
     5
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum TNTStrategy {
     Shuffle,
