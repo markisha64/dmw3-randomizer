@@ -79,7 +79,7 @@ pub fn randomize(cx: Scope) -> Element {
                 let args = args_state.read().clone();
                 let mut preset = preset_state.read().clone();
 
-                if current_state.randomizing() {
+                if !current_state.randomizing() {
                     state.modify(|_| Steps::Extracting);
 
                     cx.spawn(async move{
