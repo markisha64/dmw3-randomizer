@@ -19,6 +19,14 @@
 	text-align: center;
 }
 
+.segment {
+	border: 1px solid #000000;
+	border-radius: 5px;
+	padding: 3px;
+	margin: 2px;
+	display: inline-block;
+}
+
 .center {
 	display: flex;
 	justify-content: space-around;

@@ -16,6 +16,7 @@ pub fn encounters(cx: Scope) -> Element {
 
     render! {
         div {
+            class: "segment",
             div {
                 class: "left",
                 checkbox::checkbox {

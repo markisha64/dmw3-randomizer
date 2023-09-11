@@ -12,13 +12,16 @@ pub fn parties(cx: Scope) -> Element {
 
     render! {
         div {
-            class: "left",
-            checkbox::checkbox {
-                label: "Parties",
-                id: "parties.enabled",
-                checked: enabled,
-                onchange: move |x: Event<FormData>| {
-                    state.write().randomizer.parties.enabled = x.data.value == "true";
+            class: "segment",
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Parties",
+                    id: "parties.enabled",
+                    checked: enabled,
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.enabled = x.data.value == "true";
+                    }
                 }
             }
         }
