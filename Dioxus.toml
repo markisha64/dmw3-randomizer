@@ -7,7 +7,6 @@ asset_dir = "assets"
 
 [web.app]
 title = "DMW3 Randomizer"
-base_path = ""
 
 [web.resource]
 style = [
