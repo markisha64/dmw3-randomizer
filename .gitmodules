@@ -1,0 +1,3 @@
+[submodule "mkpsxiso"]
+	path = mkpsxiso
+	url = https://github.com/Lameguy64/mkpsxiso
