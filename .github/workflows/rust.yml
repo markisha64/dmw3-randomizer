@@ -25,3 +25,8 @@ jobs:
       run: cargo build --verbose --release
     - name: Bundle
       run: cargo bundle --release --format deb
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dmw3-randomizer-linux
+        path: target/release/bundle/deb/*.deb
