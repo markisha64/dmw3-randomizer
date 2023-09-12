@@ -43,6 +43,7 @@ pub fn shops(cx: Scope) -> Element {
                     label: "Limit shop items",
                     id: "shops.checkbox",
                     checked: limit_enabled,
+                    disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
                          limit_state.modify(|_| x.data.value == "true");
                     },
@@ -50,7 +51,7 @@ pub fn shops(cx: Scope) -> Element {
                 input {
                     r#type: "number",
                     r#value: "{limit}",
-                    r#disabled: "{!limit_enabled}",
+                    disabled: "{!limit_enabled || !enabled}",
                     onchange: move |x| {
                         let limit = match x.data.value.parse::<u8>() {
                             Ok(vl) => vl,

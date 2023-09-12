@@ -6,6 +6,8 @@ pub struct CheckboxProps<'a> {
     id: &'a str,
     #[props(default = false)]
     checked: bool,
+    #[props(default = false)]
+    disabled: bool,
     onchange: EventHandler<'a, FormEvent>,
     tooltip: Option<&'a str>,
 }
@@ -37,6 +39,7 @@ pub fn checkbox<'a>(cx: Scope<'a, CheckboxProps<'a>>) -> Element {
                         id: cx.props.id,
                         r#type: "checkbox",
                         r#checked: "true",
+                        disabled: cx.props.disabled,
                         onchange: move |evt| cx.props.onchange.call(evt)
                     }
                 }
@@ -46,6 +49,7 @@ pub fn checkbox<'a>(cx: Scope<'a, CheckboxProps<'a>>) -> Element {
                     input {
                         id: cx.props.id,
                         r#type: "checkbox",
+                        disabled: cx.props.disabled,
                         onchange: move |evt| cx.props.onchange.call(evt)
                     }
                 }

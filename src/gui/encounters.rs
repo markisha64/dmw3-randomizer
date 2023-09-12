@@ -35,6 +35,7 @@ pub fn encounters(cx: Scope) -> Element {
                     label: "Cardmon",
                     id: "encounters.cardmon",
                     checked: cardmon,
+                    disabled: !enabled,
                     tooltip: "Keep cardmon unshuffled",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.cardmon = x.data.value == "true";
@@ -44,6 +45,7 @@ pub fn encounters(cx: Scope) -> Element {
                     label: "Bosses",
                     id: "encounters.bosses",
                     checked: bosses,
+                    disabled: !enabled,
                     tooltip: "Keep bosses unshuffled",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.bosses = x.data.value == "true";
@@ -68,6 +70,7 @@ pub fn encounters(cx: Scope) -> Element {
                     },
                     select {
                         id: "encounters.tnt",
+                        disabled: !enabled,
                         onchange: move |x: Event<FormData>| {
                             state.write().randomizer.encounters.strategy = TNTStrategy::from(x.data.value.parse::<u8>().unwrap());
                         },
