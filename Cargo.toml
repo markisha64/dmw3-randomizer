@@ -1,5 +1,5 @@
 [package]
-name = "dmw3-randomizer"
+name = "dmw3_randomizer"
 version = "0.1.0"
 edition = "2021"
 description = "Digimon World 3 Randomizer"
