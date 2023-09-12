@@ -75,7 +75,7 @@ pub struct EncounterData {
 
     pub max_mp: u16,
 
-    pub x: u16,
+    pub multiplier: u16,
 }
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]

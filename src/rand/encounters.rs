@@ -56,12 +56,11 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     let modified_enemy_stats = &mut objects.enemy_stats.modified;
 
     for enemy_stats in &mut *modified_enemy_stats {
-        let encounters: Vec<&EncounterData> = modified_encounters
-            .iter()
-            .filter(|&x| x.digimon_id == enemy_stats.digimon_id as u32)
-            .collect();
-
-        let min_lv = encounters.iter().min_by(|&x, &y| x.lv.cmp(&y.lv)).unwrap();
+        let min_lv: &mut EncounterData = modified_encounters
+            .iter_mut()
+            .filter(|&&mut x| x.digimon_id == enemy_stats.digimon_id as u32)
+            .min_by(|&&mut x, &&mut y| x.lv.cmp(&y.lv))
+            .unwrap();
 
         let expect_avg_stats = 36 + min_lv.lv * 10;
         let expect_avg_res = 87 + min_lv.lv * 2;
@@ -98,6 +97,28 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         enemy_stats.thd_res = (enemy_stats.thd_res as i32 * expect_avg_res as i32 / avg_res) as i16;
         enemy_stats.mch_res = (enemy_stats.mch_res as i32 * expect_avg_res as i32 / avg_res) as i16;
         enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+
+        // modify multipliers
+        min_lv.multiplier = 16;
+
+        let min_lv: EncounterData = modified_encounters
+            .iter()
+            .filter(|&x| x.digimon_id == enemy_stats.digimon_id as u32)
+            .min_by(|&x, &y| x.lv.cmp(&y.lv))
+            .unwrap()
+            .clone();
+
+        let encounters: Vec<&mut EncounterData> = modified_encounters
+            .iter_mut()
+            .filter(|&&mut x| {
+                x.digimon_id == enemy_stats.digimon_id as u32
+                    && !(x.lv == min_lv.lv && x.multiplier == min_lv.multiplier)
+            })
+            .collect();
+
+        for encounter in encounters {
+            encounter.multiplier = ((36 + 10 * encounter.lv) * 16) / (36 + 10 * min_lv.lv);
+        }
     }
 
     if preset.encounters.strategy == TNTStrategy::Swap {
@@ -111,7 +132,9 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
         let tric_index = encounters
             .iter()
-            .position(|&x| x.digimon_id as u16 == consts::TRICERAMON_ID && x.lv == 6 && x.x == 16)
+            .position(|&x| {
+                x.digimon_id as u16 == consts::TRICERAMON_ID && x.lv == 6 && x.multiplier == 16
+            })
             .unwrap();
 
         let swapped = modified_enemy_stats
