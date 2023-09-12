@@ -40,10 +40,7 @@ fn app(cx: Scope) -> Element {
     };
 
     cx.render(rsx! {
-        link {
-            href: "src/gui/style.css",
-            rel: "stylesheet"
-        },
+        style { include_str!("../assets/style.css") },
         div {
             class: "inline",
             div {
