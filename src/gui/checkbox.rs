@@ -7,15 +7,30 @@ pub struct CheckboxProps<'a> {
     #[props(default = false)]
     checked: bool,
     onchange: EventHandler<'a, FormEvent>,
+    tooltip: Option<&'a str>,
 }
 
 pub fn checkbox<'a>(cx: Scope<'a, CheckboxProps<'a>>) -> Element {
+    let class = match cx.props.tooltip {
+        Some(_) => "tooltip",
+        None => "",
+    };
+
     render! {
         div {
+            class: class,
             label {
                 r#for: cx.props.id,
                 cx.props.label
             },
+            if let Some(tooltip) = cx.props.tooltip {
+                rsx! {
+                    span {
+                        class: "tooltiptext",
+                        tooltip
+                    }
+                }
+            }
             if cx.props.checked {
                 rsx! {
                     input {
