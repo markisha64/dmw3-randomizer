@@ -3,7 +3,8 @@
 }
 
 .file-upload {
-	border: 1px solid #000000;
+	border: 1px solid rgba(255, 255, 255, 0.5);
+	background-color: #000021;
 	border-radius: 5px;
 	min-width: 120px;
 	min-height: 20px;
@@ -12,7 +13,8 @@
 }
 
 .randomize {
-	border: 1px solid #000000;
+	border: 1px solid rgba(255, 255, 255, 0.5);
+	background-color: #000021;
 	border-radius: 5px;
 	min-width: 120px;
 	min-height: 20px;
@@ -20,7 +22,8 @@
 }
 
 .segment {
-	border: 1px solid #000000;
+	border: 1px solid rgba(255, 255, 255, 0.5);
+	background-color: #000021;
 	border-radius: 5px;
 	padding: 3px;
 	margin: 2px;
@@ -39,7 +42,7 @@
 
 
 .progress {
-	background-color: #000000;
+	background-color: rgba(255, 255, 255, 0.5);
 	height: 100%;
 	animation: progressBar 3s ease-in-out;
 	animation-fill-mode: both;
@@ -64,7 +67,8 @@
 .tooltip .tooltiptext {
 	visibility: hidden;
 	max-width: 160px;
-	background-color: black;
+	background-color: #000021;
+	border: 1px solid rgba(255, 255, 255, 0.5);
 	color: #fff;
 	text-align: center;
 	padding: 5px 0;
@@ -93,13 +97,28 @@ input[type="button"] {
 }
 
 input {
-	border: 1px solid #000000;
+	border: 1px solid rgba(255, 255, 255, 0.5);
 	border-radius: 5px;
 	text-align: center;
 	width: 120px;
 	min-height: 20px;
+	background-color: #000021;
+	color: white;
 }
 
 html {
+	background-image: url('./assets/bg.png');
 	padding: 2px;
+	animation: bg 3s linear infinite;
+	color: white;
+}
+
+@keyframes bg {
+	from {
+		background-position: 0px 0px;
+	}
+
+	to {
+		background-position: 217px 217px;
+	}
 }
