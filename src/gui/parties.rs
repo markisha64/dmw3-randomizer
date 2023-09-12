@@ -19,6 +19,7 @@ pub fn parties(cx: Scope) -> Element {
                     label: "Parties",
                     id: "parties.enabled",
                     checked: enabled,
+                    tooltip: "Randomize parties (preview currently unavailable)",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.parties.enabled = x.data.value == "true";
                     }

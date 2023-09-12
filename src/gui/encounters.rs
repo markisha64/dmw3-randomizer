@@ -23,6 +23,7 @@ pub fn encounters(cx: Scope) -> Element {
                     label: "Encounters",
                     id: "encounters.enabled",
                     checked: enabled,
+                    tooltip: "Shuffle encounters (scales stats)",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.enabled = x.data.value == "true";
                     }
@@ -34,6 +35,7 @@ pub fn encounters(cx: Scope) -> Element {
                     label: "Cardmon",
                     id: "encounters.cardmon",
                     checked: cardmon,
+                    tooltip: "Keep cardmon unshuffled",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.cardmon = x.data.value == "true";
                     }
@@ -42,11 +44,24 @@ pub fn encounters(cx: Scope) -> Element {
                     label: "Bosses",
                     id: "encounters.bosses",
                     checked: bosses,
+                    tooltip: "Keep bosses unshuffled",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.bosses = x.data.value == "true";
                     }
                 },
                 div {
+                    class: "tooltip",
+                    span {
+                        class: "tooltiptext",
+                        r#style: "max-width: 300px; width: 300px;",
+                        "TNT Strategy"
+                        br {},
+                        "Swap -> swap items with digimon that replaces triceramon"
+                        br {},
+                        "Keep -> don't move Triceramon",
+                        br {},
+                        "Shuffle -> fully random"
+                    },
                     label {
                         r#for: "encounters.tnt",
                         "TNT strat"

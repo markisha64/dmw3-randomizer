@@ -63,7 +63,7 @@
 
 .tooltip .tooltiptext {
 	visibility: hidden;
-	width: 120px;
+	max-width: 160px;
 	background-color: black;
 	color: #fff;
 	text-align: center;
@@ -73,7 +73,6 @@
 	/* Position the tooltip text - see examples below! */
 	position: absolute;
 	z-index: 1;
-
 
 	top: 100%;
 	left: 50%;

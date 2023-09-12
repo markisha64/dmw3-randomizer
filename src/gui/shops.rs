@@ -27,13 +27,18 @@ pub fn shops(cx: Scope) -> Element {
                     label: "Shops",
                     id: "shops.enabled",
                     checked: enabled,
+                    tooltip: "Randomize shop items (currently only buyable items)",
                     onchange: move |x: Event<FormData>| {
                         preset_state.write().randomizer.shops.enabled = x.data.value == "true";
                     }
                 }
             },
             div {
-                class: "left",
+                class: "left tooltip",
+                span {
+                    class: "tooltiptext",
+                    "Force shop item count",
+                },
                 checkbox::checkbox {
                     label: "Limit shop items",
                     id: "shops.checkbox",
