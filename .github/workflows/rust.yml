@@ -36,3 +36,28 @@ jobs:
       with:
         name: dmw3-randomizer-linux
         path: target/release/bundle/deb/*.deb
+  
+  build-windows:
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - name: Install Cargo bundle
+      run: cargo install cargo-bundle
+    - name: Build mkpsxiso
+      run: |
+        cmake -S ./mkpsxiso -B ./mkpsxiso/build -DCMAKE_BUILD_TYPE=Release -G "Visual Studio 17 2022"
+        cmake --build ./mkpsxiso/build
+    - name: Build
+      run: cargo build --verbose --release
+    - name: Bundle
+      run: cargo bundle --release --format msi
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dmw3-randomizer-windows
+        path: target/release/bundle/msi/*.msi
+
+
