@@ -53,7 +53,7 @@ jobs:
     - name: Construct artifact
       run: |
         mkdir artifact
-        xcopy assets\ artifact\
+        xcopy assets\ artifact\assets /i
         xcopy target\release\*.exe artifact\
         xcopy mkpsxiso\build\Release\*.exe artifact\
     - name: Upload artifact
