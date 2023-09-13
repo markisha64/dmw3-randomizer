@@ -22,7 +22,7 @@ tokio = "1.32.0"
 [package.metadata.bundle]
 name = "DMW3 Randomizer"
 identifier = "com.dmw3.randomizer"
-icon = ["assets/32x32.jpg", "assets/64x64.jpg", "assets/128x128.jpg"]
+icon = ["assets/32.jpg", "assets/64.jpg", "assets/128.jpg"]
 version = "1.0.0"
 resources = ["assets", "mkpsxiso/build/mkpsxiso", "mkpsxiso/build/dumpsxiso"]
 category = "Developer Tool"
