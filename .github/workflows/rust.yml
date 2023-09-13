@@ -61,3 +61,24 @@ jobs:
       with:
         name: dmw3-randomizer-windows
         path: artifact/
+
+  create-release:
+    name:    Create release
+    runs-on: ubuntu-latest
+    needs:   [ build-windows, build-linux ]
+  
+    steps:
+    - name: Fetch build artifacts
+      if:   ${{ github.ref_type == 'tag' }}
+      uses: actions/download-artifact@v3
+      with:
+        path: .
+  
+    - name: Publish release
+      if:   ${{ github.ref_type == 'tag' }}
+      uses: softprops/action-gh-release@v1
+      with:
+        fail_on_unmatched_files: true
+        files: |
+          dmw3-randomizer-linux/*
+          dmw3-randomizer-windows/*
