@@ -53,12 +53,11 @@ jobs:
     - name: Construct artifact
       run: |
         mkdir artifact
-        xcopy assets/ artifact/
-        xcopy target/release/*.exe artifact/
-        xcopy mkpsxiso/build/Release/*.exe artifact/
+        xcopy assets\ artifact\
+        xcopy target\release\*.exe artifact\
+        xcopy mkpsxiso\build\Release\*.exe artifact\
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: dmw3-randomizer-windows
-        path: |
-          artifact/
+        path: artifact/
