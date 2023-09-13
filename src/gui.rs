@@ -8,6 +8,8 @@ use std::path::PathBuf;
 
 mod checkbox;
 mod encounters;
+mod file_upload;
+// mod import_preset;
 mod parties;
 mod randomize;
 mod shops;
@@ -42,50 +44,50 @@ fn app(cx: Scope) -> Element {
     cx.render(rsx! {
         style { include_str!("../assets/style.css") },
         div {
-            class: "inline",
             div {
-                class: "center",
-                label {
-                    r#for: "file-upload",
-                    class: "file-upload",
-                    "{file_name_cl}"
-                },
-                input {
-                    r#type: "file",
-                    accept: ".bin",
-                    id: "file-upload",
-                    multiple: false,
-                    onchange: move |x| {
-                        if let Some(file_engine) = &x.files {
-                            let files = file_engine.files();
+                class: "inline",
+                div {
+                    class: "center",
+                    file_upload::file_upload {
+                        id: "rom-file",
+                        label: "{file_name_cl}",
+                        accept: ".bin",
+                        onchange: move |x: Event<FormData>| {
+                            if let Some(file_engine) = &x.files {
+                                let files = file_engine.files();
 
-                            match files.first() {
-                                Some(file) => (*state.write()).path = Some(PathBuf::from(file)),
-                                None => {}
+                                match files.first() {
+                                    Some(file) => (*state.write()).path = Some(PathBuf::from(file)),
+                                    None => {}
+                                }
                             }
                         }
                     },
+                    div {
+                        label {
+                            r#for: "seed",
+                            "Seed"
+                        },
+                        input {
+                            r#type: "number",
+                            id: "seed",
+                            value: "{seed}",
+                            onchange: move |x| {
+                                if x.data.value == "" {
+                                    state.write().seed = Some(64);
+                                } else {
+                                    state.write().seed = Some(x.data.value.parse::<u64>().unwrap());
+                                }
+                            }
+                        },
+                    },
+                    randomize::randomize {}
                 },
                 div {
-                    label {
-                        r#for: "seed",
-                        "Seed"
-                    },
-                    input {
-                        r#type: "number",
-                        id: "seed",
-                        value: "{seed}",
-                        onchange: move |x| {
-                            if x.data.value == "" {
-                                state.write().seed = Some(64);
-                            } else {
-                                state.write().seed = Some(x.data.value.parse::<u64>().unwrap());
-                            }
-                        }
-                    },
-                },
-                randomize::randomize {}
-            }
+                    class: "inline",
+
+                }
+            },
         },
         encounters::encounters {},
         parties::parties {}
