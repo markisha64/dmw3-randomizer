@@ -58,7 +58,7 @@ pub struct Shops {
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub struct Fixes {
-    #[serde(default = "default_bool_true")]
+    #[serde(default = "default_bool_false")]
     pub scaling: bool,
 }
 
@@ -92,6 +92,10 @@ fn default_seed() -> u64 {
 
 fn default_bool_true() -> bool {
     true
+}
+
+fn default_bool_false() -> bool {
+    false
 }
 
 fn default_shuffles() -> u8 {
