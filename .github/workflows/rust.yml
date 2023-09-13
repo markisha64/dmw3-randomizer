@@ -60,4 +60,6 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: dmw3-randomizer-windows
-        path: artifact/
+        path: |
+          artifact/
+          artifact/assets
