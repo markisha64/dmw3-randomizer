@@ -50,13 +50,20 @@ jobs:
       run: |
         cmake --preset ci -S ./mkpsxiso -B ./mkpsxiso/build -G "Visual Studio 17 2022"
         cmake --build ./mkpsxiso/build --config Release
-    - name: Upload build artifacts
+    - name: Upload main bin
       uses: actions/upload-artifact@v3
       with:
         name: dmw3-randomizer-windows
-        path: |
-          target/release/*.exe
-          mkpsxiso/build/Release/*.exe
-          assets/
+        path: target/release/*.exe
+    - name: Upload mkpsxiso
+      uses: actions/upload-artifact@v3
+      with:
+        name: dmw3-randomizer-windows
+        path: mkpsxiso/build/Release/*.exe
+    - name: Upload assets
+      uses: actions/upload-artifact@v3
+      with:
+        name: dmw3-randomizer-windows
+        path: assets/
 
 
