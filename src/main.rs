@@ -27,16 +27,14 @@ fn main() {
                 None => String::from("{preset.randomizer.seed}"),
             };
 
-            match mkpsxiso::extract(&path) {
-                Err(_) => panic!("Error extracting"),
-                _ => {}
+            if !mkpsxiso::extract(&path) {
+                panic!("Error extracting");
             }
 
             patch(&preset);
 
-            match mkpsxiso::build(&file_name) {
-                Err(_) => panic!("Error repacking"),
-                _ => {}
+            if !mkpsxiso::build(&file_name) {
+                panic!("Error repacking")
             }
 
             println!("randomized into {file_name}");
