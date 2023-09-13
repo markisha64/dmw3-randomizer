@@ -19,6 +19,8 @@ jobs:
         sudo apt-get update -y
         sudo apt-get install -y --no-install-recommends build-essential ninja-build libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev
     - uses: actions/checkout@v3
+      with:
+        submodules: recursive
     - name: Install Cargo bundle
       run: cargo install cargo-bundle
     - name: Build mkpsxiso
