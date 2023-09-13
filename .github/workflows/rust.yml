@@ -48,8 +48,8 @@ jobs:
       run: |
         cmake --preset ci -S ./mkpsxiso -B ./mkpsxiso/build -G "Visual Studio 17 2022"
         cmake --build ./mkpsxiso/build --config Release
-        move mkpsxiso/build/Release/mkpsxiso.exe target/release/
-        move mkpsxiso/build/Release/dumpsxiso.exe target/release/
+        move mkpsxiso\build\Release\mkpsxiso.exe target\release\
+        move mkpsxiso\build\Release\dumpsxiso.exe target\release\
     - name: Build
       run: cargo build --verbose --release
     - name: Upload build artifacts
