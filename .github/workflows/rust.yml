@@ -21,6 +21,10 @@ jobs:
     - uses: actions/checkout@v3
     - name: Install Cargo bundle
       run: cargo install cargo-bundle
+    - name: Build mkpsxiso
+      run: |
+        cmake -S ./mkpsxiso -B ./mkpsxiso/build -DCMAKE_BUILD_TYPE=Release
+        cmake --build ./mkpsxiso/build
     - name: Build
       run: cargo build --verbose --release
     - name: Bundle
