@@ -9,7 +9,7 @@ use std::path::PathBuf;
 mod checkbox;
 mod encounters;
 mod file_upload;
-// mod import_preset;
+mod import_preset;
 mod parties;
 mod randomize;
 mod shops;
@@ -85,7 +85,7 @@ fn app(cx: Scope) -> Element {
                 },
                 div {
                     class: "inline",
-
+                    import_preset::import_preset {}
                 }
             },
         },
