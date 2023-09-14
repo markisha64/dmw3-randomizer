@@ -9,8 +9,8 @@ use std::path::PathBuf;
 mod checkbox;
 mod encounters;
 mod file_upload;
-mod import_preset;
 mod parties;
+mod preset;
 mod randomize;
 mod shops;
 
@@ -83,10 +83,7 @@ fn app(cx: Scope) -> Element {
                     },
                     randomize::randomize {}
                 },
-                div {
-                    class: "inline",
-                    import_preset::import_preset {}
-                }
+                preset::preset {}
             },
         },
         encounters::encounters {},
