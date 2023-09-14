@@ -65,47 +65,46 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 .min_by(|&&mut x, &&mut y| x.lv.cmp(&y.lv))
                 .unwrap();
 
-            let expect_avg_stats = 36 + min_lv.lv * 10;
-            let expect_avg_res = 87 + min_lv.lv * 2;
+            let modifier = match preset.encounters.scaling_offset {
+                0 => 0,
+                offset => {
+                    let rand = rng.next_u64();
+                    let modulo = (offset as u64) * 2 + 1;
+                    (-1 * offset as i32) + (rand % modulo) as i32
+                }
+            };
 
-            let avg_stats: i32 = (enemy_stats.str as i32
-                + enemy_stats.def as i32
-                + enemy_stats.wis as i32
-                + enemy_stats.spt as i32
-                + enemy_stats.spd as i32)
-                / 5
-                + 1;
+            let expected_stats = 180 + min_lv.lv as i32 * 50 + modifier;
+            let expect_res = 620 + min_lv.lv as i32 * 15 + modifier;
 
-            let avg_res: i32 = (enemy_stats.fir_res as i32
-                + enemy_stats.wtr_res as i32
-                + enemy_stats.ice_res as i32
-                + enemy_stats.wnd_res as i32
-                + enemy_stats.thd_res as i32
-                + enemy_stats.mch_res as i32
-                + enemy_stats.drk_res as i32)
-                / 7
-                + 1;
+            let current_stats: i32 = (enemy_stats.str
+                + enemy_stats.def
+                + enemy_stats.wis
+                + enemy_stats.spt
+                + enemy_stats.spd) as i32;
+
+            let current_res: i32 = (enemy_stats.fir_res
+                + enemy_stats.wtr_res
+                + enemy_stats.ice_res
+                + enemy_stats.wnd_res
+                + enemy_stats.thd_res
+                + enemy_stats.mch_res
+                + enemy_stats.drk_res) as i32;
 
             // base stats
-            enemy_stats.str = (enemy_stats.str as i32 * expect_avg_stats as i32 / avg_stats) as i16;
-            enemy_stats.def = (enemy_stats.def as i32 * expect_avg_stats as i32 / avg_stats) as i16;
-            enemy_stats.wis = (enemy_stats.wis as i32 * expect_avg_stats as i32 / avg_stats) as i16;
-            enemy_stats.spt = (enemy_stats.spt as i32 * expect_avg_stats as i32 / avg_stats) as i16;
-            enemy_stats.spd = (enemy_stats.spd as i32 * expect_avg_stats as i32 / avg_stats) as i16;
+            enemy_stats.str = (enemy_stats.str as i32 * expected_stats / current_stats) as i16;
+            enemy_stats.def = (enemy_stats.def as i32 * expected_stats / current_stats) as i16;
+            enemy_stats.wis = (enemy_stats.wis as i32 * expected_stats / current_stats) as i16;
+            enemy_stats.spt = (enemy_stats.spt as i32 * expected_stats / current_stats) as i16;
+            enemy_stats.spd = (enemy_stats.spd as i32 * expected_stats / current_stats) as i16;
 
             // resistances
-            enemy_stats.fir_res =
-                (enemy_stats.fir_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-            enemy_stats.wtr_res =
-                (enemy_stats.wtr_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-            enemy_stats.wnd_res =
-                (enemy_stats.wnd_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-            enemy_stats.thd_res =
-                (enemy_stats.thd_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-            enemy_stats.mch_res =
-                (enemy_stats.mch_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-            enemy_stats.drk_res =
-                (enemy_stats.drk_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+            enemy_stats.fir_res = (enemy_stats.fir_res as i32 * expect_res / current_res) as i16;
+            enemy_stats.wtr_res = (enemy_stats.wtr_res as i32 * expect_res / current_res) as i16;
+            enemy_stats.wnd_res = (enemy_stats.wnd_res as i32 * expect_res / current_res) as i16;
+            enemy_stats.thd_res = (enemy_stats.thd_res as i32 * expect_res / current_res) as i16;
+            enemy_stats.mch_res = (enemy_stats.mch_res as i32 * expect_res / current_res) as i16;
+            enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_res / current_res) as i16;
 
             // modify multipliers
             min_lv.multiplier = 16;
@@ -121,12 +120,13 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 .iter_mut()
                 .filter(|&&mut x| {
                     x.digimon_id == enemy_stats.digimon_id as u32
-                        && !(x.lv == min_lv.lv && x.multiplier == min_lv.multiplier)
+                        && !(x.lv == min_lv.lv && x.multiplier == 16)
                 })
                 .collect();
 
             for encounter in encounters {
-                encounter.multiplier = ((36 + 10 * encounter.lv) * 16) / (36 + 10 * min_lv.lv);
+                encounter.multiplier = ((((180 + 50 * encounter.lv) as i32 * 16) + modifier)
+                    / (180 + 50 * min_lv.lv as i32)) as u16;
             }
         }
     }
