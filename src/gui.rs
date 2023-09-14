@@ -9,6 +9,7 @@ use std::path::PathBuf;
 mod checkbox;
 mod encounters;
 mod file_upload;
+mod number_field;
 mod parties;
 mod preset;
 mod randomize;

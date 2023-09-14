@@ -5,7 +5,7 @@ use crate::json::TNTStrategy;
 use crate::consts;
 use crate::json::Preset;
 
-use crate::gui::{checkbox, slider};
+use crate::gui::{checkbox, number_field, slider};
 
 pub fn encounters(cx: Scope) -> Element {
     let state = use_shared_state::<Preset>(cx).unwrap();
