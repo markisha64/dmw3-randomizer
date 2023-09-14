@@ -5,6 +5,7 @@
 		"encounters": {
 			"enabled": true,
 			"scaling": true,
+			"scaling_offset": 10,
 			"cardmon": true,
 			"bosses": true,
 			"strategy": "swap"

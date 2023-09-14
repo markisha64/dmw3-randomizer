@@ -13,7 +13,7 @@ mod parties;
 mod preset;
 mod randomize;
 mod shops;
-// mod slider;
+mod slider;
 
 pub fn launch() {
     dioxus_desktop::launch_cfg(

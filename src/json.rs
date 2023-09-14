@@ -33,6 +33,8 @@ pub struct Encounters {
     pub enabled: bool,
     #[serde(default = "default_bool_true")]
     pub scaling: bool,
+    #[serde(default = "default_scaling_offset")]
+    pub scaling_offset: i64,
     #[serde(default = "default_bool_true")]
     pub cardmon: bool,
     #[serde(default = "default_bool_true")]
@@ -102,6 +104,10 @@ fn default_bool_false() -> bool {
 
 fn default_shuffles() -> u8 {
     5
+}
+
+fn default_scaling_offset() -> i64 {
+    10
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]

@@ -6,7 +6,7 @@ pub struct SliderProps<'a> {
     id: &'a str,
     #[props(default = false)]
     disabled: bool,
-    onchange: EventHandler<'a, FormEvent>,
+    oninput: EventHandler<'a, FormEvent>,
     tooltip: Option<&'a str>,
     value: i64,
     min: i64,
@@ -36,14 +36,22 @@ pub fn slider<'a>(cx: Scope<'a, SliderProps<'a>>) -> Element {
             },
             input {
                 id: cx.props.id,
-                r#type: "checkbox",
+                r#type: "range",
+                class: "slider",
                 disabled: cx.props.disabled,
                 value: cx.props.value,
                 min: cx.props.min,
                 max: cx.props.max,
-                onchange: move |evt| cx.props.onchange.call(evt)
+                oninput: move |evt| cx.props.oninput.call(evt)
             },
-            "{cx.props.value}"
+            input {
+                r#type: "number",
+                value: cx.props.value,
+                class: "short_number",
+                min: cx.props.min,
+                max: cx.props.max,
+                oninput: move |evt| cx.props.oninput.call(evt)
+            }
         }
     }
 }

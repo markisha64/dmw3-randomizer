@@ -2,9 +2,10 @@ use dioxus::prelude::*;
 
 use crate::json::TNTStrategy;
 
+use crate::consts;
 use crate::json::Preset;
 
-use crate::gui::checkbox;
+use crate::gui::{checkbox, slider};
 
 pub fn encounters(cx: Scope) -> Element {
     let state = use_shared_state::<Preset>(cx).unwrap();
@@ -12,6 +13,7 @@ pub fn encounters(cx: Scope) -> Element {
 
     let enabled = read_state.randomizer.encounters.enabled;
     let scaling = read_state.randomizer.encounters.scaling;
+    let scaling_offset = read_state.randomizer.encounters.scaling_offset;
     let cardmon = read_state.randomizer.encounters.cardmon;
     let bosses = read_state.randomizer.encounters.bosses;
 
@@ -32,16 +34,6 @@ pub fn encounters(cx: Scope) -> Element {
             },
             div {
                 class: "left",
-                checkbox::checkbox {
-                    label: "Scaling",
-                    id: "encounters.scaling",
-                    checked: scaling,
-                    disabled: !enabled,
-                    tooltip: "Scale encounters",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.scaling = x.data.value == "true";
-                    }
-                },
                 checkbox::checkbox {
                     label: "Cardmon",
                     id: "encounters.cardmon",
@@ -98,6 +90,42 @@ pub fn encounters(cx: Scope) -> Element {
                             "Shuffle"
                         },
                     }
+                }
+            },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Scaling",
+                    id: "encounters.scaling",
+                    checked: scaling,
+                    disabled: !enabled,
+                    tooltip: "Scale encounters",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.encounters.scaling = x.data.value == "true";
+                    }
+                },
+                slider::slider {
+                    label: "Stat range",
+                    value: scaling_offset,
+                    id: "encounters.scaling_offset",
+                    disabled: !enabled,
+                    tooltip: "Stat range",
+                    oninput: move |x: Event<FormData>| {
+                        let new_offset: i64 = match x.data.value.parse::<i64>() {
+                            Ok(offset) => {
+                                if consts::MIN_STAT_RANGE <= offset && offset <= consts::MAX_STAT_RANGE {
+                                    offset
+                                } else {
+                                    scaling_offset
+                                }
+                            },
+                            _ => scaling_offset
+                        };
+
+                        state.write().randomizer.encounters.scaling_offset = new_offset;
+                    },
+                    min: 0,
+                    max: 100
                 }
             }
         }
