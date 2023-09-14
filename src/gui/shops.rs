@@ -1,15 +1,18 @@
 use dioxus::prelude::*;
 
+use crate::gui::GlobalState;
 use crate::json::Preset;
 
 use crate::gui::checkbox;
 
 pub fn shops(cx: Scope) -> Element {
     let preset_state = use_shared_state::<Preset>(cx).unwrap();
-    let read_preset_state = preset_state.read();
+    let global_state = use_shared_state::<GlobalState>(cx).unwrap();
 
-    let limit_state = use_state::<bool>(cx, || true);
-    let limit_enabled = *limit_state.get();
+    let read_preset_state = preset_state.read();
+    let read_global_state = global_state.read();
+
+    let limit_enabled = read_global_state.shop_limit_enabled;
 
     let enabled = read_preset_state.randomizer.shops.enabled;
 
@@ -45,7 +48,7 @@ pub fn shops(cx: Scope) -> Element {
                     checked: limit_enabled,
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
-                         limit_state.modify(|_| x.data.value == "true");
+                        global_state.write().shop_limit_enabled = x.data.value == "true";
                     },
                 },
                 input {

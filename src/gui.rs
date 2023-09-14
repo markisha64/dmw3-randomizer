@@ -21,9 +21,22 @@ pub fn launch() {
     );
 }
 
+pub struct GlobalState {
+    pub shop_limit_enabled: bool,
+}
+
+impl Default for GlobalState {
+    fn default() -> Self {
+        GlobalState {
+            shop_limit_enabled: true,
+        }
+    }
+}
+
 fn app(cx: Scope) -> Element {
     use_shared_state_provider::<Arguments>(cx, || Arguments::default());
     use_shared_state_provider::<Preset>(cx, || serde_json::from_str("{}").unwrap());
+    use_shared_state_provider::<GlobalState>(cx, || GlobalState::default());
 
     let state = use_shared_state::<Arguments>(cx).unwrap();
 
