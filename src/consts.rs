@@ -13,3 +13,7 @@ pub const SHOPS_FILE: &str = "./extract/AAA/PRO/STITSHOP.PRO";
 pub const SHOPS_LEN: usize = 30;
 
 pub const OVERLAYADDRESS: u32 = 0x800100c4;
+
+// min is 0, max is how much space there is for shops
+pub const MIN_SHOP_ITEMS: i64 = 0;
+pub const MAX_SHOP_ITEMS: i64 = 37;

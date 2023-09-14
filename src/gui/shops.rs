@@ -1,5 +1,6 @@
 use dioxus::prelude::*;
 
+use crate::consts;
 use crate::gui::GlobalState;
 use crate::json::Preset;
 
@@ -55,10 +56,18 @@ pub fn shops(cx: Scope) -> Element {
                     r#type: "number",
                     r#value: "{limit}",
                     disabled: "{!limit_enabled || !enabled}",
+                    min: consts::MIN_SHOP_ITEMS,
+                    max: consts::MAX_SHOP_ITEMS,
                     onchange: move |x| {
                         let limit = match x.data.value.parse::<u8>() {
-                            Ok(vl) => vl,
-                            _ => 64
+                            Ok(vl) => {
+                                if vl <= 37 {
+                                    vl
+                                } else {
+                                    limit
+                                }
+                            },
+                            _ => limit
                         };
 
                         preset_state.write().randomizer.shops.limit_shop_items = Some(limit);
