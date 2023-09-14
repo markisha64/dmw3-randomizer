@@ -35,6 +35,14 @@ pub struct Encounters {
     pub scaling: bool,
     #[serde(default = "default_scaling_offset")]
     pub scaling_offset: i64,
+    #[serde(default = "default_base_stats")]
+    pub base_stats: i32,
+    #[serde(default = "default_base_res")]
+    pub base_res: i32,
+    #[serde(default = "default_stat_modifier")]
+    pub stat_modifier: i32,
+    #[serde(default = "default_res_modifier")]
+    pub res_modifier: i32,
     #[serde(default = "default_bool_true")]
     pub cardmon: bool,
     #[serde(default = "default_bool_true")]
@@ -108,6 +116,22 @@ fn default_shuffles() -> u8 {
 
 fn default_scaling_offset() -> i64 {
     50
+}
+
+fn default_base_stats() -> i32 {
+    180
+}
+
+fn default_base_res() -> i32 {
+    620
+}
+
+fn default_stat_modifier() -> i32 {
+    50
+}
+
+fn default_res_modifier() -> i32 {
+    15
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]

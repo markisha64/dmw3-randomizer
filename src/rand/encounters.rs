@@ -70,12 +70,17 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 offset => {
                     let rand = rng.next_u64();
                     let modulo = (offset as u64) * 2 + 1;
+
                     (-1 * offset as i32) + (rand % modulo) as i32
                 }
             };
 
-            let expected_stats = 180 + min_lv.lv as i32 * 50 + modifier;
-            let expect_res = 620 + min_lv.lv as i32 * 15 + modifier;
+            let expected_stats = preset.encounters.base_stats
+                + min_lv.lv as i32 * preset.encounters.stat_modifier
+                + modifier;
+            let expect_res = preset.encounters.base_res
+                + min_lv.lv as i32 * preset.encounters.res_modifier
+                + modifier;
 
             let current_stats: i32 = (enemy_stats.str
                 + enemy_stats.def
@@ -125,8 +130,13 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 .collect();
 
             for encounter in encounters {
-                encounter.multiplier = ((((180 + 50 * encounter.lv) as i32 * 16) + modifier)
-                    / (180 + 50 * min_lv.lv as i32)) as u16;
+                encounter.multiplier = ((((preset.encounters.base_stats
+                    + preset.encounters.stat_modifier * encounter.lv as i32)
+                    * 16)
+                    + modifier)
+                    / (preset.encounters.base_stats
+                        + preset.encounters.stat_modifier * min_lv.lv as i32))
+                    as u16;
             }
         }
     }
