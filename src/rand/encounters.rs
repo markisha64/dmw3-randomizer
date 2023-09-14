@@ -46,78 +46,88 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             continue;
         }
 
-        // hp and mp
-        new_encounter.max_hp = (new_encounter.max_hp as u32 * old_encounter.lv as u32
-            / new_encounter.lv as u32) as u16;
+        if preset.encounters.scaling {
+            // hp and mp
+            new_encounter.max_hp = (new_encounter.max_hp as u32 * old_encounter.lv as u32
+                / new_encounter.lv as u32) as u16;
 
-        new_encounter.lv = old_encounter.lv;
+            new_encounter.lv = old_encounter.lv;
+        }
     }
 
     let modified_enemy_stats = &mut objects.enemy_stats.modified;
 
-    for enemy_stats in &mut *modified_enemy_stats {
-        let min_lv: &mut EncounterData = modified_encounters
-            .iter_mut()
-            .filter(|&&mut x| x.digimon_id == enemy_stats.digimon_id as u32)
-            .min_by(|&&mut x, &&mut y| x.lv.cmp(&y.lv))
-            .unwrap();
+    if preset.encounters.scaling {
+        for enemy_stats in &mut *modified_enemy_stats {
+            let min_lv: &mut EncounterData = modified_encounters
+                .iter_mut()
+                .filter(|&&mut x| x.digimon_id == enemy_stats.digimon_id as u32)
+                .min_by(|&&mut x, &&mut y| x.lv.cmp(&y.lv))
+                .unwrap();
 
-        let expect_avg_stats = 36 + min_lv.lv * 10;
-        let expect_avg_res = 87 + min_lv.lv * 2;
+            let expect_avg_stats = 36 + min_lv.lv * 10;
+            let expect_avg_res = 87 + min_lv.lv * 2;
 
-        let avg_stats: i32 = (enemy_stats.str as i32
-            + enemy_stats.def as i32
-            + enemy_stats.wis as i32
-            + enemy_stats.spt as i32
-            + enemy_stats.spd as i32)
-            / 5
-            + 1;
+            let avg_stats: i32 = (enemy_stats.str as i32
+                + enemy_stats.def as i32
+                + enemy_stats.wis as i32
+                + enemy_stats.spt as i32
+                + enemy_stats.spd as i32)
+                / 5
+                + 1;
 
-        let avg_res: i32 = (enemy_stats.fir_res as i32
-            + enemy_stats.wtr_res as i32
-            + enemy_stats.ice_res as i32
-            + enemy_stats.wnd_res as i32
-            + enemy_stats.thd_res as i32
-            + enemy_stats.mch_res as i32
-            + enemy_stats.drk_res as i32)
-            / 7
-            + 1;
+            let avg_res: i32 = (enemy_stats.fir_res as i32
+                + enemy_stats.wtr_res as i32
+                + enemy_stats.ice_res as i32
+                + enemy_stats.wnd_res as i32
+                + enemy_stats.thd_res as i32
+                + enemy_stats.mch_res as i32
+                + enemy_stats.drk_res as i32)
+                / 7
+                + 1;
 
-        // base stats
-        enemy_stats.str = (enemy_stats.str as i32 * expect_avg_stats as i32 / avg_stats) as i16;
-        enemy_stats.def = (enemy_stats.def as i32 * expect_avg_stats as i32 / avg_stats) as i16;
-        enemy_stats.wis = (enemy_stats.wis as i32 * expect_avg_stats as i32 / avg_stats) as i16;
-        enemy_stats.spt = (enemy_stats.spt as i32 * expect_avg_stats as i32 / avg_stats) as i16;
-        enemy_stats.spd = (enemy_stats.spd as i32 * expect_avg_stats as i32 / avg_stats) as i16;
+            // base stats
+            enemy_stats.str = (enemy_stats.str as i32 * expect_avg_stats as i32 / avg_stats) as i16;
+            enemy_stats.def = (enemy_stats.def as i32 * expect_avg_stats as i32 / avg_stats) as i16;
+            enemy_stats.wis = (enemy_stats.wis as i32 * expect_avg_stats as i32 / avg_stats) as i16;
+            enemy_stats.spt = (enemy_stats.spt as i32 * expect_avg_stats as i32 / avg_stats) as i16;
+            enemy_stats.spd = (enemy_stats.spd as i32 * expect_avg_stats as i32 / avg_stats) as i16;
 
-        // resistances
-        enemy_stats.fir_res = (enemy_stats.fir_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-        enemy_stats.wtr_res = (enemy_stats.wtr_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-        enemy_stats.wnd_res = (enemy_stats.wnd_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-        enemy_stats.thd_res = (enemy_stats.thd_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-        enemy_stats.mch_res = (enemy_stats.mch_res as i32 * expect_avg_res as i32 / avg_res) as i16;
-        enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+            // resistances
+            enemy_stats.fir_res =
+                (enemy_stats.fir_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+            enemy_stats.wtr_res =
+                (enemy_stats.wtr_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+            enemy_stats.wnd_res =
+                (enemy_stats.wnd_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+            enemy_stats.thd_res =
+                (enemy_stats.thd_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+            enemy_stats.mch_res =
+                (enemy_stats.mch_res as i32 * expect_avg_res as i32 / avg_res) as i16;
+            enemy_stats.drk_res =
+                (enemy_stats.drk_res as i32 * expect_avg_res as i32 / avg_res) as i16;
 
-        // modify multipliers
-        min_lv.multiplier = 16;
+            // modify multipliers
+            min_lv.multiplier = 16;
 
-        let min_lv: EncounterData = modified_encounters
-            .iter()
-            .filter(|&x| x.digimon_id == enemy_stats.digimon_id as u32)
-            .min_by(|&x, &y| x.lv.cmp(&y.lv))
-            .unwrap()
-            .clone();
+            let min_lv: EncounterData = modified_encounters
+                .iter()
+                .filter(|&x| x.digimon_id == enemy_stats.digimon_id as u32)
+                .min_by(|&x, &y| x.lv.cmp(&y.lv))
+                .unwrap()
+                .clone();
 
-        let encounters: Vec<&mut EncounterData> = modified_encounters
-            .iter_mut()
-            .filter(|&&mut x| {
-                x.digimon_id == enemy_stats.digimon_id as u32
-                    && !(x.lv == min_lv.lv && x.multiplier == min_lv.multiplier)
-            })
-            .collect();
+            let encounters: Vec<&mut EncounterData> = modified_encounters
+                .iter_mut()
+                .filter(|&&mut x| {
+                    x.digimon_id == enemy_stats.digimon_id as u32
+                        && !(x.lv == min_lv.lv && x.multiplier == min_lv.multiplier)
+                })
+                .collect();
 
-        for encounter in encounters {
-            encounter.multiplier = ((36 + 10 * encounter.lv) * 16) / (36 + 10 * min_lv.lv);
+            for encounter in encounters {
+                encounter.multiplier = ((36 + 10 * encounter.lv) * 16) / (36 + 10 * min_lv.lv);
+            }
         }
     }
 

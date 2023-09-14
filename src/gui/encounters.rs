@@ -11,6 +11,7 @@ pub fn encounters(cx: Scope) -> Element {
     let read_state = state.read();
 
     let enabled = read_state.randomizer.encounters.enabled;
+    let scaling = read_state.randomizer.encounters.scaling;
     let cardmon = read_state.randomizer.encounters.cardmon;
     let bosses = read_state.randomizer.encounters.bosses;
 
@@ -31,6 +32,16 @@ pub fn encounters(cx: Scope) -> Element {
             },
             div {
                 class: "left",
+                checkbox::checkbox {
+                    label: "Scaling",
+                    id: "encounters.scaling",
+                    checked: scaling,
+                    disabled: !enabled,
+                    tooltip: "Scale encounters",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.encounters.scaling = x.data.value == "true";
+                    }
+                },
                 checkbox::checkbox {
                     label: "Cardmon",
                     id: "encounters.cardmon",

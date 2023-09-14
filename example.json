@@ -4,6 +4,7 @@
 		"shuffles": 5,
 		"encounters": {
 			"enabled": true,
+			"scaling": true,
 			"cardmon": true,
 			"bosses": true,
 			"strategy": "swap"
