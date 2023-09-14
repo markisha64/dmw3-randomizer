@@ -50,6 +50,7 @@ pub fn slider<'a>(cx: Scope<'a, SliderProps<'a>>) -> Element {
                 class: "short_number",
                 min: cx.props.min,
                 max: cx.props.max,
+                disabled: cx.props.disabled,
                 oninput: move |evt| cx.props.oninput.call(evt)
             }
         }
