@@ -109,7 +109,7 @@ pub fn encounters(cx: Scope) -> Element {
                     value: scaling_offset,
                     id: "encounters.scaling_offset",
                     disabled: !enabled,
-                    tooltip: "Stat range",
+                    tooltip: "Stat range (undistributed)",
                     oninput: move |x: Event<FormData>| {
                         let new_offset: i64 = match x.data.value.parse::<i64>() {
                             Ok(offset) => {
@@ -124,8 +124,8 @@ pub fn encounters(cx: Scope) -> Element {
 
                         state.write().randomizer.encounters.scaling_offset = new_offset;
                     },
-                    min: 0,
-                    max: 100
+                    min: consts::MIN_STAT_RANGE,
+                    max: consts::MAX_STAT_RANGE
                 }
             }
         }

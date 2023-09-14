@@ -19,4 +19,4 @@ pub const MIN_SHOP_ITEMS: i64 = 0;
 pub const MAX_SHOP_ITEMS: i64 = 37;
 
 pub const MIN_STAT_RANGE: i64 = 0;
-pub const MAX_STAT_RANGE: i64 = 100;
+pub const MAX_STAT_RANGE: i64 = 150;

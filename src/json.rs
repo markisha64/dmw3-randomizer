@@ -107,7 +107,7 @@ fn default_shuffles() -> u8 {
 }
 
 fn default_scaling_offset() -> i64 {
-    10
+    50
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
