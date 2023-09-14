@@ -130,10 +130,9 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 .collect();
 
             for encounter in encounters {
-                encounter.multiplier = ((((preset.encounters.base_stats
+                encounter.multiplier = (((preset.encounters.base_stats
                     + preset.encounters.stat_modifier * encounter.lv as i32)
                     * 16)
-                    + modifier)
                     / (preset.encounters.base_stats
                         + preset.encounters.stat_modifier * min_lv.lv as i32))
                     as u16;
