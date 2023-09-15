@@ -6,6 +6,10 @@
 			"enabled": true,
 			"scaling": true,
 			"scaling_offset": 50,
+			"base_stats": 180,
+			"base_res": 620,
+			"stat_modifier": 50,
+			"res_modifier": 15,
 			"cardmon": true,
 			"bosses": true,
 			"strategy": "swap"
