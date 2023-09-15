@@ -89,7 +89,7 @@
 }
 
 .short_number {
-	max-width: 40px;
+	max-width: 50px;
 }
 
 input[type="file"] {

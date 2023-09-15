@@ -17,6 +17,11 @@ pub fn encounters(cx: Scope) -> Element {
     let cardmon = read_state.randomizer.encounters.cardmon;
     let bosses = read_state.randomizer.encounters.bosses;
 
+    let base_stats = read_state.randomizer.encounters.base_stats;
+    let base_res = read_state.randomizer.encounters.base_res;
+    let stat_modifier = read_state.randomizer.encounters.stat_modifier;
+    let res_modifier = read_state.randomizer.encounters.res_modifier;
+
     render! {
         div {
             class: "segment",
@@ -126,7 +131,98 @@ pub fn encounters(cx: Scope) -> Element {
                     },
                     min: consts::MIN_STAT_RANGE,
                     max: consts::MAX_STAT_RANGE
-                }
+                },
+            },
+            div {
+                class: "left",
+                number_field::number_field {
+                    label: "Base stats",
+                    id: "encounters.base_stats",
+                    min: 1,
+                    max: 2000,
+                    value: base_stats as i64,
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        let stats = match x.data.value.parse::<i32>() {
+                            Ok(s) => {
+                                if 1 <= s && s <= 2000 {
+                                    s
+                                } else {
+                                    base_stats
+                                }
+                            },
+                            _ => base_stats
+                        };
+
+                        state.write().randomizer.encounters.base_stats = stats;
+                    },
+                },
+                number_field::number_field {
+                    label: "Base res",
+                    id: "encounters.base_res",
+                    min: 1,
+                    max: 2000,
+                    value: base_res as i64,
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        let res = match x.data.value.parse::<i32>() {
+                            Ok(s) => {
+                                if 1 <= s && s <= 2000 {
+                                    s
+                                } else {
+                                    base_res
+                                }
+                            },
+                            _ => base_res
+                        };
+
+                        state.write().randomizer.encounters.base_res = res;
+                    },
+                },
+                number_field::number_field {
+                    label: "Stat modifier",
+                    id: "encounters.stat_modifier",
+                    min: 1,
+                    max: 200,
+                    value: stat_modifier as i64,
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        let modifier = match x.data.value.parse::<i32>() {
+                            Ok(s) => {
+                                if 1 <= s && s <= 200 {
+                                    s
+                                } else {
+                                    stat_modifier
+                                }
+                            },
+                            _ => stat_modifier
+                        };
+
+                        state.write().randomizer.encounters.stat_modifier = modifier;
+                    },
+                },
+                number_field::number_field {
+                    label: "Res modifier",
+                    id: "encounters.res_modifier",
+                    min: 1,
+                    max: 200,
+                    value: res_modifier as i64,
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        let modifier = match x.data.value.parse::<i32>() {
+                            Ok(s) => {
+                                if 1 <= s && s <= 200 {
+                                    s
+                                } else {
+                                    res_modifier
+                                }
+                            },
+                            _ => res_modifier
+                        };
+
+                        state.write().randomizer.encounters.res_modifier = modifier;
+                    },
+                },
             }
         }
     }
