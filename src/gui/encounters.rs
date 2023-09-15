@@ -99,15 +99,24 @@ pub fn encounters(cx: Scope) -> Element {
             },
             div {
                 class: "left",
-                checkbox::checkbox {
-                    label: "Scaling",
-                    id: "encounters.scaling",
-                    checked: scaling,
-                    disabled: !enabled,
-                    tooltip: "Scale encounters",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.scaling = x.data.value == "true";
-                    }
+                div {
+                    class: "tooltip",
+                    span {
+                        class: "tooltiptext",
+                        style: "width: 350px",
+                        "Total stats = Base stats + Stat modifier * level ± [0, Stat range]",
+                        br {},
+                        "Total res = Base res + Res modifier * level ± [0, Stat range]"
+                    },
+                    checkbox::checkbox {
+                        label: "Scaling",
+                        id: "encounters.scaling",
+                        checked: scaling,
+                        disabled: !enabled,
+                        onchange: move |x: Event<FormData>| {
+                            state.write().randomizer.encounters.scaling = x.data.value == "true";
+                        }
+                    },
                 },
                 slider::slider {
                     label: "Stat range",
