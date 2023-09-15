@@ -113,7 +113,7 @@ pub fn encounters(cx: Scope) -> Element {
                     label: "Stat range",
                     value: scaling_offset,
                     id: "encounters.scaling_offset",
-                    disabled: !enabled,
+                    disabled: !enabled || !scaling,
                     tooltip: "Stat range (undistributed)",
                     oninput: move |x: Event<FormData>| {
                         let new_offset: i64 = match x.data.value.parse::<i64>() {
@@ -141,7 +141,7 @@ pub fn encounters(cx: Scope) -> Element {
                     min: 1,
                     max: 2000,
                     value: base_stats as i64,
-                    disabled: !enabled,
+                    disabled: !enabled || !scaling,
                     onchange: move |x: Event<FormData>| {
                         let stats = match x.data.value.parse::<i32>() {
                             Ok(s) => {
@@ -163,7 +163,7 @@ pub fn encounters(cx: Scope) -> Element {
                     min: 1,
                     max: 2000,
                     value: base_res as i64,
-                    disabled: !enabled,
+                    disabled: !enabled || !scaling,
                     onchange: move |x: Event<FormData>| {
                         let res = match x.data.value.parse::<i32>() {
                             Ok(s) => {
@@ -185,7 +185,7 @@ pub fn encounters(cx: Scope) -> Element {
                     min: 1,
                     max: 200,
                     value: stat_modifier as i64,
-                    disabled: !enabled,
+                    disabled: !enabled || !scaling,
                     onchange: move |x: Event<FormData>| {
                         let modifier = match x.data.value.parse::<i32>() {
                             Ok(s) => {
@@ -207,7 +207,7 @@ pub fn encounters(cx: Scope) -> Element {
                     min: 1,
                     max: 200,
                     value: res_modifier as i64,
-                    disabled: !enabled,
+                    disabled: !enabled || !scaling,
                     onchange: move |x: Event<FormData>| {
                         let modifier = match x.data.value.parse::<i32>() {
                             Ok(s) => {
