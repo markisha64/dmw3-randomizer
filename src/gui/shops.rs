@@ -38,39 +38,45 @@ pub fn shops(cx: Scope) -> Element {
                 }
             },
             div {
-                class: "left tooltip",
-                span {
-                    class: "tooltiptext",
-                    "Force shop item count",
-                },
-                checkbox::checkbox {
-                    label: "Limit shop items",
-                    id: "shops.checkbox",
-                    checked: limit_enabled,
-                    disabled: !enabled,
-                    onchange: move |x: Event<FormData>| {
-                        global_state.write().shop_limit_enabled = x.data.value == "true";
+                div {
+                    class: "tooltip",
+                    span {
+                        class: "tooltiptext",
+                        "Force shop item count",
                     },
-                },
-                input {
-                    r#type: "number",
-                    r#value: "{limit}",
-                    disabled: "{!limit_enabled || !enabled}",
-                    min: consts::MIN_SHOP_ITEMS,
-                    max: consts::MAX_SHOP_ITEMS,
-                    onchange: move |x| {
-                        let limit = match x.data.value.parse::<u8>() {
-                            Ok(vl) => {
-                                if vl <= 37 {
-                                    vl
-                                } else {
-                                    limit
-                                }
+                    div {
+                        class: "left",
+                        checkbox::checkbox {
+                            label: "Limit shop items",
+                            id: "shops.checkbox",
+                            checked: limit_enabled,
+                            disabled: !enabled,
+                            onchange: move |x: Event<FormData>| {
+                                global_state.write().shop_limit_enabled = x.data.value == "true";
                             },
-                            _ => limit
-                        };
+                        },
+                        input {
+                            class: "short_number",
+                            r#type: "number",
+                            r#value: "{limit}",
+                            disabled: "{!limit_enabled || !enabled}",
+                            min: consts::MIN_SHOP_ITEMS,
+                            max: consts::MAX_SHOP_ITEMS,
+                            onchange: move |x| {
+                                let limit = match x.data.value.parse::<u8>() {
+                                    Ok(vl) => {
+                                        if vl <= 37 {
+                                            vl
+                                        } else {
+                                            limit
+                                        }
+                                    },
+                                    _ => limit
+                                };
 
-                        preset_state.write().randomizer.shops.limit_shop_items = Some(limit);
+                                preset_state.write().randomizer.shops.limit_shop_items = Some(limit);
+                            }
+                        }
                     }
                 }
             }
