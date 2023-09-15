@@ -143,7 +143,7 @@ pub fn encounters(cx: Scope) -> Element {
                 },
             },
             div {
-                class: "left",
+                class: "center",
                 number_field::number_field {
                     label: "Base stats",
                     id: "encounters.base_stats",

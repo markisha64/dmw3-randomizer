@@ -104,8 +104,8 @@ input[type="button"] {
 input {
 	border: 1px solid rgba(255, 255, 255, 0.5);
 	border-radius: 5px;
+	min-width: 20px;
 	text-align: center;
-	width: 120px;
 	min-height: 20px;
 	background-color: #000021;
 	color: white;
@@ -137,6 +137,7 @@ input[type="range"]::-webkit-slider-runnable-track {
 
 input[type="range"] {
 	appearance: none;
+	width: 120px;
 	border: none;
 }
 
@@ -151,4 +152,12 @@ input[type="range"]::-webkit-slider-thumb {
 	background: white;
 	margin-top: -5px;
 	border-radius: 50%;
+}
+
+input[type="number"] {
+	margin-right: 15px;
+}
+
+input[type="checkbox"] {
+	margin-right: 15px;
 }

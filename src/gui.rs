@@ -84,6 +84,7 @@ fn app(cx: Scope) -> Element {
                             "Seed"
                         },
                         input {
+                            style: "width: 120px;",
                             r#type: "number",
                             id: "seed",
                             value: "{seed}",
