@@ -235,7 +235,7 @@ fn read_objects() -> Objects {
     move_data_arr.reserve(443);
 
     let move_data_index = main_buf
-        .windows(16)
+        .windows(8)
         .position(|window| -> bool { window == b"\x24\x16\x04\x80\x1c\x17\x04\x80" })
         .unwrap();
 
@@ -337,6 +337,7 @@ fn write_objects(objects: &mut Objects) -> Result<(), ()> {
     objects.scaling.write_buf(&mut objects.bufs.main_buf);
     objects.shop_items.write_buf(&mut objects.bufs.shops_buf);
     objects.shops.write_buf(&mut objects.bufs.shops_buf);
+    objects.move_data.write_buf(&mut objects.bufs.main_buf);
 
     let mut new_main_executable = File::create(objects.executable.as_str()).unwrap();
     let mut new_stats = File::create(consts::STATS_FILE).unwrap();
