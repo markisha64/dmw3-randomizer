@@ -12,7 +12,7 @@ pub struct EnemyStats {
 
     some_index: u16,
 
-    unk3: u16,
+    pub attack: u16,
 
     move_1: u16,
 
@@ -117,6 +117,18 @@ pub struct Shop {
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct Pointer {
     pub value: u32,
+}
+
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
+pub struct MoveData {
+    accuracy: u8,
+    move_type: u8,
+    unk1: u32,
+    unk2: u32,
+    unk3: u16,
+    mp: u16,
+    pub power: u16,
+    unk4: u16,
 }
 
 impl Pointer {

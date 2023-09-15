@@ -15,7 +15,7 @@ mod fixes;
 mod parties;
 mod shops;
 pub mod structs;
-use structs::{EncounterData, EnemyStats, Pointer, Scaling, Shop};
+use structs::{EncounterData, EnemyStats, MoveData, Pointer, Scaling, Shop};
 
 pub struct Object<T> {
     pub original: Vec<T>,
@@ -55,6 +55,7 @@ pub struct Objects {
     pub scaling: Object<Scaling>,
     pub shops: Object<Shop>,
     pub shop_items: Object<u16>,
+    pub move_data: Object<MoveData>,
 }
 
 enum Executable {
@@ -230,6 +231,26 @@ fn read_objects() -> Objects {
         }
     }
 
+    let mut move_data_arr: Vec<MoveData> = Vec::new();
+    move_data_arr.reserve(443);
+
+    let move_data_index = main_buf
+        .windows(16)
+        .position(|window| -> bool { window == b"\x24\x16\x04\x80\x1c\x17\x04\x80" })
+        .unwrap();
+
+    let mut move_data_reader = Cursor::new(&main_buf[move_data_index..]);
+
+    // hardcoding this for now
+    for _ in 0..443 {
+        let move_data = MoveData::read(&mut move_data_reader);
+
+        match move_data {
+            Ok(move_data) => move_data_arr.push(move_data),
+            Err(_) => panic!("Binread error"),
+        }
+    }
+
     let parties_index = main_buf
         .windows(9)
         .position(|window| -> bool { window == b"\x00\x06\x07\x02\x03\x06\x01\x05\x07" })
@@ -281,6 +302,13 @@ fn read_objects() -> Objects {
         slen: 0x2,
     };
 
+    let move_data_object: Object<MoveData> = Object {
+        original: move_data_arr.clone(),
+        modified: move_data_arr.clone(),
+        index: move_data_index,
+        slen: 0x12,
+    };
+
     Objects {
         executable,
         // overlay_address_pointer: overlay,
@@ -296,6 +324,7 @@ fn read_objects() -> Objects {
         scaling: scaling_object,
         shops: shops_object,
         shop_items: shop_items_object,
+        move_data: move_data_object,
     }
 }
 
