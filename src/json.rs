@@ -194,7 +194,7 @@ impl From<u8> for ShopItems {
 
 impl Default for ShopItems {
     fn default() -> Self {
-        ShopItems::Buyable
+        ShopItems::Sellable
     }
 }
 
