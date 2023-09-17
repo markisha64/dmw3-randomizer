@@ -12,6 +12,8 @@ pub fn encounters(cx: Scope) -> Element {
     let read_state = state.read();
 
     let enabled = read_state.randomizer.encounters.enabled;
+    let selected = read_state.randomizer.encounters.strategy.clone();
+
     let scaling = read_state.randomizer.encounters.scaling;
     let scaling_offset = read_state.randomizer.encounters.scaling_offset;
     let cardmon = read_state.randomizer.encounters.cardmon;
@@ -95,14 +97,17 @@ pub fn encounters(cx: Scope) -> Element {
                         },
                         option {
                             value: "2",
+                            selected: selected == TNTStrategy::Swap,
                             "Swap"
                         },
                         option {
                             value: "1",
+                            selected: selected == TNTStrategy::Keep,
                             "Keep"
                         },
                         option {
                             value: "0",
+                            selected: selected == TNTStrategy::Shuffle,
                             "Shuffle"
                         },
                     }

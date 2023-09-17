@@ -16,6 +16,7 @@ pub fn shops(cx: Scope) -> Element {
     let limit_enabled = read_global_state.shop_limit_enabled;
 
     let enabled = read_preset_state.randomizer.shops.enabled;
+    let selected = read_preset_state.randomizer.shops.items_only.clone();
 
     let limit = match read_preset_state.randomizer.shops.limit_shop_items {
         Some(lm) => lm,
@@ -89,10 +90,12 @@ pub fn shops(cx: Scope) -> Element {
                             },
                             option {
                                 value: "0",
+                                selected: selected == ShopItems::Buyable,
                                 "Buyable"
                             },
                             option {
                                 value: "1",
+                                selected: selected == ShopItems::Sellable,
                                 "Sellable"
                             },
                         }
