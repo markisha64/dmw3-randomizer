@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 
 use crate::consts;
 use crate::gui::GlobalState;
-use crate::json::Preset;
+use crate::json::{Preset, ShopItems};
 
 use crate::gui::checkbox;
 
@@ -76,6 +76,25 @@ pub fn shops(cx: Scope) -> Element {
 
                                 preset_state.write().randomizer.shops.limit_shop_items = Some(limit);
                             }
+                        },
+                        label {
+                            r#for: "shops.items_only",
+                            "Items"
+                        },
+                        select {
+                            id: "shops.items_only",
+                            disabled: !enabled,
+                            onchange: move |x: Event<FormData>| {
+                                preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value.parse::<u8>().unwrap());
+                            },
+                            option {
+                                value: "0",
+                                "Buyable"
+                            },
+                            option {
+                                value: "1",
+                                "Sellable"
+                            },
                         }
                     }
                 }

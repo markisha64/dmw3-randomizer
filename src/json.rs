@@ -67,6 +67,8 @@ pub struct Shops {
     pub enabled: bool,
     #[serde(default = "default_shop_limit")]
     pub limit_shop_items: Option<u8>,
+    #[serde(default = "ShopItems::default")]
+    pub items_only: ShopItems,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -154,9 +156,31 @@ impl From<u8> for TNTStrategy {
     }
 }
 
-impl TNTStrategy {
+impl Default for TNTStrategy {
     fn default() -> Self {
         TNTStrategy::Swap
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "lowercase")]
+pub enum ShopItems {
+    Buyable,
+    Sellable,
+}
+
+impl From<u8> for ShopItems {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => ShopItems::Buyable,
+            _ => ShopItems::Sellable,
+        }
+    }
+}
+
+impl Default for ShopItems {
+    fn default() -> Self {
+        ShopItems::Buyable
     }
 }
 
