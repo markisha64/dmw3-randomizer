@@ -140,7 +140,7 @@ pub fn shops(cx: Scope) -> Element {
                         onchange: move |x: Event<FormData>| {
                             let sell_price = match x.data.value.parse::<i64>(){
                                 Ok(price) => {
-                                    if 6 <= price && price <= max_sell_price {
+                                    if consts::MIN_SELL_PRICE <= price && price <= max_sell_price {
                                         price
                                     } else {
                                         min_sell_price
@@ -152,7 +152,7 @@ pub fn shops(cx: Scope) -> Element {
                             preset_state.write().randomizer.shops.min_sell_price = sell_price;
                         },
                         value: min_sell_price,
-                        min: 6,
+                        min: consts::MIN_SELL_PRICE,
                         max: max_sell_price
                     },
                     number_field::number_field {
@@ -162,7 +162,7 @@ pub fn shops(cx: Scope) -> Element {
                         onchange: move |x: Event<FormData>| {
                             let sell_price = match x.data.value.parse::<i64>(){
                                 Ok(price) => {
-                                    if min_sell_price <= price && price <= 99999 {
+                                    if min_sell_price <= price && price <= consts::MAX_SELL_PRICE {
                                         price
                                     } else {
                                         max_sell_price
@@ -175,7 +175,7 @@ pub fn shops(cx: Scope) -> Element {
                         },
                         value: max_sell_price,
                         min: min_sell_price,
-                        max: 99999
+                        max: consts::MAX_SELL_PRICE
                     },
                 },
             }

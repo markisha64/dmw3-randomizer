@@ -21,3 +21,8 @@ pub const MAX_SHOP_ITEMS: i64 = 37;
 
 pub const MIN_STAT_RANGE: i64 = 0;
 pub const MAX_STAT_RANGE: i64 = 150;
+
+// don't want free items
+pub const MIN_SELL_PRICE: i64 = 1;
+// max u16 / 2
+pub const MAX_SELL_PRICE: i64 = 32768;
