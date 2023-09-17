@@ -12,6 +12,7 @@
 			"res_modifier": 15,
 			"cardmon": true,
 			"bosses": true,
+			"keep_zanbamon": true,
 			"strategy": "swap"
 		},
 		"parties": {

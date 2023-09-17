@@ -11,7 +11,11 @@ fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
             && encounter.digimon_id as u16 <= consts::CARDMON_MAX))
         || (preset.bosses && consts::BOSSES.contains(&(encounter.digimon_id as u16)))
         || (preset.strategy == TNTStrategy::Keep
-            && encounter.digimon_id as u16 == consts::TRICERAMON_ID);
+            && encounter.digimon_id as u16 == consts::TRICERAMON_ID
+            && encounter.multiplier == 16)
+        || (preset.keep_zanbamon
+            && encounter.digimon_id as u16 == consts::ZANBAMON_ID
+            && encounter.multiplier == 16);
 }
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {

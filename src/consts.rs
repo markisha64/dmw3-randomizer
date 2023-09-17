@@ -5,6 +5,7 @@ pub const BOSSES: [u16; 26] = [
     0x1c0, 0x1c1, 0x1c2, 0x1c3, 0x1c4, 0x1c5, 0x1c6, 0x1c7, 0x1c8, 0x1d1, 0x1d2, 0x1d3,
 ];
 pub const TRICERAMON_ID: u16 = 0xcb;
+pub const ZANBAMON_ID: u16 = 0x1b1;
 
 pub const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
 pub const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
