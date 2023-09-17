@@ -131,6 +131,14 @@ pub struct MoveData {
     unk4: u16,
 }
 
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
+pub struct ItemShopData {
+    unk_ptr: Pointer,
+    buy_price: u16,
+    sell_price: u16,
+    unk: u32,
+}
+
 impl Pointer {
     pub fn to_index(&self) -> u32 {
         self.value - 0x8000f800

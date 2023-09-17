@@ -17,6 +17,8 @@ mod shops;
 pub mod structs;
 use structs::{EncounterData, EnemyStats, MoveData, Pointer, Scaling, Shop};
 
+use self::structs::ItemShopData;
+
 pub struct Object<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,
@@ -55,6 +57,7 @@ pub struct Objects {
     pub scaling: Object<Scaling>,
     pub shops: Object<Shop>,
     pub shop_items: Object<u16>,
+    pub item_shop_data: Object<ItemShopData>,
     pub move_data: Object<MoveData>,
 }
 
@@ -210,6 +213,27 @@ fn read_objects() -> Objects {
         .map(|a| u16::from_ne_bytes([a[0], a[1]]))
         .collect();
 
+    let item_shop_data_index = main_buf
+        .windows(12)
+        .position(|window| -> bool {
+            window == b"\x64\x01\x65\x01\x66\x01\x67\x01\x00\x00\x00\x00"
+        })
+        .unwrap();
+
+    let item_shop_data_reader = Cursor::new(&main_buf[item_shop_data_index..]);
+
+    let mut item_shop_data_arr: Vec<ItemShopData> = Vec::new();
+    item_shop_data_arr.reserve(403);
+
+    for _ in 0..403 {
+        let item_shop_data = ItemShopData::read(&mut item_shop_data_reader);
+
+        match item_shop_data {
+            Ok(data) => item_shop_data_arr.push(data),
+            Err(_) => panic!("Binread error"),
+        }
+    }
+
     let scaling_index = main_buf
         .windows(16)
         .position(|window| -> bool {
@@ -302,6 +326,13 @@ fn read_objects() -> Objects {
         slen: 0x2,
     };
 
+    let item_shop_data_object: Object<ItemShopData> = Object {
+        original: item_shop_data_arr.clone(),
+        modified: item_shop_data_arr.clone(),
+        index: item_shop_data_index,
+        slen: 0xc,
+    };
+
     let move_data_object: Object<MoveData> = Object {
         original: move_data_arr.clone(),
         modified: move_data_arr.clone(),
@@ -324,6 +355,7 @@ fn read_objects() -> Objects {
         scaling: scaling_object,
         shops: shops_object,
         shop_items: shop_items_object,
+        item_shop_data: item_shop_data_object,
         move_data: move_data_object,
     }
 }
@@ -337,6 +369,7 @@ fn write_objects(objects: &mut Objects) -> Result<(), ()> {
     objects.scaling.write_buf(&mut objects.bufs.main_buf);
     objects.shop_items.write_buf(&mut objects.bufs.shops_buf);
     objects.shops.write_buf(&mut objects.bufs.shops_buf);
+    objects.item_shop_data.write_buf(&mut objects.bufs.main_buf);
     objects.move_data.write_buf(&mut objects.bufs.main_buf);
 
     let mut new_main_executable = File::create(objects.executable.as_str()).unwrap();
