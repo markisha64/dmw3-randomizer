@@ -23,6 +23,7 @@ Cargo.lock
 *.cue
 out.xml
 extract/*
+preset.json
 
 # dioxus
 dist/
