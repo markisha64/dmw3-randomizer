@@ -2,29 +2,59 @@ use crate::rand::Objects;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use crate::json::Shops;
+use crate::json::{ShopItems, Shops};
 use std::collections::BTreeSet;
 
 pub fn patch(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let shoppable = shoppable(objects, preset);
+
     match preset.limit_shop_items {
         Some(limit) => {
-            randomize_limited(&limit, objects, rng);
+            randomize_limited(&limit, objects, rng, shoppable);
         }
         None => {
-            randomize_existing(objects, rng);
+            randomize_existing(objects, rng, shoppable);
         }
+    }
+
+    let len = objects.item_shop_data.modified.len();
+    for i in 1..len - 1 {
+        objects.item_shop_data.modified[i].buy_price =
+            2 * objects.item_shop_data.modified[i].sell_price;
     }
 }
 
-fn randomize_limited(limit: &u8, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn shoppable(objects: &mut Objects, preset: &Shops) -> BTreeSet<u16> {
+    let len = objects.item_shop_data.original.len();
+
     let mut shoppable: BTreeSet<u16> = BTreeSet::new();
 
-    for item in &objects.shop_items.original {
-        if *item != 0 {
-            shoppable.insert(*item);
+    match preset.items_only {
+        ShopItems::Buyable => {
+            for i in 1..len - 1 {
+                if objects.item_shop_data.original[i].buy_price > 0 {
+                    shoppable.insert(i as u16);
+                }
+            }
+        }
+        ShopItems::Sellable => {
+            for i in 1..len - 1 {
+                if objects.item_shop_data.original[i].sell_price > 0 {
+                    shoppable.insert(i as u16);
+                }
+            }
         }
     }
 
+    shoppable
+}
+
+fn randomize_limited(
+    limit: &u8,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+    shoppable: BTreeSet<u16>,
+) {
     let mut ptr = objects.shops.modified.first().unwrap().items.clone();
     for i in 0..objects.shops.original.len() {
         let mut shoppable_arr = Vec::from_iter(shoppable.clone().into_iter());
@@ -44,15 +74,11 @@ fn randomize_limited(limit: &u8, objects: &mut Objects, rng: &mut Xoshiro256Star
     }
 }
 
-fn randomize_existing(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    let mut shoppable: BTreeSet<u16> = BTreeSet::new();
-
-    for item in &objects.shop_items.original {
-        if *item != 0 {
-            shoppable.insert(*item);
-        }
-    }
-
+fn randomize_existing(
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+    shoppable: BTreeSet<u16>,
+) {
     let mut shoppable_arr = Vec::from_iter(shoppable.clone().into_iter());
     for item in &mut objects.shop_items.modified {
         if *item == 0 {

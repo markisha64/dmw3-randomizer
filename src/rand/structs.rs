@@ -134,8 +134,8 @@ pub struct MoveData {
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct ItemShopData {
     unk_ptr: Pointer,
-    buy_price: u16,
-    sell_price: u16,
+    pub buy_price: u16,
+    pub sell_price: u16,
     unk: u32,
 }
 

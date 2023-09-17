@@ -220,7 +220,7 @@ fn read_objects() -> Objects {
         })
         .unwrap();
 
-    let item_shop_data_reader = Cursor::new(&main_buf[item_shop_data_index..]);
+    let mut item_shop_data_reader = Cursor::new(&main_buf[item_shop_data_index..]);
 
     let mut item_shop_data_arr: Vec<ItemShopData> = Vec::new();
     item_shop_data_arr.reserve(403);
