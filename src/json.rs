@@ -72,9 +72,9 @@ pub struct Shops {
     #[serde(default = "default_bool_true")]
     pub sell_price: bool,
     #[serde(default = "default_min_sell_price")]
-    pub min_sell_price: i32,
+    pub min_sell_price: i64,
     #[serde(default = "default_max_sell_price")]
-    pub max_sell_price: i32,
+    pub max_sell_price: i64,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -144,11 +144,11 @@ fn default_res_modifier() -> i32 {
     15
 }
 
-fn default_min_sell_price() -> i32 {
+fn default_min_sell_price() -> i64 {
     6
 }
 
-fn default_max_sell_price() -> i32 {
+fn default_max_sell_price() -> i64 {
     11000
 }
 

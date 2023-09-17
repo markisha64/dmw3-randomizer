@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::consts;
-use crate::gui::GlobalState;
+use crate::gui::{number_field, GlobalState};
 use crate::json::{Preset, ShopItems};
 
 use crate::gui::checkbox;
@@ -22,6 +22,10 @@ pub fn shops(cx: Scope) -> Element {
         Some(lm) => lm,
         None => 64,
     };
+
+    let sell_price = read_preset_state.randomizer.shops.sell_price;
+    let min_sell_price = read_preset_state.randomizer.shops.min_sell_price;
+    let max_sell_price = read_preset_state.randomizer.shops.max_sell_price;
 
     render! {
         div {
@@ -110,7 +114,70 @@ pub fn shops(cx: Scope) -> Element {
                             "Sellable"
                         },
                     }
-                }
+                },
+            },
+            div {
+                class: "tooltip",
+                span {
+                    class: "tooltiptext",
+                    "Randomize sell price"
+                },
+                div {
+                    class: "left",
+                    checkbox::checkbox {
+                        id: "shops.min_sell_price",
+                        label: "Sell price",
+                        disabled: !enabled,
+                        checked: sell_price,
+                        onchange: move |x: Event<FormData>| {
+                            preset_state.write().randomizer.shops.sell_price = x.data.value == "true";
+                        },
+                    },
+                    number_field::number_field {
+                        id: "shops.min_sell_price",
+                        label: "Min",
+                        disabled: !enabled || !sell_price,
+                        onchange: move |x: Event<FormData>| {
+                            let sell_price = match x.data.value.parse::<i64>(){
+                                Ok(price) => {
+                                    if 6 <= price && price <= max_sell_price {
+                                        price
+                                    } else {
+                                        min_sell_price
+                                    }
+                                },
+                                _ => min_sell_price
+                            };
+
+                            preset_state.write().randomizer.shops.min_sell_price = sell_price;
+                        },
+                        value: min_sell_price,
+                        min: 6,
+                        max: max_sell_price
+                    },
+                    number_field::number_field {
+                        id: "shops.max_sell_price",
+                        label: "Min",
+                        disabled: !enabled || !sell_price,
+                        onchange: move |x: Event<FormData>| {
+                            let sell_price = match x.data.value.parse::<i64>(){
+                                Ok(price) => {
+                                    if min_sell_price <= price && price <= 99999 {
+                                        price
+                                    } else {
+                                        max_sell_price
+                                    }
+                                },
+                                _ => max_sell_price
+                            };
+
+                            preset_state.write().randomizer.shops.max_sell_price = sell_price;
+                        },
+                        value: max_sell_price,
+                        min: min_sell_price,
+                        max: 99999
+                    },
+                },
             }
         }
     }
