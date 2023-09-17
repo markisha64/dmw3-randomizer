@@ -69,6 +69,12 @@ pub struct Shops {
     pub limit_shop_items: Option<u8>,
     #[serde(default = "ShopItems::default")]
     pub items_only: ShopItems,
+    #[serde(default = "default_bool_true")]
+    pub sell_price: bool,
+    #[serde(default = "default_min_sell_price")]
+    pub min_sell_price: i32,
+    #[serde(default = "default_max_sell_price")]
+    pub max_sell_price: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -136,6 +142,14 @@ fn default_stat_modifier() -> i32 {
 
 fn default_res_modifier() -> i32 {
     15
+}
+
+fn default_min_sell_price() -> i32 {
+    6
+}
+
+fn default_max_sell_price() -> i32 {
+    11000
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
