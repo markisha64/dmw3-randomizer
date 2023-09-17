@@ -20,7 +20,11 @@
 		},
 		"shops": {
 			"enabled": true,
-			"limitShopItems": 8
+			"limitShopItems": 8,
+			"items_only": "Buyable",
+			"sell_price": true,
+			"min_sell_price": 6,
+			"max_sell_price": 11000
 		}
 	},
 	"fixes": {
