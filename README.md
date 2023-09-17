@@ -53,7 +53,6 @@ Support is added for all 3 versions, if you notice any problems, fill out an iss
    ```
    Replace `[options]` with the specific options you want to use for randomization.
 
-
 6. **Play the Randomized ROM**: Once the randomization process is complete, you'll find the randomized ROM file in the designated output folder. Load the ROM in your favorite Digimon World 3 emulator to start your randomized adventure!
 
 ## Contributing
