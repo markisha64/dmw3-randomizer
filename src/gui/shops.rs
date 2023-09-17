@@ -78,27 +78,37 @@ pub fn shops(cx: Scope) -> Element {
                                 preset_state.write().randomizer.shops.limit_shop_items = Some(limit);
                             }
                         },
-                        label {
-                            r#for: "shops.items_only",
-                            "Items"
+                    },
+                },
+                div {
+                    class: "tooltip",
+                    span {
+                        class: "tooltiptext",
+                        style: "width: 200px;",
+                        "Buyable => shops contain all buyable items",
+                        br {},
+                        "Sellable => shops contain all sellable items",
+                    },
+                    label {
+                        r#for: "shops.items_only",
+                        "Items"
+                    },
+                    select {
+                        id: "shops.items_only",
+                        disabled: !enabled,
+                        onchange: move |x: Event<FormData>| {
+                            preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value.parse::<u8>().unwrap());
                         },
-                        select {
-                            id: "shops.items_only",
-                            disabled: !enabled,
-                            onchange: move |x: Event<FormData>| {
-                                preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value.parse::<u8>().unwrap());
-                            },
-                            option {
-                                value: "0",
-                                selected: selected == ShopItems::Buyable,
-                                "Buyable"
-                            },
-                            option {
-                                value: "1",
-                                selected: selected == ShopItems::Sellable,
-                                "Sellable"
-                            },
-                        }
+                        option {
+                            value: "0",
+                            selected: selected == ShopItems::Buyable,
+                            "Buyable"
+                        },
+                        option {
+                            value: "1",
+                            selected: selected == ShopItems::Sellable,
+                            "Sellable"
+                        },
                     }
                 }
             }
