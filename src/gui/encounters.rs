@@ -16,6 +16,7 @@ pub fn encounters(cx: Scope) -> Element {
     let scaling_offset = read_state.randomizer.encounters.scaling_offset;
     let cardmon = read_state.randomizer.encounters.cardmon;
     let bosses = read_state.randomizer.encounters.bosses;
+    let keep_zanbamon = read_state.randomizer.encounters.keep_zanbamon;
 
     let base_stats = read_state.randomizer.encounters.base_stats;
     let base_res = read_state.randomizer.encounters.base_res;
@@ -57,6 +58,16 @@ pub fn encounters(cx: Scope) -> Element {
                     tooltip: "Keep bosses unshuffled",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.bosses = x.data.value == "true";
+                    }
+                },
+                checkbox::checkbox {
+                    label: "Keep Zanbamon",
+                    id: "encounters.keep_zanbamon",
+                    checked: keep_zanbamon,
+                    disabled: !enabled,
+                    tooltip: "Zanbamon scripted fight can only be won by cheesing it if Zanbamon isn't there",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.encounters.keep_zanbamon = x.data.value == "true";
                     }
                 },
                 div {
