@@ -3,48 +3,57 @@
 
 The Digimon World 3 Randomizer is a tool developed in Rust that allows players to experience Digimon World 3 in a whole new way by randomizing various game elements.(currently encounters only) This repository contains the source code for the randomizer along with instructions on how to use it.
 
-## Features
-
-- Randomize wild Digimon encounters throughout the game.
-- Generate a randomized ROM file ready to be played on your favorite emulator.
-
 ## Versions
 
 Support is added for all 3 versions, if you notice any problems, fill out an issue.
 
-## Getting Started
+## Features
 
-Follow these steps to get started with the Digimon World 3 Randomizer:
+- Randomize wild Digimon encounters throughout the game.
+- Randomized starting parties (currently not previewable)
+- Randomized shops
 
-1. **Prerequisites**: 
- - Make sure you have Rust installed on your system. If not, you can download and install it from [https://www.rust-lang.org/](https://www.rust-lang.org/).
- - You also need [mkpsxiso](https://github.com/markisha64/mkpsxiso) installed and available in PATH. (currently my fork isn't merged into remote so you'll have to build mkpsxiso yourself)
- - ~700MB of extra storage (for rom extracted files)
+## Binary Download
+
+[Releases](https://github.com/markisha64/dmw3-randomizer/releases) for Windows/Ubuntu, built by github CI
+
+## Requirements
+
+- libwebkit2gtk-4.1-dev (Linux only)
+- ~700MB of extra storage (for rom extracted files)
+
+## Building from source
+
+1. **Prerequisites**: Make sure you have Rust installed on your system. If not, you can download and install it from [https://www.rust-lang.org/](https://www.rust-lang.org/).
+   You also need to have [mkpsxiso](https://github.com/Lameguy64/mkpsxiso) installed or have the necessary tools to build it
 
 2. **Clone the Repository**: Clone this repository to your local machine using the following command:
    ```shell
    git clone https://github.com/markisha64/dmw3-randomizer.git
    ```
+3. **Build mkpsxiso(skip if installed)**: Navigate to the repository directory and built the randomizer using cmake:
+   ```shell
+   cmake --preset ci -S ./mkpsxiso -B ./mkpsxiso/build
+   cmake --build ./mkpsxiso/build --config Release
+   ```
 
-3. **Build the Randomizer**: Navigate to the repository directory and build the randomizer using Cargo:
+4. **Build the Randomizer**: Navigate to the repository directory and build the randomizer using Cargo:
    ```shell
    cd dmw3-randomizer
    cargo build --release
    ```
 
-4. **Usage**: Run the randomizer with the desired options using the following command:
+5. **Usage**: Run the randomizer:
+   ```shell
+   cargo run --release
+   ```
+   Or if you want to use it as cli tool
    ```shell
    cargo run --release -- [options]
    ```
    Replace `[options]` with the specific options you want to use for randomization.
 
-5. **Play the Randomized ROM**: Once the randomization process is complete, you'll find the randomized ROM file in the designated output folder. Load the ROM in your favorite Digimon World 3 emulator to start your randomized adventure!
-
-## Configuration
-   ```shell
-   cargo run --release -- --help
-   
-   ```
+6. **Play the Randomized ROM**: Once the randomization process is complete, you'll find the randomized ROM file in the designated output folder. Load the ROM in your favorite Digimon World 3 emulator to start your randomized adventure!
 
 ## Contributing
 
