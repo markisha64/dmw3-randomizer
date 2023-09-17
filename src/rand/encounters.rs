@@ -49,8 +49,9 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
         if preset.encounters.scaling {
             // hp and mp
-            new_encounter.max_hp = (new_encounter.max_hp as u32 * old_encounter.lv as u32
-                / new_encounter.lv as u32) as u16;
+            new_encounter.max_hp = ((new_encounter.max_hp - 100) as u32 * old_encounter.lv as u32
+                / new_encounter.lv as u32
+                + 100) as u16;
 
             new_encounter.lv = old_encounter.lv;
         }
