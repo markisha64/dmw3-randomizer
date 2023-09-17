@@ -17,10 +17,25 @@ pub fn patch(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar
         }
     }
 
+    if preset.sell_price {
+        randomize_sell_price(preset, objects, rng);
+    }
+
     let len = objects.item_shop_data.modified.len();
     for i in 1..len - 1 {
         objects.item_shop_data.modified[i].buy_price =
             2 * objects.item_shop_data.modified[i].sell_price;
+    }
+}
+
+fn randomize_sell_price(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let min_price = preset.min_sell_price;
+    let range = preset.max_sell_price - min_price + 1;
+
+    for item in &mut objects.item_shop_data.modified {
+        if item.sell_price != 0 {
+            item.sell_price = min_price as u16 + (rng.next_u64() % range as u64) as u16;
+        }
     }
 }
 
