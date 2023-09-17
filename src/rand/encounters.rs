@@ -5,11 +5,13 @@ use crate::consts;
 use crate::json::{Encounters, Randomizer, TNTStrategy};
 use crate::rand::{structs::EncounterData, Objects};
 
-fn skip(digimon_id: u16, preset: &Encounters) -> bool {
+fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
     return (preset.cardmon
-        && (consts::CARDMON_MIN <= digimon_id && digimon_id <= consts::CARDMON_MAX))
-        || (preset.bosses && consts::BOSSES.contains(&digimon_id))
-        || (preset.strategy == TNTStrategy::Keep && digimon_id == consts::TRICERAMON_ID);
+        && (consts::CARDMON_MIN <= encounter.digimon_id as u16
+            && encounter.digimon_id as u16 <= consts::CARDMON_MAX))
+        || (preset.bosses && consts::BOSSES.contains(&(encounter.digimon_id as u16)))
+        || (preset.strategy == TNTStrategy::Keep
+            && encounter.digimon_id as u16 == consts::TRICERAMON_ID);
 }
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
@@ -23,11 +25,8 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             let uniform: usize = rng.next_u64() as usize;
             let j = i + uniform % (len - i - 1);
 
-            let digimon_id_1 = modified_encounters[i].digimon_id as u16;
-            let digimon_id_2 = modified_encounters[j].digimon_id as u16;
-
-            if skip(digimon_id_1 as u16, &preset.encounters)
-                || skip(digimon_id_2 as u16, &preset.encounters)
+            if skip(&modified_encounters[i], &preset.encounters)
+                || skip(&modified_encounters[j], &preset.encounters)
             {
                 continue;
             }
@@ -40,9 +39,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         let old_encounter = &encounters[i];
         let new_encounter = &mut modified_encounters[i];
 
-        let digimon_id_1 = old_encounter.digimon_id as u16;
-
-        if skip(digimon_id_1 as u16, &preset.encounters) {
+        if skip(old_encounter, &preset.encounters) {
             continue;
         }
 
