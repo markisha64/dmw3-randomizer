@@ -77,4 +77,4 @@ jobs:
         fail_on_unmatched_files: true
         files: |
           dmw3-randomizer-linux/*
-          dmw3-randomizer-windows
+          dmw3-randomizer-windows/
