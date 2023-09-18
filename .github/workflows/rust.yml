@@ -52,11 +52,12 @@ jobs:
         xcopy assets\ artifact\assets /i
         xcopy target\release\*.exe artifact\
         xcopy mkpsxiso\build\Release\*.exe artifact\
+        Compress-Archive -Path artifact\* -DestinationPath dmw3-randomizer-windows.zip
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
         name: dmw3-randomizer-windows
-        path: artifact/
+        path: dmw3-randomizer-windows.zip
 
   create-release:
     name:    Create release
@@ -77,4 +78,4 @@ jobs:
         fail_on_unmatched_files: true
         files: |
           dmw3-randomizer-linux/*
-          dmw3-randomizer-windows/
+          dmw3-randomizer-windows/*
