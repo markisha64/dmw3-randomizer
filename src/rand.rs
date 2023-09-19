@@ -258,10 +258,14 @@ fn read_objects() -> Objects {
     let mut move_data_arr: Vec<MoveData> = Vec::new();
     move_data_arr.reserve(443);
 
-    let move_data_index = main_buf
-        .windows(8)
-        .position(|window| -> bool { window == b"\x24\x16\x04\x80\x1c\x17\x04\x80" })
+    let mut move_data_index = main_buf
+        .windows(18)
+        .position(|window| -> bool {
+            window == b"\x6e\x01\x01\x01\x01\x01\x01\x00\x02\x39\x05\x01\x00\x00\x3c\x00\x02\x02"
+        })
         .unwrap();
+
+    move_data_index -= 18;
 
     let mut move_data_reader = Cursor::new(&main_buf[move_data_index..]);
 
