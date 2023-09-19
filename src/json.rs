@@ -75,6 +75,8 @@ pub struct Shops {
     pub min_sell_price: i64,
     #[serde(default = "default_max_sell_price")]
     pub max_sell_price: i64,
+    #[serde(default = "default_bool_true")]
+    pub keep_tnt: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]

@@ -26,3 +26,5 @@ pub const MAX_STAT_RANGE: i64 = 150;
 pub const MIN_SELL_PRICE: i64 = 1;
 // max u16 / 2
 pub const MAX_SELL_PRICE: i64 = 32768;
+
+pub const TNT_BALL_ID: u16 = 0x5a;
