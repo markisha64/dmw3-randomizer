@@ -26,6 +26,7 @@ pub fn shops(cx: Scope) -> Element {
     let sell_price = read_preset_state.randomizer.shops.sell_price;
     let min_sell_price = read_preset_state.randomizer.shops.min_sell_price;
     let max_sell_price = read_preset_state.randomizer.shops.max_sell_price;
+    let keep_tnt = read_preset_state.randomizer.shops.keep_tnt;
 
     render! {
         div {
@@ -176,6 +177,16 @@ pub fn shops(cx: Scope) -> Element {
                         value: max_sell_price,
                         min: min_sell_price,
                         max: consts::MAX_SELL_PRICE
+                    },
+                    checkbox::checkbox {
+                        id: "shops.keep_tnt",
+                        label: "Keep TNT",
+                        disabled: !enabled,
+                        checked: keep_tnt,
+                        tooltip: "Lock TNT Ball price",
+                        onchange: move |x: Event<FormData>| {
+                            preset_state.write().randomizer.shops.keep_tnt = x.data.value == "true";
+                        },
                     },
                 },
             }
