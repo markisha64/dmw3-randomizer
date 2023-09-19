@@ -157,7 +157,7 @@ pub fn shops(cx: Scope) -> Element {
                     },
                     number_field::number_field {
                         id: "shops.max_sell_price",
-                        label: "Min",
+                        label: "Max",
                         disabled: !enabled || !sell_price,
                         onchange: move |x: Event<FormData>| {
                             let sell_price = match x.data.value.parse::<i64>(){
