@@ -23,8 +23,8 @@ jobs:
         path: |
           ~/.cargo
           target
-        key: linux-cargo-{{ hashFiles('Cargo.lock') }}
-        restore-keys: linux-cargo-{{ hashFiles('Cargo.lock') }}
+        key: linux-cargo-${{ hashFiles('Cargo.lock') }}
+        restore-keys: linux-cargo-${{ hashFiles('Cargo.lock') }}
     - name: Install Cargo bundle
       run: cargo install cargo-bundle
     - name: Build
@@ -54,8 +54,8 @@ jobs:
         path: |
           $HOME/.cargo
           target
-        key: windows-cargo-{{ hashFiles('Cargo.lock') }}
-        restore-keys: windows-cargo-{{ hashFiles('Cargo.lock') }}
+        key: windows-cargo-${{ hashFiles('Cargo.lock') }}
+        restore-keys: windows-cargo-${{ hashFiles('Cargo.lock') }}
     - name: Build
       run: cargo build --verbose --release
     - name: Build mkpsxiso
