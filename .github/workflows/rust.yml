@@ -17,14 +17,22 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo
+          target
+        key: linux-cargo-{{ hashFiles('Cargo.lock') }}
+        restore-keys: linux-cargo-{{ hashFiles('Cargo.lock') }}
     - name: Install Cargo bundle
       run: cargo install cargo-bundle
+    - name: Build
+      run: cargo build --verbose --release
     - name: Build mkpsxiso
       run: |
         cmake --preset ci -S ./mkpsxiso -B ./mkpsxiso/build
         cmake --build ./mkpsxiso/build --config Release
-    - name: Build
-      run: cargo build --verbose --release
     - name: Bundle
       run: cargo bundle --release --format deb
     - name: Upload build artifacts
@@ -40,6 +48,14 @@ jobs:
     - uses: actions/checkout@v3
       with:
         submodules: recursive
+    - name: Cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          $HOME/.cargo
+          target
+        key: windows-cargo-{{ hashFiles('Cargo.lock') }}
+        restore-keys: windows-cargo-{{ hashFiles('Cargo.lock') }}
     - name: Build
       run: cargo build --verbose --release
     - name: Build mkpsxiso
