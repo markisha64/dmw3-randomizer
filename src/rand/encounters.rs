@@ -108,6 +108,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             // resistances
             enemy_stats.fir_res = (enemy_stats.fir_res as i32 * expect_res / current_res) as i16;
             enemy_stats.wtr_res = (enemy_stats.wtr_res as i32 * expect_res / current_res) as i16;
+            enemy_stats.ice_res = (enemy_stats.ice_res as i32 * expect_res / current_res) as i16;
             enemy_stats.wnd_res = (enemy_stats.wnd_res as i32 * expect_res / current_res) as i16;
             enemy_stats.thd_res = (enemy_stats.thd_res as i32 * expect_res / current_res) as i16;
             enemy_stats.mch_res = (enemy_stats.mch_res as i32 * expect_res / current_res) as i16;
