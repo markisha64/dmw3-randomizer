@@ -147,6 +147,50 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
+    // this is a fix for possible galacticmon phase 3
+    // this equalizes phase 1 and phase 3 multipliers
+    // without changing numbers (reciprocals)
+    // 125% * 80% = 100%
+
+    let phase_1 = objects
+        .encounters
+        .original
+        .iter()
+        .position(|x| x.digimon_id as u16 == consts::GALACTICMON_1ST_PHASE)
+        .unwrap();
+
+    let phase_3 = phase_1 + 2;
+
+    let target_multiplier = modified_encounters[phase_3].multiplier;
+    let current_multiplier = modified_encounters[phase_1].multiplier;
+
+    let phase_1_digimon_id = modified_encounters[phase_1].digimon_id;
+    let phase_3_digimon_id = modified_encounters[phase_3].digimon_id;
+
+    if target_multiplier != current_multiplier && phase_1_digimon_id != phase_3_digimon_id {
+        let stats = modified_enemy_stats
+            .iter_mut()
+            .find(|&&mut x| x.digimon_id == phase_1_digimon_id as u16)
+            .unwrap();
+
+        stats.str = ((stats.str as u16 * current_multiplier) / target_multiplier) as i16;
+        stats.def = ((stats.def as u16 * current_multiplier) / target_multiplier) as i16;
+        stats.spt = ((stats.spt as u16 * current_multiplier) / target_multiplier) as i16;
+        stats.wis = ((stats.wis as u16 * current_multiplier) / target_multiplier) as i16;
+        stats.spd = ((stats.spd as u16 * current_multiplier) / target_multiplier) as i16;
+
+        for encounter in modified_encounters.iter_mut() {
+            if encounter.digimon_id == phase_1_digimon_id {
+                encounter.multiplier =
+                    (encounter.multiplier * target_multiplier) / current_multiplier;
+            }
+        }
+
+        let attack = &mut objects.move_data.modified[stats.attack as usize];
+
+        attack.power = (attack.power * current_multiplier) / target_multiplier;
+    }
+
     if preset.encounters.strategy == TNTStrategy::Swap {
         let tric = modified_enemy_stats
             .iter()
