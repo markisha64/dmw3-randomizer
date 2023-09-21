@@ -115,8 +115,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_res / current_res) as i16;
 
             if enemy_stats.attack > 0 {
-                objects.move_data.modified[enemy_stats.attack as usize - 1].power =
-                    40 + min_lv.lv * 10;
+                objects.move_data.modified[enemy_stats.attack as usize].power = 40 + min_lv.lv * 10;
             }
 
             // modify multipliers

@@ -256,12 +256,12 @@ fn read_objects() -> Objects {
     }
 
     let mut move_data_arr: Vec<MoveData> = Vec::new();
-    move_data_arr.reserve(443);
+    move_data_arr.reserve(444);
 
     let mut move_data_index = main_buf
         .windows(18)
         .position(|window| -> bool {
-            window == b"\x6e\x01\x01\x01\x01\x01\x01\x00\x02\x39\x05\x01\x00\x00\x3c\x00\x02\x02"
+            window == b"\x04\x80\x00\x00\x3c\x00\x02\x02\x6e\x01\x01\x01\x01\x01\x01\x00\x02\x39"
         })
         .unwrap();
 
