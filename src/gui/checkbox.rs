@@ -33,26 +33,13 @@ pub fn checkbox<'a>(cx: Scope<'a, CheckboxProps<'a>>) -> Element {
                     }
                 }
             }
-            if cx.props.checked {
-                rsx! {
-                    input {
-                        id: cx.props.id,
-                        r#type: "checkbox",
-                        r#checked: "true",
-                        disabled: cx.props.disabled,
-                        onchange: move |evt| cx.props.onchange.call(evt)
-                    }
-                }
-            }
-            else {
-                rsx! {
-                    input {
-                        id: cx.props.id,
-                        r#type: "checkbox",
-                        disabled: cx.props.disabled,
-                        onchange: move |evt| cx.props.onchange.call(evt)
-                    }
-                }
+
+            input {
+                id: cx.props.id,
+                r#type: "checkbox",
+                r#checked: cx.props.checked,
+                disabled: cx.props.disabled,
+                onchange: move |evt| cx.props.onchange.call(evt)
             }
         }
     }
