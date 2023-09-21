@@ -118,78 +118,81 @@ pub fn shops(cx: Scope) -> Element {
                 },
             },
             div {
-                class: "tooltip",
-                span {
-                    class: "tooltiptext",
-                    "Randomize sell price"
-                },
+                class: "left",
                 div {
-                    class: "left",
-                    checkbox::checkbox {
-                        id: "shops.min_sell_price",
-                        label: "Sell price",
-                        disabled: !enabled,
-                        checked: sell_price,
-                        onchange: move |x: Event<FormData>| {
-                            preset_state.write().randomizer.shops.sell_price = x.data.value == "true";
-                        },
+                    class: "tooltip",
+                    span {
+                        class: "tooltiptext",
+                        "Randomize sell price"
                     },
-                    number_field::number_field {
-                        id: "shops.min_sell_price",
-                        label: "Min",
-                        disabled: !enabled || !sell_price,
-                        onchange: move |x: Event<FormData>| {
-                            let sell_price = match x.data.value.parse::<i64>(){
-                                Ok(price) => {
-                                    if consts::MIN_SELL_PRICE <= price && price <= max_sell_price {
-                                        price
-                                    } else {
-                                        min_sell_price
-                                    }
-                                },
-                                _ => min_sell_price
-                            };
+                    div {
+                        class: "left",
+                        checkbox::checkbox {
+                            id: "shops.min_sell_price",
+                            label: "Sell price",
+                            disabled: !enabled,
+                            checked: sell_price,
+                            onchange: move |x: Event<FormData>| {
+                                preset_state.write().randomizer.shops.sell_price = x.data.value == "true";
+                            },
+                        },
+                        number_field::number_field {
+                            id: "shops.min_sell_price",
+                            label: "Min",
+                            disabled: !enabled || !sell_price,
+                            onchange: move |x: Event<FormData>| {
+                                let sell_price = match x.data.value.parse::<i64>(){
+                                    Ok(price) => {
+                                        if consts::MIN_SELL_PRICE <= price && price <= max_sell_price {
+                                            price
+                                        } else {
+                                            min_sell_price
+                                        }
+                                    },
+                                    _ => min_sell_price
+                                };
 
-                            preset_state.write().randomizer.shops.min_sell_price = sell_price;
+                                preset_state.write().randomizer.shops.min_sell_price = sell_price;
+                            },
+                            value: min_sell_price,
+                            min: consts::MIN_SELL_PRICE,
+                            max: max_sell_price
                         },
-                        value: min_sell_price,
-                        min: consts::MIN_SELL_PRICE,
-                        max: max_sell_price
-                    },
-                    number_field::number_field {
-                        id: "shops.max_sell_price",
-                        label: "Max",
-                        disabled: !enabled || !sell_price,
-                        onchange: move |x: Event<FormData>| {
-                            let sell_price = match x.data.value.parse::<i64>(){
-                                Ok(price) => {
-                                    if min_sell_price <= price && price <= consts::MAX_SELL_PRICE {
-                                        price
-                                    } else {
-                                        max_sell_price
-                                    }
-                                },
-                                _ => max_sell_price
-                            };
+                        number_field::number_field {
+                            id: "shops.max_sell_price",
+                            label: "Max",
+                            disabled: !enabled || !sell_price,
+                            onchange: move |x: Event<FormData>| {
+                                let sell_price = match x.data.value.parse::<i64>(){
+                                    Ok(price) => {
+                                        if min_sell_price <= price && price <= consts::MAX_SELL_PRICE {
+                                            price
+                                        } else {
+                                            max_sell_price
+                                        }
+                                    },
+                                    _ => max_sell_price
+                                };
 
-                            preset_state.write().randomizer.shops.max_sell_price = sell_price;
+                                preset_state.write().randomizer.shops.max_sell_price = sell_price;
+                            },
+                            value: max_sell_price,
+                            min: min_sell_price,
+                            max: consts::MAX_SELL_PRICE
                         },
-                        value: max_sell_price,
-                        min: min_sell_price,
-                        max: consts::MAX_SELL_PRICE
-                    },
-                    checkbox::checkbox {
-                        id: "shops.keep_tnt",
-                        label: "Keep TNT",
-                        disabled: !enabled,
-                        checked: keep_tnt,
-                        tooltip: "Lock TNT Ball price",
-                        onchange: move |x: Event<FormData>| {
-                            preset_state.write().randomizer.shops.keep_tnt = x.data.value == "true";
-                        },
+                    }
+                },
+                checkbox::checkbox {
+                    id: "shops.keep_tnt",
+                    label: "Keep TNT",
+                    disabled: !enabled,
+                    checked: keep_tnt,
+                    tooltip: "Lock TNT Ball price",
+                    onchange: move |x: Event<FormData>| {
+                        preset_state.write().randomizer.shops.keep_tnt = x.data.value == "true";
                     },
                 },
-            }
+            },
         }
     }
 }
