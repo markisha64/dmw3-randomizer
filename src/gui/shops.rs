@@ -185,7 +185,7 @@ pub fn shops(cx: Scope) -> Element {
                 checkbox::checkbox {
                     id: "shops.keep_tnt",
                     label: "Keep TNT",
-                    disabled: !enabled,
+                    disabled: !enabled || !sell_price,
                     checked: keep_tnt,
                     tooltip: "Lock TNT Ball price",
                     onchange: move |x: Event<FormData>| {
