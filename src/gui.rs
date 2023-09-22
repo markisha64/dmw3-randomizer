@@ -1,9 +1,12 @@
 use dioxus::prelude::*;
 use dioxus_desktop::{Config, WindowBuilder};
+use rand_xoshiro::rand_core::RngCore;
+use rand_xoshiro::rand_core::SeedableRng;
 
 use crate::json::Preset;
 
 use crate::cli::Arguments;
+use rand_xoshiro::Xoshiro256StarStar;
 use std::path::PathBuf;
 
 mod checkbox;
@@ -42,6 +45,12 @@ fn app(cx: Scope) -> Element {
 
     let state = use_shared_state::<Arguments>(cx).unwrap();
     let preset_state = use_shared_state::<Preset>(cx).unwrap();
+
+    let rng_state = use_state::<Xoshiro256StarStar>(cx, || {
+        Xoshiro256StarStar::seed_from_u64(state.read().seed.unwrap())
+    });
+
+    let mut rng = rng_state.get().clone();
 
     let read_state = state.read();
 
@@ -113,13 +122,27 @@ fn app(cx: Scope) -> Element {
                             id: "seed",
                             value: "{seed}",
                             onchange: move |x| {
-                                if x.data.value == "" {
-                                    state.write().seed = Some(64);
-                                } else {
-                                    state.write().seed = Some(x.data.value.parse::<u64>().unwrap());
-                                }
+                                let seed = match x.data.value.parse::<u64>() {
+                                    Ok(sd) => sd,
+                                    _ => seed
+                                };
+
+                                state.write().seed = Some(seed);
                             }
                         },
+                        label {
+                            r#for: "new",
+                            class: "randomize",
+                            "New",
+                        },
+                        input {
+                            r#type: "button",
+                            id: "new",
+                            onclick: move |_| {
+                                state.write().seed = Some(rng.next_u64());
+                                rng_state.modify(|_| rng.clone());
+                            }
+                        }
                     },
                     randomize::randomize {}
                 },
