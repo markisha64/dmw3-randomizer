@@ -41,6 +41,7 @@ fn app(cx: Scope) -> Element {
     use_shared_state_provider::<GlobalState>(cx, || GlobalState::default());
 
     let state = use_shared_state::<Arguments>(cx).unwrap();
+    let preset_state = use_shared_state::<Preset>(cx).unwrap();
 
     let read_state = state.read();
 
@@ -50,6 +51,8 @@ fn app(cx: Scope) -> Element {
         Some(file) => file.file_name().unwrap().to_str().unwrap(),
         None => "Rom file",
     };
+
+    let shuffles = preset_state.read().randomizer.shuffles;
 
     let seed = match read_state.seed {
         Some(s) => s,
@@ -76,6 +79,27 @@ fn app(cx: Scope) -> Element {
                                     None => {}
                                 }
                             }
+                        }
+                    },
+                    number_field::number_field {
+                        id: "shuffles",
+                        value: shuffles as i64,
+                        label: "Shuffles",
+                        min: 1,
+                        max: 255,
+                        onchange: move |x: Event<FormData>| {
+                            let shuffles = match x.data.value.parse::<u8>() {
+                                Ok(sf) => {
+                                    if 1 <= sf {
+                                        sf
+                                    } else {
+                                       shuffles
+                                    }
+                                },
+                                _ => shuffles
+                            };
+
+                            preset_state.write().randomizer.shuffles = shuffles;
                         }
                     },
                     div {
