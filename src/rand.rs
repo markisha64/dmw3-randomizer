@@ -6,6 +6,7 @@ use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::Cursor;
+use std::path::PathBuf;
 
 use crate::consts;
 use crate::json::Preset;
@@ -70,9 +71,9 @@ enum Executable {
 impl Executable {
     fn as_str(&self) -> &'static str {
         match self {
-            Executable::PAL => "./extract/SLES_039.36",
-            Executable::USA => "./extract/SLUS_014.36",
-            Executable::JAP => "./extract/SLPS_034.46",
+            Executable::PAL => "SLES_039.36",
+            Executable::USA => "SLUS_014.36",
+            Executable::JAP => "SLPS_034.46",
         }
     }
 
@@ -86,8 +87,9 @@ impl Executable {
     }
 }
 
-fn read_objects() -> Objects {
-    let itr = fs::read_dir("./extract").unwrap();
+fn read_objects(path: &PathBuf) -> Objects {
+    let rom_name = path.file_name().unwrap().to_str().unwrap();
+    let itr = fs::read_dir(format!("extract/{}/", rom_name)).unwrap();
 
     let executable_opt = itr
         .map(|x| -> Option<Executable> {
@@ -108,10 +110,11 @@ fn read_objects() -> Objects {
         None => panic!("can't find extracted executable"),
     };
 
-    let stats_buf = fs::read(consts::STATS_FILE).unwrap();
-    let encounter_buf = fs::read(consts::ENCOUNTERS_FILE).unwrap();
-    let main_buf = fs::read(executable.as_str()).unwrap();
-    let shops_buf = fs::read(consts::SHOPS_FILE).unwrap();
+    let stats_buf = fs::read(format!("extract/{}/{}", rom_name, consts::STATS_FILE)).unwrap();
+    let encounter_buf =
+        fs::read(format!("extract/{}/{}", rom_name, consts::ENCOUNTERS_FILE)).unwrap();
+    let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str())).unwrap();
+    let shops_buf = fs::read(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
 
     let overlay_address = Pointer {
         value: consts::OVERLAYADDRESS,
@@ -364,7 +367,7 @@ fn read_objects() -> Objects {
     }
 }
 
-fn write_objects(objects: &mut Objects) -> Result<(), ()> {
+fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     objects.enemy_stats.write_buf(&mut objects.bufs.stats_buf);
     objects
         .encounters
@@ -376,10 +379,20 @@ fn write_objects(objects: &mut Objects) -> Result<(), ()> {
     objects.item_shop_data.write_buf(&mut objects.bufs.main_buf);
     objects.move_data.write_buf(&mut objects.bufs.main_buf);
 
-    let mut new_main_executable = File::create(objects.executable.as_str()).unwrap();
-    let mut new_stats = File::create(consts::STATS_FILE).unwrap();
-    let mut new_encounters = File::create(consts::ENCOUNTERS_FILE).unwrap();
-    let mut new_shops = File::create(consts::SHOPS_FILE).unwrap();
+    let rom_name = path.file_name().unwrap().to_str().unwrap();
+
+    let mut new_main_executable = File::create(format!(
+        "extract/{}/{}",
+        rom_name,
+        objects.executable.as_str()
+    ))
+    .unwrap();
+    let mut new_stats =
+        File::create(format!("extract/{}/{}", rom_name, consts::STATS_FILE)).unwrap();
+    let mut new_encounters =
+        File::create(format!("extract/{}/{}", rom_name, consts::ENCOUNTERS_FILE)).unwrap();
+    let mut new_shops =
+        File::create(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
 
     match new_main_executable.write_all(&objects.bufs.main_buf) {
         Err(_) => return Err(()),
@@ -404,8 +417,8 @@ fn write_objects(objects: &mut Objects) -> Result<(), ()> {
     Ok(())
 }
 
-pub fn patch(preset: &Preset) {
-    let mut objects = read_objects();
+pub fn patch(path: &PathBuf, preset: &Preset) {
+    let mut objects = read_objects(path);
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(preset.randomizer.seed);
 
@@ -425,7 +438,7 @@ pub fn patch(preset: &Preset) {
         shops::patch(&preset.randomizer.shops, &mut objects, &mut rng);
     }
 
-    match write_objects(&mut objects) {
+    match write_objects(path, &mut objects) {
         Err(_) => panic!("Error writing objects"),
         _ => (),
     }

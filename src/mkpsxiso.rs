@@ -30,9 +30,12 @@ pub fn extract(path: &std::path::PathBuf) -> bool {
 
     Command::new(bin_res.unwrap())
         .arg("-x")
-        .arg("extract/")
+        .arg(format!(
+            "extract/{}/",
+            path.file_name().unwrap().to_str().unwrap()
+        ))
         .arg("-s")
-        .arg("out.xml")
+        .arg("extract/out.xml")
         .arg("-pt")
         .arg(&path)
         .output()
@@ -55,7 +58,7 @@ pub fn build(file_name: &str) -> bool {
         .arg(&bin)
         .arg("-c")
         .arg(&cue)
-        .arg("./out.xml")
+        .arg("extract/out.xml")
         .arg("-y")
         .output()
         .unwrap()

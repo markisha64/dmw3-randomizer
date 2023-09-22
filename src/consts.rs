@@ -9,9 +9,9 @@ pub const TRICERAMON_ID: u16 = 0xcb;
 pub const ZANBAMON_ID: u16 = 0x151;
 pub const GALACTICMON_1ST_PHASE: u16 = 0x1ba;
 
-pub const STATS_FILE: &str = "./extract/AAA/PRO/SDIGIEDT.PRO";
-pub const ENCOUNTERS_FILE: &str = "./extract/AAA/PRO/FIELDSTG.PRO";
-pub const SHOPS_FILE: &str = "./extract/AAA/PRO/STITSHOP.PRO";
+pub const STATS_FILE: &str = "AAA/PRO/SDIGIEDT.PRO";
+pub const ENCOUNTERS_FILE: &str = "AAA/PRO/FIELDSTG.PRO";
+pub const SHOPS_FILE: &str = "AAA/PRO/STITSHOP.PRO";
 
 pub const SHOPS_LEN: usize = 30;
 

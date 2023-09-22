@@ -31,7 +31,7 @@ fn main() {
                 panic!("Error extracting");
             }
 
-            patch(&preset);
+            patch(&path, &preset);
 
             if !mkpsxiso::build(&file_name) {
                 panic!("Error repacking")

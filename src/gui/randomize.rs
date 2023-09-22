@@ -105,7 +105,7 @@ pub fn randomize(cx: Scope) -> Element {
 
                                     set_percent.send(Steps::Randomizing);
 
-                                    patch(&preset);
+                                    patch(path, &preset);
 
                                     set_percent.send(Steps::Packaging);
 
