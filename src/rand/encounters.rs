@@ -48,10 +48,13 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
 
         if preset.encounters.scaling {
-            new_encounter.max_hp =
-                ((old_encounter.max_hp as f64) * preset.encounters.hp_modifier) as u16;
+            new_encounter.max_hp = old_encounter.max_hp;
             new_encounter.lv = old_encounter.lv;
         }
+    }
+
+    for encounter in modified_encounters.iter_mut() {
+        encounter.max_hp = ((encounter.max_hp as f64) * preset.encounters.hp_modifier) as u16;
     }
 
     let modified_enemy_stats = &mut objects.enemy_stats.modified;
