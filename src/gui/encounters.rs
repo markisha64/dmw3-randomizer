@@ -256,6 +256,8 @@ pub fn encounters(cx: Scope) -> Element {
                     max: 4.0,
                     id: "encounters.hp_modifier",
                     label: "HP modifier",
+                    disabled: !enabled || !scaling,
+                    tooltip: "Multiply enemy HP by",
                     onchange: move  |x: Event<FormData>| {
                         let modifier = match x.data.value.parse::<f64>() {
                             Ok(s) => {

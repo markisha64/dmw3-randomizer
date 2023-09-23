@@ -10,6 +10,7 @@
 			"base_res": 620,
 			"stat_modifier": 50,
 			"res_modifier": 15,
+			"hp_modifier": 1,
 			"cardmon": true,
 			"bosses": true,
 			"keep_zanbamon": true,
