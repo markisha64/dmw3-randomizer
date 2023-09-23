@@ -13,6 +13,7 @@ mod checkbox;
 mod encounters;
 mod file_upload;
 mod number_field;
+mod number_field_float;
 mod parties;
 mod preset;
 mod randomize;

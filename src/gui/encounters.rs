@@ -5,7 +5,7 @@ use crate::json::TNTStrategy;
 use crate::consts;
 use crate::json::Preset;
 
-use crate::gui::{checkbox, number_field, slider};
+use crate::gui::{checkbox, number_field, number_field_float, slider};
 
 pub fn encounters(cx: Scope) -> Element {
     let state = use_shared_state::<Preset>(cx).unwrap();
@@ -24,6 +24,7 @@ pub fn encounters(cx: Scope) -> Element {
     let base_res = read_state.randomizer.encounters.base_res;
     let stat_modifier = read_state.randomizer.encounters.stat_modifier;
     let res_modifier = read_state.randomizer.encounters.res_modifier;
+    let hp_modifier = read_state.randomizer.encounters.hp_modifier;
 
     render! {
         div {
@@ -248,6 +249,29 @@ pub fn encounters(cx: Scope) -> Element {
                         state.write().randomizer.encounters.res_modifier = modifier;
                     },
                 },
+            },
+            div {
+                number_field_float::number_field {
+                    min: 0.01,
+                    max: 4.0,
+                    id: "encounters.hp_modifier",
+                    label: "HP modifier",
+                    onchange: move  |x: Event<FormData>| {
+                        let modifier = match x.data.value.parse::<f64>() {
+                            Ok(s) => {
+                                if 0.01 <= s && s <= 4.0 {
+                                    s
+                                } else {
+                                    hp_modifier
+                                }
+                            },
+                            _ => hp_modifier
+                        };
+
+                        state.write().randomizer.encounters.hp_modifier = modifier;
+                    },
+                    value: hp_modifier
+                }
             }
         }
     }

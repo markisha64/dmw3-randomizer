@@ -43,6 +43,8 @@ pub struct Encounters {
     pub stat_modifier: i32,
     #[serde(default = "default_res_modifier")]
     pub res_modifier: i32,
+    #[serde(default = "default_hp_modifier")]
+    pub hp_modifier: f64,
     #[serde(default = "default_bool_true")]
     pub cardmon: bool,
     #[serde(default = "default_bool_true")]
@@ -144,6 +146,10 @@ fn default_stat_modifier() -> i32 {
 
 fn default_res_modifier() -> i32 {
     15
+}
+
+fn default_hp_modifier() -> f64 {
+    1.0
 }
 
 fn default_min_sell_price() -> i64 {
