@@ -6,6 +6,8 @@ pub struct NumberField<'a> {
     id: &'a str,
     #[props(default = false)]
     disabled: bool,
+    #[props(default = 0.01)]
+    step: f64,
     onchange: EventHandler<'a, FormEvent>,
     tooltip: Option<&'a str>,
     value: f64,
@@ -40,6 +42,7 @@ pub fn number_field<'a>(cx: Scope<'a, NumberField<'a>>) -> Element {
                 class: "short_number",
                 min: cx.props.min,
                 max: cx.props.max,
+                step: cx.props.step,
                 disabled: cx.props.disabled,
                 onchange: move |evt| cx.props.onchange.call(evt)
             }
