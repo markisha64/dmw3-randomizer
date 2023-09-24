@@ -17,6 +17,7 @@ mod number_field_float;
 mod parties;
 mod preset;
 mod randomize;
+mod scaling;
 mod shops;
 mod slider;
 
@@ -151,7 +152,8 @@ fn app(cx: Scope) -> Element {
             },
         },
         encounters::encounters {},
-        parties::parties {}
+        scaling::scaling {},
+        parties::parties {},
         shops::shops {}
     })
 }
