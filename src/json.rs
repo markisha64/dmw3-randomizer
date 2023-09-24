@@ -9,6 +9,8 @@ pub struct Preset {
     pub randomizer: Randomizer,
     #[serde(default = "default_fixes")]
     pub fixes: Fixes,
+    #[serde(default = "default_scaling")]
+    pub scaling: Scaling,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -31,20 +33,6 @@ pub struct Randomizer {
 pub struct Encounters {
     #[serde(default = "default_bool_true")]
     pub enabled: bool,
-    #[serde(default = "default_bool_true")]
-    pub scaling: bool,
-    #[serde(default = "default_scaling_offset")]
-    pub scaling_offset: i64,
-    #[serde(default = "default_base_stats")]
-    pub base_stats: i32,
-    #[serde(default = "default_base_res")]
-    pub base_res: i32,
-    #[serde(default = "default_stat_modifier")]
-    pub stat_modifier: i32,
-    #[serde(default = "default_res_modifier")]
-    pub res_modifier: i32,
-    #[serde(default = "default_hp_modifier")]
-    pub hp_modifier: f64,
     #[serde(default = "default_bool_true")]
     pub cardmon: bool,
     #[serde(default = "default_bool_true")]
@@ -88,6 +76,25 @@ pub struct Fixes {
     pub scaling: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "lowercase")]
+pub struct Scaling {
+    #[serde(default = "default_bool_true")]
+    pub enabled: bool,
+    #[serde(default = "default_scaling_offset")]
+    pub scaling_offset: i64,
+    #[serde(default = "default_base_stats")]
+    pub base_stats: i32,
+    #[serde(default = "default_base_res")]
+    pub base_res: i32,
+    #[serde(default = "default_stat_modifier")]
+    pub stat_modifier: i32,
+    #[serde(default = "default_res_modifier")]
+    pub res_modifier: i32,
+    #[serde(default = "default_hp_modifier")]
+    pub hp_modifier: f64,
+}
+
 fn default_shop_limit() -> Option<u8> {
     Some(8)
 }
@@ -97,6 +104,10 @@ fn default_randomizer() -> Randomizer {
 }
 
 fn default_fixes() -> Fixes {
+    serde_json::from_str("{}").unwrap()
+}
+
+fn default_scaling() -> Scaling {
     serde_json::from_str("{}").unwrap()
 }
 

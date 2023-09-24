@@ -14,6 +14,7 @@ use crate::json::Preset;
 mod encounters;
 mod fixes;
 mod parties;
+mod scaling;
 mod shops;
 pub mod structs;
 use structs::{EncounterData, EnemyStats, MoveData, Pointer, Scaling, Shop};
@@ -428,6 +429,10 @@ pub fn patch(path: &PathBuf, preset: &Preset) {
 
     if preset.randomizer.parties.enabled {
         parties::patch(&preset.randomizer, &mut objects, &mut rng);
+    }
+
+    if preset.scaling.enabled {
+        scaling::patch(&preset.scaling, &mut objects, &mut rng);
     }
 
     if preset.fixes.scaling {
