@@ -6,10 +6,10 @@ use crate::json::{Encounters, Randomizer, TNTStrategy};
 use crate::rand::{structs::EncounterData, Objects};
 
 fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
-    return (preset.cardmon
+    return (!preset.cardmon
         && (consts::CARDMON_MIN <= encounter.digimon_id as u16
             && encounter.digimon_id as u16 <= consts::CARDMON_MAX))
-        || (preset.bosses && consts::BOSSES.contains(&(encounter.digimon_id as u16)))
+        || (!preset.bosses && consts::BOSSES.contains(&(encounter.digimon_id as u16)))
         || (preset.strategy == TNTStrategy::Keep
             && encounter.digimon_id as u16 == consts::TRICERAMON_ID
             && encounter.multiplier == 16)

@@ -39,7 +39,7 @@ pub fn encounters(cx: Scope) -> Element {
                     id: "encounters.cardmon",
                     checked: cardmon,
                     disabled: !enabled,
-                    tooltip: "Keep cardmon unshuffled",
+                    tooltip: "Shuffle cardmon",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.cardmon = x.data.value == "true";
                     }
@@ -49,7 +49,7 @@ pub fn encounters(cx: Scope) -> Element {
                     id: "encounters.bosses",
                     checked: bosses,
                     disabled: !enabled,
-                    tooltip: "Keep bosses unshuffled",
+                    tooltip: "Shuffle bosses",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.bosses = x.data.value == "true";
                     }
