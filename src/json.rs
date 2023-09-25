@@ -23,7 +23,7 @@ pub struct Randomizer {
     #[serde(default = "default_encounters")]
     pub encounters: Encounters,
     #[serde(default = "default_parties")]
-    pub parties: Parties,
+    pub party: Party,
     #[serde(default = "default_shops")]
     pub shops: Shops,
 }
@@ -45,9 +45,11 @@ pub struct Encounters {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct Parties {
+pub struct Party {
     #[serde(default = "default_bool_true")]
     pub enabled: bool,
+    #[serde(default = "default_bool_true")]
+    pub random_parties: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -115,7 +117,7 @@ fn default_encounters() -> Encounters {
     serde_json::from_str("{}").unwrap()
 }
 
-fn default_parties() -> Parties {
+fn default_parties() -> Party {
     serde_json::from_str("{}").unwrap()
 }
 
