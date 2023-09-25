@@ -50,6 +50,14 @@ pub struct Party {
     pub enabled: bool,
     #[serde(default = "default_bool_true")]
     pub random_parties: bool,
+    #[serde(default = "default_total_starting_stats")]
+    pub total_starting_stats: u16,
+    #[serde(default = "default_min_starting_stat")]
+    pub min_starting_stat: u16,
+    #[serde(default = "default_total_starting_ress")]
+    pub total_starting_res: u16,
+    #[serde(default = "default_min_starting_res")]
+    pub min_starting_res: u16,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -171,6 +179,22 @@ fn default_min_sell_price() -> i64 {
 
 fn default_max_sell_price() -> i64 {
     11000
+}
+
+fn default_total_starting_stats() -> u16 {
+    200
+}
+
+fn default_min_starting_stat() -> u16 {
+    30
+}
+
+fn default_total_starting_ress() -> u16 {
+    680
+}
+
+fn default_min_starting_res() -> u16 {
+    60
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
