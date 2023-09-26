@@ -4,6 +4,67 @@ use rand_xoshiro::Xoshiro256StarStar;
 use crate::json::Randomizer;
 use crate::rand::Objects;
 
+use super::structs::Scaling;
+
+#[derive(Clone, Copy)]
+enum Stat {
+    Str,
+    Def,
+    Spt,
+    Wis,
+    Spd,
+    Chr,
+    FirRes,
+    WtrRes,
+    IceRes,
+    WndRes,
+    ThdRes,
+    MchRes,
+    DrkRes,
+}
+
+impl Stat {
+    fn update(&self, dscaling: &mut Scaling, amount: u16) {
+        let ptr = match self {
+            Stat::Str => &mut dscaling.startStr,
+            Stat::Def => &mut dscaling.startDef,
+            Stat::Spt => &mut dscaling.startSpt,
+            Stat::Wis => &mut dscaling.startWis,
+            Stat::Spd => &mut dscaling.startSpd,
+            Stat::Chr => &mut dscaling.startChr,
+            Stat::FirRes => &mut dscaling.startFirRes,
+            Stat::WtrRes => &mut dscaling.startWtrRes,
+            Stat::IceRes => &mut dscaling.startIceRes,
+            Stat::WndRes => &mut dscaling.startWndRes,
+            Stat::ThdRes => &mut dscaling.startThdRes,
+            Stat::MchRes => &mut dscaling.startMchRes,
+            Stat::DrkRes => &mut dscaling.startDrkRes,
+        };
+
+        (*ptr) += amount;
+    }
+
+    fn set(&self, dscaling: &mut Scaling, amount: u16) {
+        let ptr = match self {
+            Stat::Str => &mut dscaling.startStr,
+            Stat::Def => &mut dscaling.startDef,
+            Stat::Spt => &mut dscaling.startSpt,
+            Stat::Wis => &mut dscaling.startWis,
+            Stat::Spd => &mut dscaling.startSpd,
+            Stat::Chr => &mut dscaling.startChr,
+            Stat::FirRes => &mut dscaling.startFirRes,
+            Stat::WtrRes => &mut dscaling.startWtrRes,
+            Stat::IceRes => &mut dscaling.startIceRes,
+            Stat::WndRes => &mut dscaling.startWndRes,
+            Stat::ThdRes => &mut dscaling.startThdRes,
+            Stat::MchRes => &mut dscaling.startMchRes,
+            Stat::DrkRes => &mut dscaling.startDrkRes,
+        };
+
+        (*ptr) = amount;
+    }
+}
+
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     if preset.party.random_parties {
         let parties = &mut objects.parties.modified;
@@ -25,4 +86,13 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             }
         }
     }
+
+    let mut stats: Vec<Stat> = vec![
+        Stat::Str,
+        Stat::Def,
+        Stat::Spt,
+        Stat::Wis,
+        Stat::Spd,
+        Stat::Chr,
+    ];
 }

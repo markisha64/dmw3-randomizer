@@ -87,7 +87,35 @@ struct Moveset {
 
 #[derive(BinRead, Debug, Clone, BinWrite)]
 pub struct Scaling {
-    #[br(count = 0x3e)]
+    unk_0: u16,
+
+    pub startStr: u16,
+
+    pub startDef: u16,
+
+    pub startSpt: u16,
+
+    pub startWis: u16,
+
+    pub startSpd: u16,
+
+    pub startChr: u16,
+
+    pub startFirRes: u16,
+
+    pub startWtrRes: u16,
+
+    pub startIceRes: u16,
+
+    pub startWndRes: u16,
+
+    pub startThdRes: u16,
+
+    pub startMchRes: u16,
+
+    pub startDrkRes: u16,
+
+    #[br(count = 0x22)]
     unk_arr: Vec<u8>,
 
     exp_modifier: u8,
