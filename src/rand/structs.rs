@@ -89,31 +89,31 @@ struct Moveset {
 pub struct Scaling {
     unk_0: u16,
 
-    pub startStr: u16,
+    pub start_str: u16,
 
-    pub startDef: u16,
+    pub start_def: u16,
 
-    pub startSpt: u16,
+    pub start_spt: u16,
 
-    pub startWis: u16,
+    pub start_wis: u16,
 
-    pub startSpd: u16,
+    pub start_spd: u16,
 
-    pub startChr: u16,
+    pub start_chr: u16,
 
-    pub startFirRes: u16,
+    pub start_fir_res: u16,
 
-    pub startWtrRes: u16,
+    pub start_wtr_res: u16,
 
-    pub startIceRes: u16,
+    pub start_ice_res: u16,
 
-    pub startWndRes: u16,
+    pub start_wnd_res: u16,
 
-    pub startThdRes: u16,
+    pub start_thd_res: u16,
 
-    pub startMchRes: u16,
+    pub start_mch_res: u16,
 
-    pub startDrkRes: u16,
+    pub start_drk_res: u16,
 
     #[br(count = 0x22)]
     unk_arr: Vec<u8>,

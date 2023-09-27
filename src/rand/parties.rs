@@ -13,7 +13,7 @@ enum Stat {
     Spt,
     Wis,
     Spd,
-    Chr,
+    // Chr,
     FirRes,
     WtrRes,
     IceRes,
@@ -26,19 +26,19 @@ enum Stat {
 impl Stat {
     fn update(&self, dscaling: &mut Scaling, amount: u16) {
         let ptr = match self {
-            Stat::Str => &mut dscaling.startStr,
-            Stat::Def => &mut dscaling.startDef,
-            Stat::Spt => &mut dscaling.startSpt,
-            Stat::Wis => &mut dscaling.startWis,
-            Stat::Spd => &mut dscaling.startSpd,
-            Stat::Chr => &mut dscaling.startChr,
-            Stat::FirRes => &mut dscaling.startFirRes,
-            Stat::WtrRes => &mut dscaling.startWtrRes,
-            Stat::IceRes => &mut dscaling.startIceRes,
-            Stat::WndRes => &mut dscaling.startWndRes,
-            Stat::ThdRes => &mut dscaling.startThdRes,
-            Stat::MchRes => &mut dscaling.startMchRes,
-            Stat::DrkRes => &mut dscaling.startDrkRes,
+            Stat::Str => &mut dscaling.start_str,
+            Stat::Def => &mut dscaling.start_def,
+            Stat::Spt => &mut dscaling.start_spt,
+            Stat::Wis => &mut dscaling.start_wis,
+            Stat::Spd => &mut dscaling.start_spd,
+            // Stat::Chr => &mut dscaling.startChr,
+            Stat::FirRes => &mut dscaling.start_fir_res,
+            Stat::WtrRes => &mut dscaling.start_wtr_res,
+            Stat::IceRes => &mut dscaling.start_ice_res,
+            Stat::WndRes => &mut dscaling.start_wnd_res,
+            Stat::ThdRes => &mut dscaling.start_thd_res,
+            Stat::MchRes => &mut dscaling.start_mch_res,
+            Stat::DrkRes => &mut dscaling.start_drk_res,
         };
 
         (*ptr) += amount;
@@ -46,19 +46,19 @@ impl Stat {
 
     fn set(&self, dscaling: &mut Scaling, amount: u16) {
         let ptr = match self {
-            Stat::Str => &mut dscaling.startStr,
-            Stat::Def => &mut dscaling.startDef,
-            Stat::Spt => &mut dscaling.startSpt,
-            Stat::Wis => &mut dscaling.startWis,
-            Stat::Spd => &mut dscaling.startSpd,
-            Stat::Chr => &mut dscaling.startChr,
-            Stat::FirRes => &mut dscaling.startFirRes,
-            Stat::WtrRes => &mut dscaling.startWtrRes,
-            Stat::IceRes => &mut dscaling.startIceRes,
-            Stat::WndRes => &mut dscaling.startWndRes,
-            Stat::ThdRes => &mut dscaling.startThdRes,
-            Stat::MchRes => &mut dscaling.startMchRes,
-            Stat::DrkRes => &mut dscaling.startDrkRes,
+            Stat::Str => &mut dscaling.start_str,
+            Stat::Def => &mut dscaling.start_def,
+            Stat::Spt => &mut dscaling.start_spt,
+            Stat::Wis => &mut dscaling.start_wis,
+            Stat::Spd => &mut dscaling.start_spd,
+            // Stat::Chr => &mut dscaling.startChr,
+            Stat::FirRes => &mut dscaling.start_fir_res,
+            Stat::WtrRes => &mut dscaling.start_wtr_res,
+            Stat::IceRes => &mut dscaling.start_ice_res,
+            Stat::WndRes => &mut dscaling.start_wnd_res,
+            Stat::ThdRes => &mut dscaling.start_thd_res,
+            Stat::MchRes => &mut dscaling.start_mch_res,
+            Stat::DrkRes => &mut dscaling.start_drk_res,
         };
 
         (*ptr) = amount;
@@ -87,12 +87,73 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    let mut stats: Vec<Stat> = vec![
-        Stat::Str,
-        Stat::Def,
-        Stat::Spt,
-        Stat::Wis,
-        Stat::Spd,
-        Stat::Chr,
+    let mut stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
+
+    let min_sum = preset.party.min_starting_stat * 5;
+    for scaling in &mut objects.scaling.modified {
+        let mut leftover = preset.party.total_starting_stats - min_sum;
+
+        for _ in 0..preset.shuffles {
+            for i in 0..3 {
+                let uniform = rng.next_u64() as usize;
+                let j = i + uniform % (4 - i);
+
+                stats.swap(i, j);
+            }
+        }
+
+        for stat in &stats {
+            stat.set(scaling, preset.party.min_starting_stat);
+        }
+
+        for stat in &stats {
+            let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
+            leftover -= new_add;
+
+            stat.update(scaling, new_add);
+        }
+
+        if leftover > 0 {
+            stats.last().unwrap().update(scaling, leftover);
+        }
+    }
+
+    let mut resistances: Vec<Stat> = vec![
+        Stat::FirRes,
+        Stat::WtrRes,
+        Stat::IceRes,
+        Stat::WndRes,
+        Stat::ThdRes,
+        Stat::MchRes,
+        Stat::DrkRes,
     ];
+
+    let min_sum = preset.party.min_starting_res * 7;
+    for scaling in &mut objects.scaling.modified {
+        let mut leftover = preset.party.total_starting_res - min_sum;
+
+        for _ in 0..preset.shuffles {
+            for i in 0..5 {
+                let uniform = rng.next_u64() as usize;
+                let j = i + uniform % (6 - i);
+
+                resistances.swap(i, j);
+            }
+        }
+
+        for res in &resistances {
+            res.set(scaling, preset.party.min_starting_res);
+        }
+
+        for res in &resistances {
+            let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
+            leftover -= new_add;
+
+            res.update(scaling, new_add);
+        }
+
+        if leftover > 0 {
+            resistances.last().unwrap().update(scaling, leftover);
+        }
+    }
 }
