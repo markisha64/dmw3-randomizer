@@ -75,7 +75,13 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
         enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_res / current_res) as i16;
 
         if enemy_stats.attack > 0 {
-            objects.move_data.modified[enemy_stats.attack as usize - 1].power = 40 + min_lv.lv * 10;
+            let move_data = &mut objects.move_data.modified[enemy_stats.attack as usize - 1];
+
+            move_data.power = 40 + min_lv.lv * 10;
+
+            if move_data.hit_effect == consts::MULTI_HIT && move_data.freq > 1 {
+                move_data.power = (move_data.power * 6) / (move_data.freq as u16 * 5);
+            }
         }
 
         // modify multipliers
