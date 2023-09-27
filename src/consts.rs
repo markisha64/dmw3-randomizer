@@ -30,3 +30,5 @@ pub const MIN_SELL_PRICE: i64 = 1;
 pub const MAX_SELL_PRICE: i64 = 32768;
 
 pub const TNT_BALL_ID: u16 = 0x5a;
+
+// pub const MULTI_HIT: u8 = 0x9;

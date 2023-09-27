@@ -149,14 +149,20 @@ pub struct Pointer {
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct MoveData {
-    move_type: u8,
-    unk1: u8,
     mp: u16,
     pub power: u16,
-    unk2: u16,
+    unk1: u16,
     accuracy: u8,
-    unk3: u64,
-    unk4: u8,
+    unk2: u8,
+    boost: u8,
+    effective_against: u8,
+    pub hit_effect: u8,
+    effect_rate: u8,
+    effect_value: u8,
+    unk3: u8,
+    unk4: u16,
+    move_type: u8,
+    pub freq: u8,
 }
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
