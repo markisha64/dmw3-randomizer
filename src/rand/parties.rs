@@ -66,7 +66,7 @@ impl Stat {
 }
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    if preset.party.random_parties {
+    if preset.parties.random_parties {
         let parties = &mut objects.parties.modified;
         let mut all_digimon: [u8; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
         let rindex = (rng.next_u64() % 6) as usize;
@@ -87,12 +87,12 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    if preset.party.random_stat_distribution {
+    if preset.parties.random_stat_distribution {
         let mut stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
 
-        let min_sum = preset.party.min_starting_stat * 5;
+        let min_sum = preset.parties.min_starting_stat * 5;
         for scaling in &mut objects.scaling.modified {
-            let mut leftover = preset.party.total_starting_stats - min_sum;
+            let mut leftover = preset.parties.total_starting_stats - min_sum;
 
             for _ in 0..preset.shuffles {
                 for i in 0..3 {
@@ -104,7 +104,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             }
 
             for stat in &stats {
-                stat.set(scaling, preset.party.min_starting_stat);
+                stat.set(scaling, preset.parties.min_starting_stat);
             }
 
             for stat in &stats {
@@ -120,7 +120,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    if preset.party.random_res_distribution {
+    if preset.parties.random_res_distribution {
         let mut resistances: Vec<Stat> = vec![
             Stat::FirRes,
             Stat::WtrRes,
@@ -131,9 +131,9 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             Stat::DrkRes,
         ];
 
-        let min_sum = preset.party.min_starting_res * 7;
+        let min_sum = preset.parties.min_starting_res * 7;
         for scaling in &mut objects.scaling.modified {
-            let mut leftover = preset.party.total_starting_res - min_sum;
+            let mut leftover = preset.parties.total_starting_res - min_sum;
 
             for _ in 0..preset.shuffles {
                 for i in 0..5 {
@@ -145,7 +145,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             }
 
             for res in &resistances {
-                res.set(scaling, preset.party.min_starting_res);
+                res.set(scaling, preset.parties.min_starting_res);
             }
 
             for res in &resistances {

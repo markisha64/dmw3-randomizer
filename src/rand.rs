@@ -427,7 +427,7 @@ pub fn patch(path: &PathBuf, preset: &Preset) {
         encounters::patch(&preset.randomizer, &mut objects, &mut rng);
     }
 
-    if preset.randomizer.party.enabled {
+    if preset.randomizer.parties.enabled {
         parties::patch(&preset.randomizer, &mut objects, &mut rng);
     }
 

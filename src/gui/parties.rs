@@ -8,16 +8,16 @@ pub fn parties(cx: Scope) -> Element {
     let state = use_shared_state::<Preset>(cx).unwrap();
     let read_state = state.read();
 
-    let enabled = read_state.randomizer.party.enabled;
-    let random_parties = read_state.randomizer.party.random_parties;
+    let enabled = read_state.randomizer.parties.enabled;
+    let random_parties = read_state.randomizer.parties.random_parties;
 
-    let stat_distribution = read_state.randomizer.party.random_stat_distribution;
-    let min_stat = read_state.randomizer.party.min_starting_stat;
-    let total_start_stat = read_state.randomizer.party.total_starting_stats;
+    let stat_distribution = read_state.randomizer.parties.random_stat_distribution;
+    let min_stat = read_state.randomizer.parties.min_starting_stat;
+    let total_start_stat = read_state.randomizer.parties.total_starting_stats;
 
-    let res_distribution = read_state.randomizer.party.random_res_distribution;
-    let min_res = read_state.randomizer.party.min_starting_res;
-    let total_start_res = read_state.randomizer.party.total_starting_res;
+    let res_distribution = read_state.randomizer.parties.random_res_distribution;
+    let min_res = read_state.randomizer.parties.min_starting_res;
+    let total_start_res = read_state.randomizer.parties.total_starting_res;
 
     render! {
         div {
@@ -29,7 +29,7 @@ pub fn parties(cx: Scope) -> Element {
                     id: "party.enabled",
                     checked: enabled,
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.party.enabled = x.data.value == "true";
+                        state.write().randomizer.parties.enabled = x.data.value == "true";
                     }
                 },
                 checkbox::checkbox {
@@ -39,7 +39,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize parties (preview currently unavailable)",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.party.random_parties = x.data.value == "true";
+                        state.write().randomizer.parties.random_parties = x.data.value == "true";
                     }
                 },
             },
@@ -52,7 +52,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize player digimon stat distribution",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.party.random_stat_distribution = x.data.value == "true";
+                        state.write().randomizer.parties.random_stat_distribution = x.data.value == "true";
                     }
                 },
                 number_field::number_field {
@@ -75,7 +75,7 @@ pub fn parties(cx: Scope) -> Element {
                             _ => min_stat
                         };
 
-                        state.write().randomizer.party.min_starting_stat = new_stat
+                        state.write().randomizer.parties.min_starting_stat = new_stat
                     }
                 },
                 number_field::number_field {
@@ -98,7 +98,7 @@ pub fn parties(cx: Scope) -> Element {
                             _ => total_start_stat
                         };
 
-                        state.write().randomizer.party.total_starting_stats = new_stat
+                        state.write().randomizer.parties.total_starting_stats = new_stat
                     }
                 }
             },
@@ -111,7 +111,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize player digimon res distribution",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.party.random_res_distribution = x.data.value == "true";
+                        state.write().randomizer.parties.random_res_distribution = x.data.value == "true";
                     }
                 },
                 number_field::number_field {
@@ -134,7 +134,7 @@ pub fn parties(cx: Scope) -> Element {
                             _ => min_res
                         };
 
-                        state.write().randomizer.party.min_starting_res = new_res
+                        state.write().randomizer.parties.min_starting_res = new_res
                     }
                 },
                 number_field::number_field {
@@ -157,7 +157,7 @@ pub fn parties(cx: Scope) -> Element {
                             _ => total_start_res
                         };
 
-                        state.write().randomizer.party.total_starting_res = new_res
+                        state.write().randomizer.parties.total_starting_res = new_res
                     }
                 }
             },
