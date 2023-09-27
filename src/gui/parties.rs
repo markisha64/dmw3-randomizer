@@ -170,6 +170,7 @@ pub fn parties(cx: Scope) -> Element {
                     label: "Stat affinities",
                     checked: stat_affinities,
                     id: "parties.stat_affinites",
+                    disabled: !enabled,
                     tooltip: "Randomize stat gain affinities",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.parties.stat_affinities = x.data.value == "true";
@@ -179,6 +180,7 @@ pub fn parties(cx: Scope) -> Element {
                     label: "Res affinities",
                     checked: res_affinities,
                     id: "parties.res_affinites",
+                    disabled: !enabled,
                     tooltip: "Randomize res gain affinities",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.parties.res_affinities = x.data.value == "true";
