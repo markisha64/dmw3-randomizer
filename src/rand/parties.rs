@@ -87,73 +87,77 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    let mut stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
+    if preset.party.random_stat_distribution {
+        let mut stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
 
-    let min_sum = preset.party.min_starting_stat * 5;
-    for scaling in &mut objects.scaling.modified {
-        let mut leftover = preset.party.total_starting_stats - min_sum;
+        let min_sum = preset.party.min_starting_stat * 5;
+        for scaling in &mut objects.scaling.modified {
+            let mut leftover = preset.party.total_starting_stats - min_sum;
 
-        for _ in 0..preset.shuffles {
-            for i in 0..3 {
-                let uniform = rng.next_u64() as usize;
-                let j = i + uniform % (4 - i);
+            for _ in 0..preset.shuffles {
+                for i in 0..3 {
+                    let uniform = rng.next_u64() as usize;
+                    let j = i + uniform % (4 - i);
 
-                stats.swap(i, j);
+                    stats.swap(i, j);
+                }
             }
-        }
 
-        for stat in &stats {
-            stat.set(scaling, preset.party.min_starting_stat);
-        }
+            for stat in &stats {
+                stat.set(scaling, preset.party.min_starting_stat);
+            }
 
-        for stat in &stats {
-            let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
-            leftover -= new_add;
+            for stat in &stats {
+                let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
+                leftover -= new_add;
 
-            stat.update(scaling, new_add);
-        }
+                stat.update(scaling, new_add);
+            }
 
-        if leftover > 0 {
-            stats.last().unwrap().update(scaling, leftover);
+            if leftover > 0 {
+                stats.last().unwrap().update(scaling, leftover);
+            }
         }
     }
 
-    let mut resistances: Vec<Stat> = vec![
-        Stat::FirRes,
-        Stat::WtrRes,
-        Stat::IceRes,
-        Stat::WndRes,
-        Stat::ThdRes,
-        Stat::MchRes,
-        Stat::DrkRes,
-    ];
+    if preset.party.random_res_distribution {
+        let mut resistances: Vec<Stat> = vec![
+            Stat::FirRes,
+            Stat::WtrRes,
+            Stat::IceRes,
+            Stat::WndRes,
+            Stat::ThdRes,
+            Stat::MchRes,
+            Stat::DrkRes,
+        ];
 
-    let min_sum = preset.party.min_starting_res * 7;
-    for scaling in &mut objects.scaling.modified {
-        let mut leftover = preset.party.total_starting_res - min_sum;
+        let min_sum = preset.party.min_starting_res * 7;
+        for scaling in &mut objects.scaling.modified {
+            let mut leftover = preset.party.total_starting_res - min_sum;
 
-        for _ in 0..preset.shuffles {
-            for i in 0..5 {
-                let uniform = rng.next_u64() as usize;
-                let j = i + uniform % (6 - i);
+            for _ in 0..preset.shuffles {
+                for i in 0..5 {
+                    let uniform = rng.next_u64() as usize;
+                    let j = i + uniform % (6 - i);
 
-                resistances.swap(i, j);
+                    resistances.swap(i, j);
+                }
             }
-        }
 
-        for res in &resistances {
-            res.set(scaling, preset.party.min_starting_res);
-        }
+            for res in &resistances {
+                res.set(scaling, preset.party.min_starting_res);
+            }
 
-        for res in &resistances {
-            let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
-            leftover -= new_add;
+            for res in &resistances {
+                let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
+                leftover -= new_add;
 
-            res.update(scaling, new_add);
-        }
+                res.update(scaling, new_add);
+            }
 
-        if leftover > 0 {
-            resistances.last().unwrap().update(scaling, leftover);
+            if leftover > 0 {
+                resistances.last().unwrap().update(scaling, leftover);
+            }
         }
     }
 }
