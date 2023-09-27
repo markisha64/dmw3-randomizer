@@ -19,6 +19,9 @@ pub fn parties(cx: Scope) -> Element {
     let min_res = read_state.randomizer.parties.min_starting_res;
     let total_start_res = read_state.randomizer.parties.total_starting_res;
 
+    let stat_affinities = read_state.randomizer.parties.stat_affinities;
+    let res_affinities = read_state.randomizer.parties.res_affinities;
+
     render! {
         div {
             class: "segment",
@@ -161,6 +164,27 @@ pub fn parties(cx: Scope) -> Element {
                     }
                 }
             },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Stat affinities",
+                    checked: stat_affinities,
+                    id: "parties.stat_affinites",
+                    tooltip: "Randomize stat gain affinities",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.stat_affinities = x.data.value == "true";
+                    }
+                },
+                checkbox::checkbox {
+                    label: "Res affinities",
+                    checked: res_affinities,
+                    id: "parties.res_affinites",
+                    tooltip: "Randomize res gain affinities",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.res_affinities = x.data.value == "true";
+                    }
+                }
+            }
         }
     }
 }

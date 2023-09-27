@@ -160,4 +160,20 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             }
         }
     }
+
+    if preset.parties.stat_affinities {
+        for scaling in &mut objects.scaling.modified {
+            for stat in &mut scaling.stat_offsets {
+                (*stat) = 1 + (rng.next_u64() % 5) as u8;
+            }
+        }
+    }
+
+    if preset.parties.res_affinities {
+        for scaling in &mut objects.scaling.modified {
+            for res in &mut scaling.res_offsets {
+                (*res) = 1 + (rng.next_u64() % 5) as u8;
+            }
+        }
+    }
 }

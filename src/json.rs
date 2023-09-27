@@ -62,6 +62,10 @@ pub struct Parties {
     pub total_starting_res: u16,
     #[serde(default = "default_min_starting_res")]
     pub min_starting_res: u16,
+    #[serde(default = "default_bool_true")]
+    pub stat_affinities: bool,
+    #[serde(default = "default_bool_true")]
+    pub res_affinities: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
