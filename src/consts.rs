@@ -8,6 +8,7 @@ pub const BOSSES: [u16; 26] = [
 pub const TRICERAMON_ID: u16 = 0xcb;
 pub const ZANBAMON_ID: u16 = 0x151;
 pub const GALACTICMON_1ST_PHASE: u16 = 0x1ba;
+pub const GALACTICMON_IDS: [u16; 3] = [0x1ba, 0x1d2, 0x1d3];
 
 pub const STATS_FILE: &str = "AAA/PRO/SDIGIEDT.PRO";
 pub const ENCOUNTERS_FILE: &str = "AAA/PRO/FIELDSTG.PRO";

@@ -15,7 +15,9 @@ fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
             && encounter.multiplier == 16)
         || (preset.keep_zanbamon
             && encounter.digimon_id as u16 == consts::ZANBAMON_ID
-            && encounter.multiplier == 16);
+            && encounter.multiplier == 16)
+        || (preset.keep_galacticmon
+            && consts::GALACTICMON_IDS.contains(&(encounter.digimon_id as u16)));
 }
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {

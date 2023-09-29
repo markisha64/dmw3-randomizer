@@ -39,6 +39,8 @@ pub struct Encounters {
     pub bosses: bool,
     #[serde(default = "default_bool_true")]
     pub keep_zanbamon: bool,
+    #[serde(default = "default_bool_true")]
+    pub keep_galacticmon: bool,
     #[serde(default = "TNTStrategy::default")]
     pub strategy: TNTStrategy,
 }

@@ -16,6 +16,7 @@ pub fn encounters(cx: Scope) -> Element {
     let cardmon = read_state.randomizer.encounters.cardmon;
     let bosses = read_state.randomizer.encounters.bosses;
     let keep_zanbamon = read_state.randomizer.encounters.keep_zanbamon;
+    let keep_galacticmon = read_state.randomizer.encounters.keep_galacticmon;
 
     render! {
         div {
@@ -52,16 +53,6 @@ pub fn encounters(cx: Scope) -> Element {
                     tooltip: "Shuffle bosses",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.encounters.bosses = x.data.value == "true";
-                    }
-                },
-                checkbox::checkbox {
-                    label: "Keep Zanbamon",
-                    id: "encounters.keep_zanbamon",
-                    checked: keep_zanbamon,
-                    disabled: !enabled,
-                    tooltip: "Zanbamon scripted fight can only be won by cheesing it if Zanbamon isn't there",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.keep_zanbamon = x.data.value == "true";
                     }
                 },
                 div {
@@ -105,6 +96,29 @@ pub fn encounters(cx: Scope) -> Element {
                     }
                 }
             },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Keep Zanbamon",
+                    id: "encounters.keep_zanbamon",
+                    checked: keep_zanbamon,
+                    disabled: !enabled,
+                    tooltip: "Zanbamon scripted fight can only be won by cheesing it if Zanbamon isn't there",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.encounters.keep_zanbamon = x.data.value == "true";
+                    }
+                },
+                checkbox::checkbox {
+                    label: "Keep Galacticmon",
+                    id: "encounters.keep_galacticmon",
+                    checked: keep_galacticmon,
+                    disabled: !enabled,
+                    tooltip: "Galacticmon fight is kinda buggy when it's not Galacticmon",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.encounters.keep_galacticmon = x.data.value == "true";
+                    }
+                },
+            }
         }
     }
 }
