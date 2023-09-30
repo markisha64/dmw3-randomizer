@@ -24,41 +24,41 @@ enum Stat {
 }
 
 impl Stat {
-    fn update(&self, dscaling: &mut DigivolutionData, amount: u16) {
+    fn update(&self, ddata: &mut DigivolutionData, amount: u16) {
         let ptr = match self {
-            Stat::Str => &mut dscaling.str,
-            Stat::Def => &mut dscaling.def,
-            Stat::Spt => &mut dscaling.spt,
-            Stat::Wis => &mut dscaling.wis,
-            Stat::Spd => &mut dscaling.spd,
-            // Stat::Chr => &mut dscaling.startChr,
-            Stat::FirRes => &mut dscaling.fir_res,
-            Stat::WtrRes => &mut dscaling.wtr_res,
-            Stat::IceRes => &mut dscaling.ice_res,
-            Stat::WndRes => &mut dscaling.wnd_res,
-            Stat::ThdRes => &mut dscaling.thd_res,
-            Stat::MchRes => &mut dscaling.mch_res,
-            Stat::DrkRes => &mut dscaling.drk_res,
+            Stat::Str => &mut ddata.str,
+            Stat::Def => &mut ddata.def,
+            Stat::Spt => &mut ddata.spt,
+            Stat::Wis => &mut ddata.wis,
+            Stat::Spd => &mut ddata.spd,
+            // Stat::Chr => &mut ddata.startChr,
+            Stat::FirRes => &mut ddata.fir_res,
+            Stat::WtrRes => &mut ddata.wtr_res,
+            Stat::IceRes => &mut ddata.ice_res,
+            Stat::WndRes => &mut ddata.wnd_res,
+            Stat::ThdRes => &mut ddata.thd_res,
+            Stat::MchRes => &mut ddata.mch_res,
+            Stat::DrkRes => &mut ddata.drk_res,
         };
 
         (*ptr) += amount;
     }
 
-    fn set(&self, dscaling: &mut DigivolutionData, amount: u16) {
+    fn set(&self, ddata: &mut DigivolutionData, amount: u16) {
         let ptr = match self {
-            Stat::Str => &mut dscaling.str,
-            Stat::Def => &mut dscaling.def,
-            Stat::Spt => &mut dscaling.spt,
-            Stat::Wis => &mut dscaling.wis,
-            Stat::Spd => &mut dscaling.spd,
-            // Stat::Chr => &mut dscaling.startChr,
-            Stat::FirRes => &mut dscaling.fir_res,
-            Stat::WtrRes => &mut dscaling.wtr_res,
-            Stat::IceRes => &mut dscaling.ice_res,
-            Stat::WndRes => &mut dscaling.wnd_res,
-            Stat::ThdRes => &mut dscaling.thd_res,
-            Stat::MchRes => &mut dscaling.mch_res,
-            Stat::DrkRes => &mut dscaling.drk_res,
+            Stat::Str => &mut ddata.str,
+            Stat::Def => &mut ddata.def,
+            Stat::Spt => &mut ddata.spt,
+            Stat::Wis => &mut ddata.wis,
+            Stat::Spd => &mut ddata.spd,
+            // Stat::Chr => &mut ddata.startChr,
+            Stat::FirRes => &mut ddata.fir_res,
+            Stat::WtrRes => &mut ddata.wtr_res,
+            Stat::IceRes => &mut ddata.ice_res,
+            Stat::WndRes => &mut ddata.wnd_res,
+            Stat::ThdRes => &mut ddata.thd_res,
+            Stat::MchRes => &mut ddata.mch_res,
+            Stat::DrkRes => &mut ddata.drk_res,
         };
 
         (*ptr) = amount;
@@ -91,7 +91,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         let mut stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
 
         let min_sum = preset.parties.min_starting_stat * 5;
-        for scaling in &mut objects.scaling.modified {
+        for digivolution_data in &mut objects.digivolution_data.modified {
             let mut leftover = preset.parties.total_starting_stats - min_sum;
 
             for _ in 0..preset.shuffles {
@@ -104,18 +104,18 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             }
 
             for stat in &stats {
-                stat.set(scaling, preset.parties.min_starting_stat);
+                stat.set(digivolution_data, preset.parties.min_starting_stat);
             }
 
             for stat in &stats {
                 let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
                 leftover -= new_add;
 
-                stat.update(scaling, new_add);
+                stat.update(digivolution_data, new_add);
             }
 
             if leftover > 0 {
-                stats.last().unwrap().update(scaling, leftover);
+                stats.last().unwrap().update(digivolution_data, leftover);
             }
         }
     }
@@ -132,7 +132,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         ];
 
         let min_sum = preset.parties.min_starting_res * 7;
-        for scaling in &mut objects.scaling.modified {
+        for digivolution_data in &mut objects.digivolution_data.modified {
             let mut leftover = preset.parties.total_starting_res - min_sum;
 
             for _ in 0..preset.shuffles {
@@ -145,33 +145,36 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             }
 
             for res in &resistances {
-                res.set(scaling, preset.parties.min_starting_res);
+                res.set(digivolution_data, preset.parties.min_starting_res);
             }
 
             for res in &resistances {
                 let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
                 leftover -= new_add;
 
-                res.update(scaling, new_add);
+                res.update(digivolution_data, new_add);
             }
 
             if leftover > 0 {
-                resistances.last().unwrap().update(scaling, leftover);
+                resistances
+                    .last()
+                    .unwrap()
+                    .update(digivolution_data, leftover);
             }
         }
     }
 
     if preset.parties.stat_affinities {
-        for scaling in &mut objects.scaling.modified {
-            for stat in &mut scaling.stat_offsets {
+        for digivolution_data in &mut objects.digivolution_data.modified {
+            for stat in &mut digivolution_data.stat_offsets {
                 (*stat) = 1 + (rng.next_u64() % 5) as u8;
             }
         }
     }
 
     if preset.parties.res_affinities {
-        for scaling in &mut objects.scaling.modified {
-            for res in &mut scaling.res_offsets {
+        for digivolution_data in &mut objects.digivolution_data.modified {
+            for res in &mut digivolution_data.res_offsets {
                 (*res) = 1 + (rng.next_u64() % 5) as u8;
             }
         }
