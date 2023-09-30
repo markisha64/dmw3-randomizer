@@ -22,7 +22,7 @@ pub fn patch(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar
     }
 
     let len = objects.item_shop_data.modified.len();
-    for i in 1..len - 1 {
+    for i in 1..len {
         objects.item_shop_data.modified[i].buy_price =
             2 * objects.item_shop_data.modified[i].sell_price;
     }
@@ -33,7 +33,7 @@ fn randomize_sell_price(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro
     let range = preset.max_sell_price - min_price + 1;
 
     let len = objects.item_shop_data.modified.len();
-    for i in 0..len - 1 {
+    for i in 1..len {
         let item = &mut objects.item_shop_data.modified[i];
 
         if item.sell_price != 0 && !(i as u16 == consts::TNT_BALL_ID && preset.keep_tnt) {
@@ -49,14 +49,14 @@ fn shoppable(objects: &mut Objects, preset: &Shops) -> BTreeSet<u16> {
 
     match preset.items_only {
         ShopItems::Buyable => {
-            for i in 1..len - 1 {
+            for i in 1..len {
                 if objects.item_shop_data.original[i].buy_price > 0 {
                     shoppable.insert(i as u16);
                 }
             }
         }
         ShopItems::Sellable => {
-            for i in 1..len - 1 {
+            for i in 1..len {
                 if objects.item_shop_data.original[i].sell_price > 0 {
                     shoppable.insert(i as u16);
                 }
