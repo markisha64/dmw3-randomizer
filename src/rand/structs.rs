@@ -86,37 +86,65 @@ struct Moveset {
 }
 
 #[derive(BinRead, Debug, Clone, BinWrite)]
-pub struct Scaling {
-    unk_0: u16,
+pub struct DigivolutionData {
+    pub digimon_id: u16,
 
-    pub start_str: u16,
+    pub str: u16,
 
-    pub start_def: u16,
+    pub def: u16,
 
-    pub start_spt: u16,
+    pub spt: u16,
 
-    pub start_wis: u16,
+    pub wis: u16,
 
-    pub start_spd: u16,
+    pub spd: u16,
 
-    pub start_chr: u16,
+    pub chr: u16,
 
-    pub start_fir_res: u16,
+    pub fir_res: u16,
 
-    pub start_wtr_res: u16,
+    pub wtr_res: u16,
 
-    pub start_ice_res: u16,
+    pub ice_res: u16,
 
-    pub start_wnd_res: u16,
+    pub wnd_res: u16,
 
-    pub start_thd_res: u16,
+    pub thd_res: u16,
 
-    pub start_mch_res: u16,
+    pub mch_res: u16,
 
-    pub start_drk_res: u16,
+    pub drk_res: u16,
 
-    #[br(count = 0x22)]
-    unk_arr: Vec<u8>,
+    attack: u16,
+
+    #[br(count = 5)]
+    tech: Vec<u16>,
+
+    ori_tech: u16,
+
+    dv_tech: u16,
+
+    psn_rate: u8,
+
+    par_rate: u8,
+
+    cnf_rate: u8,
+
+    slp_rate: u8,
+
+    ko_rate: u8,
+
+    #[br(count = 5)]
+    tech_learn_level: Vec<u8>,
+
+    #[br(count = 5)]
+    tech_load_level: Vec<u8>,
+
+    unk0: u8,
+
+    dv: u8,
+
+    unk1: u8,
 
     exp_modifier: u8,
 

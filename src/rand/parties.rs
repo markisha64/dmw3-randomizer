@@ -4,7 +4,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 use crate::json::Randomizer;
 use crate::rand::Objects;
 
-use super::structs::Scaling;
+use super::structs::DigivolutionData;
 
 #[derive(Clone, Copy)]
 enum Stat {
@@ -24,41 +24,41 @@ enum Stat {
 }
 
 impl Stat {
-    fn update(&self, dscaling: &mut Scaling, amount: u16) {
+    fn update(&self, dscaling: &mut DigivolutionData, amount: u16) {
         let ptr = match self {
-            Stat::Str => &mut dscaling.start_str,
-            Stat::Def => &mut dscaling.start_def,
-            Stat::Spt => &mut dscaling.start_spt,
-            Stat::Wis => &mut dscaling.start_wis,
-            Stat::Spd => &mut dscaling.start_spd,
+            Stat::Str => &mut dscaling.str,
+            Stat::Def => &mut dscaling.def,
+            Stat::Spt => &mut dscaling.spt,
+            Stat::Wis => &mut dscaling.wis,
+            Stat::Spd => &mut dscaling.spd,
             // Stat::Chr => &mut dscaling.startChr,
-            Stat::FirRes => &mut dscaling.start_fir_res,
-            Stat::WtrRes => &mut dscaling.start_wtr_res,
-            Stat::IceRes => &mut dscaling.start_ice_res,
-            Stat::WndRes => &mut dscaling.start_wnd_res,
-            Stat::ThdRes => &mut dscaling.start_thd_res,
-            Stat::MchRes => &mut dscaling.start_mch_res,
-            Stat::DrkRes => &mut dscaling.start_drk_res,
+            Stat::FirRes => &mut dscaling.fir_res,
+            Stat::WtrRes => &mut dscaling.wtr_res,
+            Stat::IceRes => &mut dscaling.ice_res,
+            Stat::WndRes => &mut dscaling.wnd_res,
+            Stat::ThdRes => &mut dscaling.thd_res,
+            Stat::MchRes => &mut dscaling.mch_res,
+            Stat::DrkRes => &mut dscaling.drk_res,
         };
 
         (*ptr) += amount;
     }
 
-    fn set(&self, dscaling: &mut Scaling, amount: u16) {
+    fn set(&self, dscaling: &mut DigivolutionData, amount: u16) {
         let ptr = match self {
-            Stat::Str => &mut dscaling.start_str,
-            Stat::Def => &mut dscaling.start_def,
-            Stat::Spt => &mut dscaling.start_spt,
-            Stat::Wis => &mut dscaling.start_wis,
-            Stat::Spd => &mut dscaling.start_spd,
+            Stat::Str => &mut dscaling.str,
+            Stat::Def => &mut dscaling.def,
+            Stat::Spt => &mut dscaling.spt,
+            Stat::Wis => &mut dscaling.wis,
+            Stat::Spd => &mut dscaling.spd,
             // Stat::Chr => &mut dscaling.startChr,
-            Stat::FirRes => &mut dscaling.start_fir_res,
-            Stat::WtrRes => &mut dscaling.start_wtr_res,
-            Stat::IceRes => &mut dscaling.start_ice_res,
-            Stat::WndRes => &mut dscaling.start_wnd_res,
-            Stat::ThdRes => &mut dscaling.start_thd_res,
-            Stat::MchRes => &mut dscaling.start_mch_res,
-            Stat::DrkRes => &mut dscaling.start_drk_res,
+            Stat::FirRes => &mut dscaling.fir_res,
+            Stat::WtrRes => &mut dscaling.wtr_res,
+            Stat::IceRes => &mut dscaling.ice_res,
+            Stat::WndRes => &mut dscaling.wnd_res,
+            Stat::ThdRes => &mut dscaling.thd_res,
+            Stat::MchRes => &mut dscaling.mch_res,
+            Stat::DrkRes => &mut dscaling.drk_res,
         };
 
         (*ptr) = amount;

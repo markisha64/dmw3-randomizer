@@ -17,7 +17,7 @@ mod parties;
 mod scaling;
 mod shops;
 pub mod structs;
-use structs::{EncounterData, EnemyStats, MoveData, Pointer, Scaling, Shop};
+use structs::{DigivolutionData, EncounterData, EnemyStats, MoveData, Pointer, Shop};
 
 use self::structs::ItemShopData;
 
@@ -56,7 +56,7 @@ pub struct Objects {
     pub enemy_stats: Object<EnemyStats>,
     pub encounters: Object<EncounterData>,
     pub parties: Object<u8>,
-    pub scaling: Object<Scaling>,
+    pub scaling: Object<DigivolutionData>,
     pub shops: Object<Shop>,
     pub shop_items: Object<u16>,
     pub item_shop_data: Object<ItemShopData>,
@@ -247,11 +247,11 @@ fn read_objects(path: &PathBuf) -> Objects {
 
     let mut scaling_reader = Cursor::new(&main_buf[scaling_index..]);
 
-    let mut scaling_arr: Vec<Scaling> = Vec::new();
+    let mut scaling_arr: Vec<DigivolutionData> = Vec::new();
     scaling_arr.reserve(9);
 
     for _ in 0..9 {
-        let scaling = Scaling::read(&mut scaling_reader);
+        let scaling = DigivolutionData::read(&mut scaling_reader);
 
         match scaling {
             Ok(scal) => scaling_arr.push(scal),
@@ -311,7 +311,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         slen: 0x1,
     };
 
-    let scaling_object: Object<Scaling> = Object {
+    let scaling_object: Object<DigivolutionData> = Object {
         original: scaling_arr,
         modified: scaling_copy,
         index: scaling_index,
