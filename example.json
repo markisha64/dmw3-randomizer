@@ -10,7 +10,18 @@
 			"strategy": "swap"
 		},
 		"parties": {
-			"enabled": true
+			"enabled": true,
+			"random_parties": true,
+			"random_stat_distribution": true,
+			"random_res_distribution": true,
+			"total_starting_stat": 200,
+			"min_starting_stat": 30,
+			"total_starting_ress": 680,
+			"min_starting_res": 60,
+			"stat_affinities": true,
+			"res_affinities": true,
+			"learned_tech": true,
+			"signatures": true
 		},
 		"shops": {
 			"enabled": true,
