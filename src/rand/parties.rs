@@ -91,7 +91,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         let mut stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
 
         let min_sum = preset.parties.min_starting_stat * 5;
-        for digivolution_data in &mut objects.digivolution_data.modified {
+        for rookie_data in &mut objects.rookie_data.modified {
             let mut leftover = preset.parties.total_starting_stats - min_sum;
 
             for _ in 0..preset.shuffles {
@@ -104,18 +104,18 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             }
 
             for stat in &stats {
-                stat.set(digivolution_data, preset.parties.min_starting_stat);
+                stat.set(rookie_data, preset.parties.min_starting_stat);
             }
 
             for stat in &stats {
                 let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
                 leftover -= new_add;
 
-                stat.update(digivolution_data, new_add);
+                stat.update(rookie_data, new_add);
             }
 
             if leftover > 0 {
-                stats.last().unwrap().update(digivolution_data, leftover);
+                stats.last().unwrap().update(rookie_data, leftover);
             }
         }
     }
@@ -132,7 +132,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         ];
 
         let min_sum = preset.parties.min_starting_res * 7;
-        for digivolution_data in &mut objects.digivolution_data.modified {
+        for rookie_data in &mut objects.rookie_data.modified {
             let mut leftover = preset.parties.total_starting_res - min_sum;
 
             for _ in 0..preset.shuffles {
@@ -145,36 +145,33 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             }
 
             for res in &resistances {
-                res.set(digivolution_data, preset.parties.min_starting_res);
+                res.set(rookie_data, preset.parties.min_starting_res);
             }
 
             for res in &resistances {
                 let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
                 leftover -= new_add;
 
-                res.update(digivolution_data, new_add);
+                res.update(rookie_data, new_add);
             }
 
             if leftover > 0 {
-                resistances
-                    .last()
-                    .unwrap()
-                    .update(digivolution_data, leftover);
+                resistances.last().unwrap().update(rookie_data, leftover);
             }
         }
     }
 
     if preset.parties.stat_affinities {
-        for digivolution_data in &mut objects.digivolution_data.modified {
-            for stat in &mut digivolution_data.stat_offsets {
+        for rookie_data in &mut objects.rookie_data.modified {
+            for stat in &mut rookie_data.stat_offsets {
                 (*stat) = 1 + (rng.next_u64() % 5) as u8;
             }
         }
     }
 
     if preset.parties.res_affinities {
-        for digivolution_data in &mut objects.digivolution_data.modified {
-            for res in &mut digivolution_data.res_offsets {
+        for rookie_data in &mut objects.rookie_data.modified {
+            for res in &mut rookie_data.res_offsets {
                 (*res) = 1 + (rng.next_u64() % 5) as u8;
             }
         }
