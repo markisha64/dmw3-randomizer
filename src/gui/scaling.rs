@@ -89,28 +89,6 @@ pub fn scaling(cx: Scope) -> Element {
                     },
                 },
                 number_field::number_field {
-                    label: "Base res",
-                    id: "scaling.base_res",
-                    min: 1,
-                    max: 2000,
-                    value: base_res as i64,
-                    disabled: !enabled,
-                    onchange: move |x: Event<FormData>| {
-                        let res = match x.data.value.parse::<i32>() {
-                            Ok(s) => {
-                                if 1 <= s && s <= 2000 {
-                                    s
-                                } else {
-                                    base_res
-                                }
-                            },
-                            _ => base_res
-                        };
-
-                        preset_state.write().scaling.base_res = res;
-                    },
-                },
-                number_field::number_field {
                     label: "Stat modifier",
                     id: "scaling.stat_modifier",
                     min: 1,
@@ -130,6 +108,31 @@ pub fn scaling(cx: Scope) -> Element {
                         };
 
                         preset_state.write().scaling.stat_modifier = modifier;
+                    },
+                },
+            },
+            div {
+                class: "center",
+                number_field::number_field {
+                    label: "Base res",
+                    id: "scaling.base_res",
+                    min: 1,
+                    max: 2000,
+                    value: base_res as i64,
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        let res = match x.data.value.parse::<i32>() {
+                            Ok(s) => {
+                                if 1 <= s && s <= 2000 {
+                                    s
+                                } else {
+                                    base_res
+                                }
+                            },
+                            _ => base_res
+                        };
+
+                        preset_state.write().scaling.base_res = res;
                     },
                 },
                 number_field::number_field {
