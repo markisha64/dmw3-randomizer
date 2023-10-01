@@ -57,6 +57,7 @@ pub struct Objects {
     pub encounters: Object<EncounterData>,
     pub parties: Object<u8>,
     pub rookie_data: Object<DigivolutionData>,
+    pub digivolution_data: Object<DigivolutionData>,
     pub shops: Object<Shop>,
     pub shop_items: Object<u16>,
     pub item_shop_data: Object<ItemShopData>,
@@ -245,15 +246,27 @@ fn read_objects(path: &PathBuf) -> Objects {
         })
         .unwrap();
 
-    let mut rookie_data_reader = Cursor::new(&main_buf[digivolution_data_index..]);
+    let mut digivolution_data_reader = Cursor::new(&main_buf[digivolution_data_index..]);
 
-    let mut rookie_data_arr: Vec<DigivolutionData> = Vec::new();
-    rookie_data_arr.reserve(9);
+    let mut digivolution_data_arr: Vec<DigivolutionData> = Vec::new();
+    digivolution_data_arr.reserve(8);
 
     for _ in 0..8 {
-        let rookie_data = DigivolutionData::read(&mut rookie_data_reader);
+        let rookie_data = DigivolutionData::read(&mut digivolution_data_reader);
 
         match rookie_data {
+            Ok(data) => digivolution_data_arr.push(data),
+            Err(_) => panic!("Binread error"),
+        }
+    }
+
+    let mut rookie_data_arr: Vec<DigivolutionData> = Vec::new();
+    rookie_data_arr.reserve(44);
+
+    for _ in 0..44 {
+        let digivolution_data = DigivolutionData::read(&mut digivolution_data_reader);
+
+        match digivolution_data {
             Ok(data) => rookie_data_arr.push(data),
             Err(_) => panic!("Binread error"),
         }
@@ -289,6 +302,7 @@ fn read_objects(path: &PathBuf) -> Objects {
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let rookie_data_copy = rookie_data_arr.clone();
+    let digivolution_data_copy = rookie_data_arr.clone();
 
     let enemy_stats_object = Object {
         original: enemy_stats_arr,
@@ -315,6 +329,13 @@ fn read_objects(path: &PathBuf) -> Objects {
         original: rookie_data_arr,
         modified: rookie_data_copy,
         index: digivolution_data_index,
+        slen: 0x58,
+    };
+
+    let digivolution_data_object: Object<DigivolutionData> = Object {
+        original: digivolution_data_arr,
+        modified: digivolution_data_copy,
+        index: digivolution_data_index + 0x58 * 8,
         slen: 0x58,
     };
 
@@ -359,6 +380,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         encounters: encounters_object,
         parties: parties_object,
         rookie_data: rookie_data_object,
+        digivolution_data: digivolution_data_object,
         shops: shops_object,
         shop_items: shop_items_object,
         item_shop_data: item_shop_data_object,
@@ -373,6 +395,9 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
         .write_buf(&mut objects.bufs.encounter_buf);
     objects.parties.write_buf(&mut objects.bufs.main_buf);
     objects.rookie_data.write_buf(&mut objects.bufs.main_buf);
+    objects
+        .digivolution_data
+        .write_buf(&mut objects.bufs.main_buf);
     objects.shop_items.write_buf(&mut objects.bufs.shops_buf);
     objects.shops.write_buf(&mut objects.bufs.shops_buf);
     objects.item_shop_data.write_buf(&mut objects.bufs.main_buf);
