@@ -248,26 +248,26 @@ fn read_objects(path: &PathBuf) -> Objects {
 
     let mut digivolution_data_reader = Cursor::new(&main_buf[digivolution_data_index..]);
 
-    let mut digivolution_data_arr: Vec<DigivolutionData> = Vec::new();
-    digivolution_data_arr.reserve(8);
+    let mut rookie_data_arr: Vec<DigivolutionData> = Vec::new();
+    rookie_data_arr.reserve(8);
 
     for _ in 0..8 {
         let rookie_data = DigivolutionData::read(&mut digivolution_data_reader);
 
         match rookie_data {
-            Ok(data) => digivolution_data_arr.push(data),
+            Ok(data) => rookie_data_arr.push(data),
             Err(_) => panic!("Binread error"),
         }
     }
 
-    let mut rookie_data_arr: Vec<DigivolutionData> = Vec::new();
-    rookie_data_arr.reserve(44);
+    let mut digivolution_data_arr: Vec<DigivolutionData> = Vec::new();
+    digivolution_data_arr.reserve(44);
 
     for _ in 0..44 {
         let digivolution_data = DigivolutionData::read(&mut digivolution_data_reader);
 
         match digivolution_data {
-            Ok(data) => rookie_data_arr.push(data),
+            Ok(data) => digivolution_data_arr.push(data),
             Err(_) => panic!("Binread error"),
         }
     }
@@ -302,7 +302,7 @@ fn read_objects(path: &PathBuf) -> Objects {
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let rookie_data_copy = rookie_data_arr.clone();
-    let digivolution_data_copy = rookie_data_arr.clone();
+    let digivolution_data_copy = digivolution_data_arr.clone();
 
     let enemy_stats_object = Object {
         original: enemy_stats_arr,

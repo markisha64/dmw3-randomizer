@@ -3,6 +3,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::Randomizer;
 use crate::rand::Objects;
+use std::collections::BTreeSet;
 
 use super::structs::DigivolutionData;
 
@@ -175,5 +176,66 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 (*res) = 1 + (rng.next_u64() % 5) as u8;
             }
         }
+    }
+
+    if preset.parties.learned_moves {
+        learned_moves(objects, rng);
+    }
+
+    if preset.parties.signatues {
+        signatues(objects, rng);
+    }
+}
+
+fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let mut learnable: BTreeSet<u16> = BTreeSet::new();
+
+    for digivolution in &objects.digivolution_data.original {
+        for tech in digivolution.tech.iter() {
+            let deref = *tech;
+
+            if deref != 0 {
+                learnable.insert(deref);
+            }
+        }
+    }
+
+    for digivolution in &mut objects.digivolution_data.modified {
+        let mut learnable_arr = Vec::from_iter(learnable.clone().into_iter());
+
+        for tech in &mut digivolution.tech {
+            if *tech == 0 {
+                continue;
+            }
+
+            let mv = (rng.next_u64() % learnable_arr.len() as u64) as usize;
+
+            *tech = learnable_arr[mv];
+            learnable_arr.remove(mv);
+        }
+    }
+}
+
+fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let mut learnable_rookie: BTreeSet<u16> = BTreeSet::new();
+    let mut learnable: BTreeSet<u16> = BTreeSet::new();
+
+    for rookie in &objects.rookie_data.original {
+        learnable_rookie.insert(rookie.ori_tech);
+    }
+
+    for digivolution in &objects.digivolution_data.original {
+        learnable.insert(digivolution.ori_tech);
+    }
+
+    let learnable_rookie_arr = Vec::from_iter(learnable_rookie.into_iter());
+    let learnable_arr = Vec::from_iter(learnable.into_iter());
+
+    for rookie in &mut objects.rookie_data.modified {
+        rookie.ori_tech = learnable_rookie_arr[(rng.next_u64() % 8) as usize];
+    }
+
+    for digivolution in &mut objects.digivolution_data.modified {
+        digivolution.ori_tech = learnable_arr[(rng.next_u64() % 44) as usize];
     }
 }

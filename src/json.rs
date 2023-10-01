@@ -68,6 +68,10 @@ pub struct Parties {
     pub stat_affinities: bool,
     #[serde(default = "default_bool_true")]
     pub res_affinities: bool,
+    #[serde(default = "default_bool_true")]
+    pub learned_moves: bool,
+    #[serde(default = "default_bool_true")]
+    pub signatues: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

@@ -118,9 +118,9 @@ pub struct DigivolutionData {
     attack: u16,
 
     #[br(count = 5)]
-    tech: Vec<u16>,
+    pub tech: Vec<u16>,
 
-    ori_tech: u16,
+    pub ori_tech: u16,
 
     dv_tech: u16,
 
