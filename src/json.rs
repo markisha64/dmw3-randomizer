@@ -51,11 +51,11 @@ pub struct Parties {
     #[serde(default = "default_bool_true")]
     pub enabled: bool,
     #[serde(default = "default_bool_true")]
-    pub random_parties: bool,
+    pub parties: bool,
     #[serde(default = "default_bool_true")]
-    pub random_stat_distribution: bool,
+    pub stat_distribution: bool,
     #[serde(default = "default_bool_true")]
-    pub random_res_distribution: bool,
+    pub res_distribution: bool,
     #[serde(default = "default_total_starting_stats")]
     pub total_starting_stats: u16,
     #[serde(default = "default_min_starting_stat")]

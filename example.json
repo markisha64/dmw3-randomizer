@@ -11,9 +11,9 @@
 		},
 		"parties": {
 			"enabled": true,
-			"random_parties": true,
-			"random_stat_distribution": true,
-			"random_res_distribution": true,
+			"parties": true,
+			"stat_distribution": true,
+			"res_distribution": true,
 			"total_starting_stat": 200,
 			"min_starting_stat": 30,
 			"total_starting_ress": 680,

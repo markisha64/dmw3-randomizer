@@ -67,7 +67,7 @@ impl Stat {
 }
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    if preset.parties.random_parties {
+    if preset.parties.parties {
         let parties = &mut objects.parties.modified;
         let mut all_digimon: [u8; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
         let rindex = (rng.next_u64() % 6) as usize;
@@ -88,7 +88,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    if preset.parties.random_stat_distribution {
+    if preset.parties.stat_distribution {
         let mut stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
 
         let min_sum = preset.parties.min_starting_stat * 5;
@@ -121,7 +121,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    if preset.parties.random_res_distribution {
+    if preset.parties.res_distribution {
         let mut resistances: Vec<Stat> = vec![
             Stat::FirRes,
             Stat::WtrRes,

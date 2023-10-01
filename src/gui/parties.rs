@@ -9,13 +9,13 @@ pub fn parties(cx: Scope) -> Element {
     let read_state = state.read();
 
     let enabled = read_state.randomizer.parties.enabled;
-    let random_parties = read_state.randomizer.parties.random_parties;
+    let random_parties = read_state.randomizer.parties.parties;
 
-    let stat_distribution = read_state.randomizer.parties.random_stat_distribution;
+    let stat_distribution = read_state.randomizer.parties.stat_distribution;
     let min_stat = read_state.randomizer.parties.min_starting_stat;
     let total_start_stat = read_state.randomizer.parties.total_starting_stats;
 
-    let res_distribution = read_state.randomizer.parties.random_res_distribution;
+    let res_distribution = read_state.randomizer.parties.res_distribution;
     let min_res = read_state.randomizer.parties.min_starting_res;
     let total_start_res = read_state.randomizer.parties.total_starting_res;
 
@@ -45,7 +45,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize parties (preview currently unavailable)",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.random_parties = x.data.value == "true";
+                        state.write().randomizer.parties.parties = x.data.value == "true";
                     }
                 },
             },
@@ -58,7 +58,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize player digimon stat distribution",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.random_stat_distribution = x.data.value == "true";
+                        state.write().randomizer.parties.stat_distribution = x.data.value == "true";
                     }
                 },
                 number_field::number_field {
@@ -117,7 +117,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize player digimon res distribution",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.random_res_distribution = x.data.value == "true";
+                        state.write().randomizer.parties.res_distribution = x.data.value == "true";
                     }
                 },
                 number_field::number_field {
