@@ -178,7 +178,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    if preset.parties.learned_moves {
+    if preset.parties.learned_tech {
         learned_moves(objects, rng);
     }
 

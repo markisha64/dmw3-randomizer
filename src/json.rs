@@ -69,7 +69,7 @@ pub struct Parties {
     #[serde(default = "default_bool_true")]
     pub res_affinities: bool,
     #[serde(default = "default_bool_true")]
-    pub learned_moves: bool,
+    pub learned_tech: bool,
     #[serde(default = "default_bool_true")]
     pub signatues: bool,
 }

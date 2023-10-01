@@ -22,6 +22,9 @@ pub fn parties(cx: Scope) -> Element {
     let stat_affinities = read_state.randomizer.parties.stat_affinities;
     let res_affinities = read_state.randomizer.parties.res_affinities;
 
+    let learned_tech = read_state.randomizer.parties.learned_tech;
+    let signatures = read_state.randomizer.parties.signatues;
+
     render! {
         div {
             class: "segment",
@@ -184,6 +187,29 @@ pub fn parties(cx: Scope) -> Element {
                     tooltip: "Randomize res gain affinities",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.parties.res_affinities = x.data.value == "true";
+                    }
+                }
+            },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Learned Tech",
+                    checked: learned_tech,
+                    id: "parties.learned_tech",
+                    disabled: !enabled,
+                    tooltip: "Randomize learned tech",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.learned_tech = x.data.value == "true";
+                    }
+                },
+                checkbox::checkbox {
+                    label: "Signatures",
+                    checked: signatures,
+                    id: "parties.signatures",
+                    disabled: !enabled,
+                    tooltip: "Randomize signature moves",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.signatues = x.data.value == "true";
                     }
                 }
             }
