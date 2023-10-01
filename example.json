@@ -29,7 +29,7 @@
 			"items_only": "Buyable",
 			"sell_price": true,
 			"min_sell_price": 6,
-			"max_sell_price": 11000,
+			"max_sell_price": 6000,
 			"keep_tnt": true
 		}
 	},

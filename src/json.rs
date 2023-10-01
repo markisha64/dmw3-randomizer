@@ -192,7 +192,7 @@ fn default_min_sell_price() -> i64 {
 }
 
 fn default_max_sell_price() -> i64 {
-    11000
+    6000
 }
 
 fn default_total_starting_stats() -> u16 {
