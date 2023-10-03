@@ -25,6 +25,9 @@ pub fn parties(cx: Scope) -> Element {
     let learned_tech = read_state.randomizer.parties.learned_tech;
     let signatures = read_state.randomizer.parties.signatues;
 
+    let digivolutions = read_state.randomizer.parties.digivolutions;
+    let keep_stages = read_state.randomizer.parties.keep_stages;
+
     render! {
         div {
             class: "segment",
@@ -210,6 +213,29 @@ pub fn parties(cx: Scope) -> Element {
                     tooltip: "Randomize signature moves",
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.parties.signatues = x.data.value == "true";
+                    }
+                }
+            },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Digivolutions",
+                    checked: digivolutions,
+                    id: "parties.digivolutions",
+                    disabled: !enabled,
+                    tooltip: "Randomize digivolutions",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.digivolutions = x.data.value == "true";
+                    }
+                },
+                checkbox::checkbox {
+                    label: "Keep Stages",
+                    checked: keep_stages,
+                    id: "parties.keep_stages",
+                    disabled: !enabled || !digivolutions,
+                    tooltip: "Replace digimon of a stage with a digimon of the same stage",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.keep_stages = x.data.value == "true";
                     }
                 }
             }
