@@ -189,9 +189,9 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
     if preset.parties.digivolutions {
         if preset.parties.keep_stages {
-            dv_cond_limited(objects, rng);
+            dv_cond_limited(preset, objects, rng);
         } else {
-            dv_cond_unlimited(objects, rng);
+            dv_cond_unlimited(preset, objects, rng);
         }
     }
 }
@@ -249,18 +249,21 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     }
 }
 
-fn dv_cond_unlimited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     for dindex in 0..8 {
         let conds = &mut objects.dv_cond.modified[dindex];
+
         // swap ids
-        for i in 0..42 {
-            let uniform: usize = rng.next_u64() as usize;
-            let j = i + uniform % (43 - i);
+        for _ in 0..preset.shuffles {
+            for i in 0..42 {
+                let uniform: usize = rng.next_u64() as usize;
+                let j = i + uniform % (43 - i);
 
-            let ind = conds.conditions[j].index;
+                let ind = conds.conditions[j].index;
 
-            conds.conditions[j].index = conds.conditions[i].index;
-            conds.conditions[i].index = ind;
+                conds.conditions[j].index = conds.conditions[i].index;
+                conds.conditions[i].index = ind;
+            }
         }
 
         // we can clone because we're not touching index anymore
@@ -291,7 +294,7 @@ fn dv_cond_unlimited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     }
 }
 
-fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     for dindex in 0..8 {
         let conds = &mut objects.dv_cond.modified[dindex];
 
@@ -313,14 +316,16 @@ fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
             .collect();
 
         let champ_len = champ_indexes.len();
-        for i in 0..champ_len - 2 {
-            let uniform: usize = rng.next_u64() as usize;
-            let j = i + uniform % (champ_len - 1 - i);
+        for _ in 0..preset.shuffles {
+            for i in 0..champ_len - 2 {
+                let uniform: usize = rng.next_u64() as usize;
+                let j = i + uniform % (champ_len - 1 - i);
 
-            let ind = conds.conditions[champ_indexes[j]].index;
+                let ind = conds.conditions[champ_indexes[j]].index;
 
-            conds.conditions[champ_indexes[j]].index = conds.conditions[champ_indexes[i]].index;
-            conds.conditions[champ_indexes[i]].index = ind;
+                conds.conditions[champ_indexes[j]].index = conds.conditions[champ_indexes[i]].index;
+                conds.conditions[champ_indexes[i]].index = ind;
+            }
         }
 
         let ults_indexes: Vec<usize> = consts::ULTIMATES
@@ -337,14 +342,16 @@ fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
             .collect();
 
         let ults_len = ults_indexes.len();
-        for i in 0..ults_len - 2 {
-            let uniform: usize = rng.next_u64() as usize;
-            let j = i + uniform % (ults_len - 1 - i);
+        for _ in 0..preset.shuffles {
+            for i in 0..ults_len - 2 {
+                let uniform: usize = rng.next_u64() as usize;
+                let j = i + uniform % (ults_len - 1 - i);
 
-            let ind = conds.conditions[ults_indexes[j]].index;
+                let ind = conds.conditions[ults_indexes[j]].index;
 
-            conds.conditions[ults_indexes[j]].index = conds.conditions[ults_indexes[i]].index;
-            conds.conditions[ults_indexes[i]].index = ind;
+                conds.conditions[ults_indexes[j]].index = conds.conditions[ults_indexes[i]].index;
+                conds.conditions[ults_indexes[i]].index = ind;
+            }
         }
 
         let megas_indexes: Vec<usize> = consts::MEGAS
@@ -361,14 +368,16 @@ fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
             .collect();
 
         let megas_len = megas_indexes.len();
-        for i in 0..megas_len - 2 {
-            let uniform: usize = rng.next_u64() as usize;
-            let j = i + uniform % (megas_len - 1 - i);
+        for _ in 0..preset.shuffles {
+            for i in 0..megas_len - 2 {
+                let uniform: usize = rng.next_u64() as usize;
+                let j = i + uniform % (megas_len - 1 - i);
 
-            let ind = conds.conditions[megas_indexes[j]].index;
+                let ind = conds.conditions[megas_indexes[j]].index;
 
-            conds.conditions[megas_indexes[j]].index = conds.conditions[megas_indexes[i]].index;
-            conds.conditions[megas_indexes[i]].index = ind;
+                conds.conditions[megas_indexes[j]].index = conds.conditions[megas_indexes[i]].index;
+                conds.conditions[megas_indexes[i]].index = ind;
+            }
         }
 
         let ultras_indexes: Vec<usize> = consts::ULTRAS
@@ -385,14 +394,17 @@ fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
             .collect();
 
         let ultras_len = ultras_indexes.len();
-        for i in 0..ultras_len - 2 {
-            let uniform: usize = rng.next_u64() as usize;
-            let j = i + uniform % (ultras_len - 1 - i);
+        for _ in 0..preset.shuffles {
+            for i in 0..ultras_len - 2 {
+                let uniform: usize = rng.next_u64() as usize;
+                let j = i + uniform % (ultras_len - 1 - i);
 
-            let ind = conds.conditions[ultras_indexes[j]].index;
+                let ind = conds.conditions[ultras_indexes[j]].index;
 
-            conds.conditions[ultras_indexes[j]].index = conds.conditions[ultras_indexes[i]].index;
-            conds.conditions[ultras_indexes[i]].index = ind;
+                conds.conditions[ultras_indexes[j]].index =
+                    conds.conditions[ultras_indexes[i]].index;
+                conds.conditions[ultras_indexes[i]].index = ind;
+            }
         }
 
         // we can clone because we're not touching index anymore
