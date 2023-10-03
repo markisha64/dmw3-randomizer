@@ -201,6 +201,23 @@ pub struct ItemShopData {
     unk: u32,
 }
 
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
+pub struct DigivolutionCondition {
+    pub index: u32,  // +1
+    dv_index_1: u16, // +1
+    rq_level_1: u16,
+    dv_index_2: u16, // +1
+    rq_level_2: u16,
+    rq_type: u16,
+    rq: u16,
+}
+
+#[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct DigivolutionConditions {
+    #[br(count = 44)]
+    pub conditions: Vec<DigivolutionCondition>,
+}
+
 impl Pointer {
     pub fn to_index(&self) -> u32 {
         self.value - 0x8000f800
