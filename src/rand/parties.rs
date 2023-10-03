@@ -183,7 +183,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         learned_moves(objects, rng);
     }
 
-    if preset.parties.signatues {
+    if preset.parties.signatures {
         signatues(objects, rng);
     }
 

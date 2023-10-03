@@ -71,7 +71,7 @@ pub struct Parties {
     #[serde(default = "default_bool_true")]
     pub learned_tech: bool,
     #[serde(default = "default_bool_true")]
-    pub signatues: bool,
+    pub signatures: bool,
     #[serde(default = "default_bool_true")]
     pub digivolutions: bool,
     #[serde(default = "default_bool_true")]

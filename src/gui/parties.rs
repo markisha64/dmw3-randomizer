@@ -23,7 +23,7 @@ pub fn parties(cx: Scope) -> Element {
     let res_affinities = read_state.randomizer.parties.res_affinities;
 
     let learned_tech = read_state.randomizer.parties.learned_tech;
-    let signatures = read_state.randomizer.parties.signatues;
+    let signatures = read_state.randomizer.parties.signatures;
 
     let digivolutions = read_state.randomizer.parties.digivolutions;
     let keep_stages = read_state.randomizer.parties.keep_stages;
@@ -212,7 +212,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize signature moves",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.signatues = x.data.value == "true";
+                        state.write().randomizer.parties.signatures = x.data.value == "true";
                     }
                 }
             },
