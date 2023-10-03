@@ -21,7 +21,9 @@
 			"stat_affinities": true,
 			"res_affinities": true,
 			"learned_tech": true,
-			"signatures": true
+			"signatures": true,
+			"digivolutions": true,
+			"keep_tiers": true
 		},
 		"shops": {
 			"enabled": true,

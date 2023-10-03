@@ -72,6 +72,10 @@ pub struct Parties {
     pub learned_tech: bool,
     #[serde(default = "default_bool_true")]
     pub signatues: bool,
+    #[serde(default = "default_bool_true")]
+    pub digivolutions: bool,
+    #[serde(default = "default_bool_true")]
+    pub keep_tiers: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
