@@ -185,6 +185,10 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     if preset.parties.signatues {
         signatues(objects, rng);
     }
+
+    if preset.parties.digivolutions {
+        dv_cond_limited(objects, rng);
+    }
 }
 
 fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
@@ -237,5 +241,47 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
 
     for digivolution in &mut objects.digivolution_data.modified {
         digivolution.ori_tech = learnable_arr[(rng.next_u64() % 44) as usize];
+    }
+}
+
+fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    for dindex in 0..8 {
+        let conds = &mut objects.dv_cond.modified[dindex];
+        // swap ids
+        for i in 0..42 {
+            let uniform: usize = rng.next_u64() as usize;
+            let j = i + uniform % (43 - i);
+
+            let ind = conds.conditions[j].index;
+
+            conds.conditions[j].index = conds.conditions[i].index;
+            conds.conditions[i].index = ind;
+        }
+
+        // we can clone because we're not touching index anymore
+        let cloned = conds.conditions.clone();
+
+        // swap dv reqs
+        for cond in &mut conds.conditions {
+            if cond.dv_index_1 > 0 {
+                let cond_index = objects.dv_cond.original[dindex]
+                    .conditions
+                    .iter()
+                    .position(|x| x.index == cond.dv_index_1 as u32)
+                    .unwrap();
+
+                cond.dv_index_1 = (cloned[cond_index].index) as u16;
+            }
+
+            if cond.dv_index_2 > 0 {
+                let cond_index = objects.dv_cond.original[dindex]
+                    .conditions
+                    .iter()
+                    .position(|x| x.index == cond.dv_index_2 as u32)
+                    .unwrap();
+
+                cond.dv_index_2 = (cloned[cond_index].index) as u16;
+            }
+        }
     }
 }

@@ -203,10 +203,10 @@ pub struct ItemShopData {
 
 #[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct DigivolutionCondition {
-    pub index: u32,  // +1
-    dv_index_1: u16, // +1
+    pub index: u32,      // +1
+    pub dv_index_1: u16, // +1
     rq_level_1: u16,
-    dv_index_2: u16, // +1
+    pub dv_index_2: u16, // +1
     rq_level_2: u16,
     rq_type: u16,
     rq: u16,
