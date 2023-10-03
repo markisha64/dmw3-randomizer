@@ -23,7 +23,7 @@
 			"learned_tech": true,
 			"signatures": true,
 			"digivolutions": true,
-			"keep_tiers": true
+			"keep_stages": true
 		},
 		"shops": {
 			"enabled": true,

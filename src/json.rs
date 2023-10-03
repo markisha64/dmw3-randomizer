@@ -75,7 +75,7 @@ pub struct Parties {
     #[serde(default = "default_bool_true")]
     pub digivolutions: bool,
     #[serde(default = "default_bool_true")]
-    pub keep_tiers: bool,
+    pub keep_stages: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

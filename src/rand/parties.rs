@@ -1,6 +1,7 @@
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
+use crate::consts;
 use crate::json::Randomizer;
 use crate::rand::Objects;
 use std::collections::BTreeSet;
@@ -187,7 +188,11 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     }
 
     if preset.parties.digivolutions {
-        dv_cond_limited(objects, rng);
+        if preset.parties.keep_stages {
+            dv_cond_limited(objects, rng);
+        } else {
+            dv_cond_unlimited(objects, rng);
+        }
     }
 }
 
@@ -244,7 +249,7 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     }
 }
 
-fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn dv_cond_unlimited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     for dindex in 0..8 {
         let conds = &mut objects.dv_cond.modified[dindex];
         // swap ids
@@ -256,6 +261,138 @@ fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
 
             conds.conditions[j].index = conds.conditions[i].index;
             conds.conditions[i].index = ind;
+        }
+
+        // we can clone because we're not touching index anymore
+        let cloned = conds.conditions.clone();
+
+        // swap dv reqs
+        for cond in &mut conds.conditions {
+            if cond.dv_index_1 > 0 {
+                let cond_index = objects.dv_cond.original[dindex]
+                    .conditions
+                    .iter()
+                    .position(|x| x.index == cond.dv_index_1 as u32)
+                    .unwrap();
+
+                cond.dv_index_1 = (cloned[cond_index].index) as u16;
+            }
+
+            if cond.dv_index_2 > 0 {
+                let cond_index = objects.dv_cond.original[dindex]
+                    .conditions
+                    .iter()
+                    .position(|x| x.index == cond.dv_index_2 as u32)
+                    .unwrap();
+
+                cond.dv_index_2 = (cloned[cond_index].index) as u16;
+            }
+        }
+    }
+}
+
+fn dv_cond_limited(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    for dindex in 0..8 {
+        let conds = &mut objects.dv_cond.modified[dindex];
+
+        // TODO: this looks fucking horrible
+        // clean this shit up
+
+        // swap ids
+        let champ_indexes: Vec<usize> = consts::CHAMPIONS
+            .iter()
+            .map(|x| -> usize {
+                objects.dv_cond.original[dindex]
+                    .conditions
+                    .iter()
+                    .position(|y| {
+                        objects.digivolution_data.original[y.index as usize - 9].digimon_id == *x
+                    })
+                    .unwrap()
+            })
+            .collect();
+
+        let champ_len = champ_indexes.len();
+        for i in 0..champ_len - 2 {
+            let uniform: usize = rng.next_u64() as usize;
+            let j = i + uniform % (champ_len - 1 - i);
+
+            let ind = conds.conditions[champ_indexes[j]].index;
+
+            conds.conditions[champ_indexes[j]].index = conds.conditions[champ_indexes[i]].index;
+            conds.conditions[champ_indexes[i]].index = ind;
+        }
+
+        let ults_indexes: Vec<usize> = consts::ULTIMATES
+            .iter()
+            .map(|x| -> usize {
+                objects.dv_cond.original[dindex]
+                    .conditions
+                    .iter()
+                    .position(|y| {
+                        objects.digivolution_data.original[y.index as usize - 9].digimon_id == *x
+                    })
+                    .unwrap()
+            })
+            .collect();
+
+        let ults_len = ults_indexes.len();
+        for i in 0..ults_len - 2 {
+            let uniform: usize = rng.next_u64() as usize;
+            let j = i + uniform % (ults_len - 1 - i);
+
+            let ind = conds.conditions[ults_indexes[j]].index;
+
+            conds.conditions[ults_indexes[j]].index = conds.conditions[ults_indexes[i]].index;
+            conds.conditions[ults_indexes[i]].index = ind;
+        }
+
+        let megas_indexes: Vec<usize> = consts::MEGAS
+            .iter()
+            .map(|x| -> usize {
+                objects.dv_cond.original[dindex]
+                    .conditions
+                    .iter()
+                    .position(|y| {
+                        objects.digivolution_data.original[y.index as usize - 9].digimon_id == *x
+                    })
+                    .unwrap()
+            })
+            .collect();
+
+        let megas_len = megas_indexes.len();
+        for i in 0..megas_len - 2 {
+            let uniform: usize = rng.next_u64() as usize;
+            let j = i + uniform % (megas_len - 1 - i);
+
+            let ind = conds.conditions[megas_indexes[j]].index;
+
+            conds.conditions[megas_indexes[j]].index = conds.conditions[megas_indexes[i]].index;
+            conds.conditions[megas_indexes[i]].index = ind;
+        }
+
+        let ultras_indexes: Vec<usize> = consts::ULTRAS
+            .iter()
+            .map(|x| -> usize {
+                objects.dv_cond.original[dindex]
+                    .conditions
+                    .iter()
+                    .position(|y| {
+                        objects.digivolution_data.original[y.index as usize - 9].digimon_id == *x
+                    })
+                    .unwrap()
+            })
+            .collect();
+
+        let ultras_len = ultras_indexes.len();
+        for i in 0..ultras_len - 2 {
+            let uniform: usize = rng.next_u64() as usize;
+            let j = i + uniform % (ultras_len - 1 - i);
+
+            let ind = conds.conditions[ultras_indexes[j]].index;
+
+            conds.conditions[ultras_indexes[j]].index = conds.conditions[ultras_indexes[i]].index;
+            conds.conditions[ultras_indexes[i]].index = ind;
         }
 
         // we can clone because we're not touching index anymore
