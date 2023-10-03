@@ -13,6 +13,7 @@ pub const GALACTICMON_IDS: [u16; 3] = [0x1ba, 0x1d2, 0x1d3];
 pub const STATS_FILE: &str = "AAA/PRO/SDIGIEDT.PRO";
 pub const ENCOUNTERS_FILE: &str = "AAA/PRO/FIELDSTG.PRO";
 pub const SHOPS_FILE: &str = "AAA/PRO/STITSHOP.PRO";
+pub const EXP_FILE: &str = "AAA/PRO/STFGTREP.PRO";
 
 pub const SHOPS_LEN: usize = 30;
 

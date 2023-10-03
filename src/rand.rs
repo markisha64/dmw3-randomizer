@@ -19,6 +19,7 @@ mod shops;
 pub mod structs;
 use structs::{DigivolutionData, EncounterData, EnemyStats, MoveData, Pointer, Shop};
 
+use self::structs::DigivolutionConditions;
 use self::structs::ItemShopData;
 
 pub struct Object<T> {
@@ -47,6 +48,7 @@ struct Bufs {
     encounter_buf: Vec<u8>,
     main_buf: Vec<u8>,
     shops_buf: Vec<u8>,
+    exp_buf: Vec<u8>,
 }
 
 pub struct Objects {
@@ -62,6 +64,7 @@ pub struct Objects {
     pub shop_items: Object<u16>,
     pub item_shop_data: Object<ItemShopData>,
     pub move_data: Object<MoveData>,
+    pub digivolution_conditions: Object<DigivolutionConditions>,
 }
 
 enum Executable {
@@ -117,6 +120,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         fs::read(format!("extract/{}/{}", rom_name, consts::ENCOUNTERS_FILE)).unwrap();
     let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str())).unwrap();
     let shops_buf = fs::read(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
+    let exp_buf = fs::read(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
 
     let overlay_address = Pointer {
         value: consts::OVERLAYADDRESS,
@@ -299,10 +303,31 @@ fn read_objects(path: &PathBuf) -> Objects {
         .position(|window| -> bool { window == b"\x00\x06\x07\x02\x03\x06\x01\x05\x07" })
         .unwrap();
 
+    let mut digivolution_conditions_arr: Vec<DigivolutionConditions> = Vec::new();
+    digivolution_conditions_arr.reserve(8);
+
+    let digivolution_conditions_index = exp_buf
+        .windows(8)
+        .position(|x| x == b"\x09\x00\x00\x00\x00\x00\x01\x00")
+        .unwrap();
+
+    let mut digivolution_conditions_reader = Cursor::new(&exp_buf[digivolution_conditions_index..]);
+
+    for _ in 0..8 {
+        let digivolution_conditions =
+            DigivolutionConditions::read(&mut digivolution_conditions_reader);
+
+        match digivolution_conditions {
+            Ok(cond) => digivolution_conditions_arr.push(cond),
+            Err(_) => panic!("Binread error"),
+        }
+    }
+
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let rookie_data_copy = rookie_data_arr.clone();
     let digivolution_data_copy = digivolution_data_arr.clone();
+    let digivolution_conditions_copy = digivolution_conditions_arr.clone();
 
     let enemy_stats_object = Object {
         original: enemy_stats_arr,
@@ -367,6 +392,13 @@ fn read_objects(path: &PathBuf) -> Objects {
         slen: 0x12,
     };
 
+    let digivolution_cond_object: Object<DigivolutionConditions> = Object {
+        original: digivolution_conditions_arr,
+        modified: digivolution_conditions_copy,
+        index: digivolution_conditions_index,
+        slen: 0x2c0,
+    };
+
     Objects {
         executable,
         // overlay_address_pointer: overlay,
@@ -375,6 +407,7 @@ fn read_objects(path: &PathBuf) -> Objects {
             stats_buf,
             main_buf,
             shops_buf,
+            exp_buf,
         },
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
@@ -385,6 +418,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         shop_items: shop_items_object,
         item_shop_data: item_shop_data_object,
         move_data: move_data_object,
+        digivolution_conditions: digivolution_cond_object,
     }
 }
 
@@ -402,6 +436,9 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     objects.shops.write_buf(&mut objects.bufs.shops_buf);
     objects.item_shop_data.write_buf(&mut objects.bufs.main_buf);
     objects.move_data.write_buf(&mut objects.bufs.main_buf);
+    objects
+        .digivolution_conditions
+        .write_buf(&mut objects.bufs.exp_buf);
 
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 
@@ -417,6 +454,7 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
         File::create(format!("extract/{}/{}", rom_name, consts::ENCOUNTERS_FILE)).unwrap();
     let mut new_shops =
         File::create(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
+    let mut new_exp = File::create(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
 
     match new_main_executable.write_all(&objects.bufs.main_buf) {
         Err(_) => return Err(()),
@@ -434,6 +472,11 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     }
 
     match new_shops.write_all(&objects.bufs.shops_buf) {
+        Err(_) => return Err(()),
+        _ => {}
+    }
+
+    match new_exp.write_all(&objects.bufs.exp_buf) {
         Err(_) => return Err(()),
         _ => {}
     }
