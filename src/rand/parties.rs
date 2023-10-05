@@ -184,7 +184,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     }
 
     if preset.parties.signatures {
-        signatues(objects, rng);
+        signatues(objects, rng, preset);
     }
 
     if preset.parties.digivolutions {
@@ -225,7 +225,7 @@ fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     }
 }
 
-fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Randomizer) {
     let mut learnable_rookie: BTreeSet<u16> = BTreeSet::new();
     let mut learnable: BTreeSet<u16> = BTreeSet::new();
 
@@ -237,15 +237,31 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
         learnable.insert(digivolution.ori_tech);
     }
 
-    let learnable_rookie_arr = Vec::from_iter(learnable_rookie.into_iter());
-    let learnable_arr = Vec::from_iter(learnable.into_iter());
+    let mut learnable_rookie_arr = Vec::from_iter(learnable_rookie.into_iter());
+    let mut learnable_arr = Vec::from_iter(learnable.into_iter());
 
-    for rookie in &mut objects.rookie_data.modified {
-        rookie.ori_tech = learnable_rookie_arr[(rng.next_u64() % 8) as usize];
+    for _ in 0..preset.shuffles {
+        for i in 0..6 {
+            let uniform = rng.next_u64() as usize;
+            let j = i + uniform % (7 - i);
+
+            learnable_rookie_arr.swap(i, j);
+        }
+
+        for i in 0..42 {
+            let uniform = rng.next_u64() as usize;
+            let j = i + uniform % (43 - i);
+
+            learnable_arr.swap(i, j);
+        }
     }
 
-    for digivolution in &mut objects.digivolution_data.modified {
-        digivolution.ori_tech = learnable_arr[(rng.next_u64() % 44) as usize];
+    for i in 0..8 {
+        objects.rookie_data.modified[i].ori_tech = learnable_rookie_arr[i];
+    }
+
+    for i in 0..44 {
+        objects.digivolution_data.modified[i].ori_tech = learnable_arr[i];
     }
 }
 
