@@ -46,3 +46,6 @@ pub const MEGAS: [u16; 17] = [
     0xe6, 0x3b, 0x96,
 ];
 pub const ULTRAS: [u16; 3] = [0x97, 0x179, 0x17d];
+
+pub const ROOKIE_COUNT: usize = 8;
+pub const DIGIVOLUTION_COUNT: usize = 44;

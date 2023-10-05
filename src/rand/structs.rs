@@ -1,3 +1,4 @@
+use crate::consts;
 use binread::BinRead;
 use binwrite::BinWrite;
 use std::fmt::Debug;
@@ -214,7 +215,7 @@ pub struct DigivolutionCondition {
 
 #[derive(BinRead, Debug, Clone, BinWrite)]
 pub struct DigivolutionConditions {
-    #[br(count = 44)]
+    #[br(count = consts::DIGIVOLUTION_COUNT)]
     pub conditions: Vec<DigivolutionCondition>,
 }
 

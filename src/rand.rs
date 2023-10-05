@@ -253,9 +253,9 @@ fn read_objects(path: &PathBuf) -> Objects {
     let mut digivolution_data_reader = Cursor::new(&main_buf[digivolution_data_index..]);
 
     let mut rookie_data_arr: Vec<DigivolutionData> = Vec::new();
-    rookie_data_arr.reserve(8);
+    rookie_data_arr.reserve(consts::ROOKIE_COUNT);
 
-    for _ in 0..8 {
+    for _ in 0..consts::ROOKIE_COUNT {
         let rookie_data = DigivolutionData::read(&mut digivolution_data_reader);
 
         match rookie_data {
@@ -265,9 +265,9 @@ fn read_objects(path: &PathBuf) -> Objects {
     }
 
     let mut digivolution_data_arr: Vec<DigivolutionData> = Vec::new();
-    digivolution_data_arr.reserve(44);
+    digivolution_data_arr.reserve(consts::DIGIVOLUTION_COUNT);
 
-    for _ in 0..44 {
+    for _ in 0..consts::DIGIVOLUTION_COUNT {
         let digivolution_data = DigivolutionData::read(&mut digivolution_data_reader);
 
         match digivolution_data {
@@ -304,7 +304,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         .unwrap();
 
     let mut dv_cond_arr: Vec<DigivolutionConditions> = Vec::new();
-    dv_cond_arr.reserve(8);
+    dv_cond_arr.reserve(consts::ROOKIE_COUNT);
 
     let dv_cond_index = exp_buf
         .windows(8)
@@ -313,7 +313,7 @@ fn read_objects(path: &PathBuf) -> Objects {
 
     let mut dv_cond_reader = Cursor::new(&exp_buf[dv_cond_index..]);
 
-    for _ in 0..8 {
+    for _ in 0..consts::ROOKIE_COUNT {
         let dv_cond = DigivolutionConditions::read(&mut dv_cond_reader);
 
         match dv_cond {

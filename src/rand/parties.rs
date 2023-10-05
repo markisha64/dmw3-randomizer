@@ -70,14 +70,14 @@ impl Stat {
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     if preset.parties.parties {
         let parties = &mut objects.parties.modified;
-        let mut all_digimon: [u8; 8] = [0, 1, 2, 3, 4, 5, 6, 7];
-        let rindex = (rng.next_u64() % 6) as usize;
+        let mut all_digimon: [u8; consts::ROOKIE_COUNT] = [0, 1, 2, 3, 4, 5, 6, 7];
+        let rindex = (rng.next_u64() % (consts::ROOKIE_COUNT - 2) as u64) as usize;
         for i in 0..3 {
             // Fisher-Yates shuffles
             for _ in 0..preset.shuffles {
-                for j in 0..6 {
+                for j in 0..(consts::ROOKIE_COUNT - 2) {
                     let uniform = rng.next_u64() as usize;
-                    let k = j + uniform % (7 - j);
+                    let k = j + uniform % (consts::ROOKIE_COUNT - 1 - j);
 
                     all_digimon.swap(j, k);
                 }
@@ -241,39 +241,39 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Rando
     let mut learnable_arr = Vec::from_iter(learnable.into_iter());
 
     for _ in 0..preset.shuffles {
-        for i in 0..6 {
+        for i in 0..(consts::ROOKIE_COUNT - 2) {
             let uniform = rng.next_u64() as usize;
-            let j = i + uniform % (7 - i);
+            let j = i + uniform % (consts::ROOKIE_COUNT - 1 - i);
 
             learnable_rookie_arr.swap(i, j);
         }
 
-        for i in 0..42 {
+        for i in 0..(consts::DIGIVOLUTION_COUNT - 2) {
             let uniform = rng.next_u64() as usize;
-            let j = i + uniform % (43 - i);
+            let j = i + uniform % (consts::DIGIVOLUTION_COUNT - 1 - i);
 
             learnable_arr.swap(i, j);
         }
     }
 
-    for i in 0..8 {
+    for i in 0..consts::ROOKIE_COUNT {
         objects.rookie_data.modified[i].ori_tech = learnable_rookie_arr[i];
     }
 
-    for i in 0..44 {
+    for i in 0..consts::DIGIVOLUTION_COUNT {
         objects.digivolution_data.modified[i].ori_tech = learnable_arr[i];
     }
 }
 
 fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    for dindex in 0..8 {
+    for dindex in 0..consts::ROOKIE_COUNT {
         let conds = &mut objects.dv_cond.modified[dindex];
 
         // swap ids
         for _ in 0..preset.shuffles {
-            for i in 0..42 {
+            for i in 0..(consts::DIGIVOLUTION_COUNT - 2) {
                 let uniform: usize = rng.next_u64() as usize;
-                let j = i + uniform % (43 - i);
+                let j = i + uniform % (consts::DIGIVOLUTION_COUNT - 1 - i);
 
                 let ind = conds.conditions[j].index;
 
@@ -311,7 +311,7 @@ fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshi
 }
 
 fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    for dindex in 0..8 {
+    for dindex in 0..consts::ROOKIE_COUNT {
         let conds = &mut objects.dv_cond.modified[dindex];
 
         // TODO: this looks fucking horrible
