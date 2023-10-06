@@ -6,6 +6,7 @@ mod json;
 mod mkpsxiso;
 
 mod rand;
+mod util;
 use rand::patch;
 
 mod gui;

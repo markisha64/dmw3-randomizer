@@ -1,9 +1,11 @@
-use rand_xoshiro::rand_core::RngCore;
+use std::collections::{BTreeMap, BTreeSet, HashSet};
+
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::consts;
 use crate::json::{Encounters, Randomizer, TNTStrategy};
 use crate::rand::{structs::EncounterData, Objects};
+use crate::util::{self, uniform_random_vector};
 
 fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
     return (!preset.cardmon
@@ -26,20 +28,55 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     let modified_enemy_stats = &mut objects.enemy_stats.modified;
     let encounters = &objects.encounters.original;
 
-    // Fisher-Yates shuffles
-    for _ in 0..preset.shuffles {
-        for i in 0..(len - 2) {
-            let uniform: usize = rng.next_u64() as usize;
-            let j = i + uniform % (len - i - 1);
+    let possible_ids: BTreeSet<u32> = BTreeSet::from_iter(
+        encounters
+            .iter()
+            .filter(|x| !skip(*x, &preset.encounters))
+            .map(|x| x.digimon_id),
+    );
 
-            if skip(&modified_encounters[i], &preset.encounters)
-                || skip(&modified_encounters[j], &preset.encounters)
-            {
-                continue;
-            }
+    let skipped_count = encounters
+        .iter()
+        .filter(|x| skip(*x, &preset.encounters))
+        .count();
 
-            modified_encounters.swap(i, j);
-        }
+    let mut shuffled_encounters_digimon: BTreeMap<u32, Vec<EncounterData>> = BTreeMap::new();
+
+    let possible_arr = Vec::from_iter(possible_ids.into_iter());
+    let mut shuffled_ids =
+        util::uniform_random_vector(&possible_arr, len - skipped_count, preset.shuffles, rng);
+
+    for digimon_id in possible_arr {
+        let possible_encounters: Vec<&EncounterData> = encounters
+            .iter()
+            .filter(|x| x.digimon_id == digimon_id)
+            .collect();
+
+        let possible_encounters: HashSet<EncounterData> =
+            HashSet::from_iter(possible_encounters.iter().map(|x| **x));
+
+        let possible_encounters_arr = Vec::from_iter(possible_encounters.into_iter());
+
+        let count = shuffled_ids.iter().filter(|x| **x == digimon_id).count();
+
+        shuffled_encounters_digimon.insert(
+            digimon_id,
+            uniform_random_vector(&possible_encounters_arr, count, preset.shuffles, rng),
+        );
+    }
+
+    for encounter in modified_encounters.iter_mut() {
+        if skip(encounter, &preset.encounters) {
+            continue;
+        };
+
+        let new_encounter_id = shuffled_ids.pop().unwrap();
+
+        *encounter = shuffled_encounters_digimon
+            .get_mut(&new_encounter_id)
+            .unwrap()
+            .pop()
+            .unwrap();
     }
 
     if preset.encounters.strategy == TNTStrategy::Swap {

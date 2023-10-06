@@ -66,7 +66,7 @@ pub struct EnemyStats {
     counter_moveset: Moveset,
 }
 
-#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite, PartialEq, Eq, Hash)]
 pub struct EncounterData {
     pub digimon_id: u32,
 
