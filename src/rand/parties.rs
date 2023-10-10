@@ -7,6 +7,7 @@ use crate::rand::Objects;
 use std::collections::BTreeSet;
 
 use super::structs::DigivolutionData;
+use crate::util;
 
 #[derive(Clone, Copy)]
 enum Stat {
