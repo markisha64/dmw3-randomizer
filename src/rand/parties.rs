@@ -7,7 +7,6 @@ use crate::rand::Objects;
 use std::collections::BTreeSet;
 
 use super::structs::DigivolutionData;
-use crate::util;
 
 #[derive(Clone, Copy)]
 enum Stat {
@@ -159,7 +158,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     }
 
     if preset.parties.learned_tech {
-        learned_moves(objects, rng, preset);
+        learned_moves(objects, rng);
     }
 
     if preset.parties.signatures {
@@ -175,9 +174,8 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     }
 }
 
-fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Randomizer) {
+fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let mut learnable: BTreeSet<u16> = BTreeSet::new();
-    let mut move_count: usize = 0;
 
     for digivolution in &objects.digivolution_data.original {
         for tech in digivolution.tech.iter() {
@@ -185,35 +183,22 @@ fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &R
 
             if deref != 0 {
                 learnable.insert(deref);
-                move_count += 1;
             }
         }
     }
 
-    let learnable_arr = Vec::from_iter(learnable.clone().into_iter());
-    let mut shuffled_arr =
-        util::uniform_random_vector(&learnable_arr, move_count, preset.shuffles, rng);
-
     for digivolution in &mut objects.digivolution_data.modified {
-        let shuffled = BTreeSet::from_iter(shuffled_arr.clone().into_iter());
-
-        let mut move_pool = Vec::from_iter(shuffled.into_iter());
+        let mut learnable_arr = Vec::from_iter(learnable.clone().into_iter());
 
         for tech in &mut digivolution.tech {
             if *tech == 0 {
                 continue;
             }
 
-            let mv = (rng.next_u64() % move_pool.len() as u64) as usize;
+            let mv = (rng.next_u64() % learnable_arr.len() as u64) as usize;
 
-            *tech = move_pool[mv];
-            shuffled_arr.remove(
-                shuffled_arr
-                    .iter()
-                    .position(|x| *x == move_pool[mv])
-                    .unwrap(),
-            );
-            move_pool.remove(mv);
+            *tech = learnable_arr[mv];
+            learnable_arr.remove(mv);
         }
     }
 }
