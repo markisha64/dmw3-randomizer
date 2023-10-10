@@ -71,18 +71,10 @@ impl Stat {
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     if preset.parties.parties {
         let parties = &mut objects.parties.modified;
-        let mut all_digimon: [u8; consts::ROOKIE_COUNT] = [0, 1, 2, 3, 4, 5, 6, 7];
+        let mut all_digimon: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7];
         let rindex = (rng.next_u64() % (consts::ROOKIE_COUNT - 2) as u64) as usize;
         for i in 0..3 {
-            // Fisher-Yates shuffles
-            for _ in 0..preset.shuffles {
-                for j in 0..(consts::ROOKIE_COUNT - 2) {
-                    let uniform = rng.next_u64() as usize;
-                    let k = j + uniform % (consts::ROOKIE_COUNT - 1 - j);
-
-                    all_digimon.swap(j, k);
-                }
-            }
+            util::shuffle(&mut all_digimon, preset.shuffles, rng);
 
             for j in 0..3 {
                 parties[i * 3 + j] = all_digimon[rindex + j];
@@ -97,14 +89,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         for rookie_data in &mut objects.rookie_data.modified {
             let mut leftover = preset.parties.total_starting_stats - min_sum;
 
-            for _ in 0..preset.shuffles {
-                for i in 0..3 {
-                    let uniform = rng.next_u64() as usize;
-                    let j = i + uniform % (4 - i);
-
-                    stats.swap(i, j);
-                }
-            }
+            util::shuffle(&mut stats, preset.shuffles, rng);
 
             for stat in &stats {
                 stat.set(rookie_data, preset.parties.min_starting_stat);
@@ -138,14 +123,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         for rookie_data in &mut objects.rookie_data.modified {
             let mut leftover = preset.parties.total_starting_res - min_sum;
 
-            for _ in 0..preset.shuffles {
-                for i in 0..5 {
-                    let uniform = rng.next_u64() as usize;
-                    let j = i + uniform % (6 - i);
-
-                    resistances.swap(i, j);
-                }
-            }
+            util::shuffle(&mut resistances, preset.shuffles, rng);
 
             for res in &resistances {
                 res.set(rookie_data, preset.parties.min_starting_res);
@@ -255,21 +233,8 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Rando
     let mut learnable_rookie_arr = Vec::from_iter(learnable_rookie.into_iter());
     let mut learnable_arr = Vec::from_iter(learnable.into_iter());
 
-    for _ in 0..preset.shuffles {
-        for i in 0..(consts::ROOKIE_COUNT - 2) {
-            let uniform = rng.next_u64() as usize;
-            let j = i + uniform % (consts::ROOKIE_COUNT - 1 - i);
-
-            learnable_rookie_arr.swap(i, j);
-        }
-
-        for i in 0..(consts::DIGIVOLUTION_COUNT - 2) {
-            let uniform = rng.next_u64() as usize;
-            let j = i + uniform % (consts::DIGIVOLUTION_COUNT - 1 - i);
-
-            learnable_arr.swap(i, j);
-        }
-    }
+    util::shuffle(&mut learnable_rookie_arr, preset.shuffles, rng);
+    util::shuffle(&mut learnable_arr, preset.shuffles, rng);
 
     for i in 0..consts::ROOKIE_COUNT {
         objects.rookie_data.modified[i].ori_tech = learnable_rookie_arr[i];

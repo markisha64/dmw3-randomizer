@@ -13,31 +13,30 @@ pub fn uniform_random_vector<T: Clone>(
     for _ in 0..((length - 1) / alphabet_length + 1) {
         let mut chunk = alphabet.clone();
 
-        // skip advancing rng if unnecessary
-        if alphabet_length > 1 {
-            for _ in 0..shuffles {
-                for i in 0..(alphabet_length - 2) {
-                    let uniform = rng.next_u64() as usize;
-                    let j = i + uniform % (alphabet_length - i - 1);
-
-                    chunk.swap(i, j);
-                }
-            }
-        }
+        shuffle(&mut chunk, shuffles, rng);
 
         vector.extend(chunk);
     }
 
     vector.truncate(length);
 
-    if length > 1 {
-        for i in 0..(length - 2) {
-            let uniform: usize = rng.next_u64() as usize;
-            let j = i + uniform % (length - i - 1);
-
-            vector.swap(i, j);
-        }
-    }
+    shuffle(&mut vector, shuffles, rng);
 
     vector
+}
+
+// Fisher-Yates shuffles
+pub fn shuffle<T> (array: &mut Vec<T>, shuffles: u8, rng: &mut Xoshiro256StarStar) {
+    let len = array.len();
+
+    if len > 1 {
+        for _ in 0..shuffles {
+            for i in 0..(len - 2) {
+                let uniform: usize = rng.next_u64() as usize;
+                let j = i + uniform % (len - i - 1);
+
+                array.swap(i, j);
+            }
+        }
+    }
 }
