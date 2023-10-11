@@ -147,15 +147,15 @@ pub struct DigivolutionData {
 
     unk1: u8,
 
-    exp_modifier: u8,
+    pub exp_modifier: u8,
 
-    starting_hp: u8,
+    pub starting_hp: u8,
 
-    starting_mp: u8,
+    pub starting_mp: u8,
 
-    hp_modifier: u8,
+    pub hp_modifier: u8,
 
-    mp_modifier: u8,
+    pub mp_modifier: u8,
 
     #[br(count = 6)]
     pub stat_offsets: Vec<u8>,
