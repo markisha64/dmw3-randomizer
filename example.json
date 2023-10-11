@@ -23,7 +23,22 @@
 			"learned_tech": true,
 			"signatures": true,
 			"digivolutions": true,
-			"keep_stages": true
+			"keep_stages": true,
+	    "exp_modifier": true,
+	    "min_exp_modifier": 6,
+	    "max_exp_modifier": 10,
+	    "hp_modifier": true,
+	    "min_hp_modifier": 60,
+	    "max_hp_modifier": 100,
+	    "mp_modifier": true,
+	    "min_mp_modifier": 30,
+	    "max_mp_modifier": 75,
+	    "starting_hp": true,
+	    "min_starting_hp": 130,
+	    "max_starting_hp": 180,
+	    "starting_mp": true,
+	    "min_starting_mp": 10,
+	    "max_starting_mp": 200
 		},
 		"shops": {
 			"enabled": true,

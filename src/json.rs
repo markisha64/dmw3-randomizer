@@ -94,6 +94,18 @@ pub struct Parties {
     pub min_mp_modifier: u8,
     #[serde(default = "default_max_mp_modifier")]
     pub max_mp_modifier: u8,
+    #[serde(default = "default_bool_true")]
+    pub starting_hp: bool,
+    #[serde(default = "default_min_starting_hp")]
+    pub min_starting_hp: u8,
+    #[serde(default = "default_max_starting_hp")]
+    pub max_starting_hp: u8,
+    #[serde(default = "default_bool_true")]
+    pub starting_mp: bool,
+    #[serde(default = "default_min_starting_mp")]
+    pub min_starting_mp: u8,
+    #[serde(default = "default_max_starting_mp")]
+    pub max_starting_mp: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -250,11 +262,27 @@ fn default_max_hp_modifier() -> u8 {
 }
 
 fn default_min_mp_modifier() -> u8 {
-    60
+    30
 }
 
 fn default_max_mp_modifier() -> u8 {
-    100
+    75
+}
+
+fn default_min_starting_hp() -> u8 {
+    130
+}
+
+fn default_max_starting_hp() -> u8 {
+    180
+}
+
+fn default_min_starting_mp() -> u8 {
+    10
+}
+
+fn default_max_starting_mp() -> u8 {
+    200
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
