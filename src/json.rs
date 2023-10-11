@@ -76,6 +76,24 @@ pub struct Parties {
     pub digivolutions: bool,
     #[serde(default = "default_bool_true")]
     pub keep_stages: bool,
+    #[serde(default = "default_bool_true")]
+    pub exp_modifier: bool,
+    #[serde(default = "default_min_exp_modifier")]
+    pub min_exp_modifier: u8,
+    #[serde(default = "default_max_exp_modifier")]
+    pub max_exp_modifier: u8,
+    #[serde(default = "default_bool_true")]
+    pub hp_modifier: bool,
+    #[serde(default = "default_min_hp_modifier")]
+    pub min_hp_modifier: u8,
+    #[serde(default = "default_max_hp_modifier")]
+    pub max_hp_modifier: u8,
+    #[serde(default = "default_bool_true")]
+    pub mp_modifier: bool,
+    #[serde(default = "default_min_mp_modifier")]
+    pub min_mp_modifier: u8,
+    #[serde(default = "default_max_mp_modifier")]
+    pub max_mp_modifier: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -213,6 +231,30 @@ fn default_total_starting_ress() -> u16 {
 
 fn default_min_starting_res() -> u16 {
     60
+}
+
+fn default_min_exp_modifier() -> u8 {
+    6
+}
+
+fn default_max_exp_modifier() -> u8 {
+    10
+}
+
+fn default_min_hp_modifier() -> u8 {
+    60
+}
+
+fn default_max_hp_modifier() -> u8 {
+    100
+}
+
+fn default_min_mp_modifier() -> u8 {
+    60
+}
+
+fn default_max_mp_modifier() -> u8 {
+    100
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]

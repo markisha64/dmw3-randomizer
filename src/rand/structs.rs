@@ -149,7 +149,9 @@ pub struct DigivolutionData {
 
     exp_modifier: u8,
 
-    unk: u16,
+    starting_hp: u8,
+
+    starting_mp: u8,
 
     hp_modifier: u8,
 
@@ -161,7 +163,10 @@ pub struct DigivolutionData {
     #[br(count = 7)]
     pub res_offsets: Vec<u8>,
 
-    #[br(count = 8)]
+    #[br(count = 5)]
+    blast_indices: Vec<u8>,
+
+    #[br(count = 3)]
     unk_arr_1: Vec<u8>,
 }
 
