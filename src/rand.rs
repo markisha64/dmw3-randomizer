@@ -177,7 +177,9 @@ fn read_objects(path: &PathBuf) -> Objects {
             Err(_) => panic!("Binread error"),
         }
 
-        if unwrapped.digimon_id == 0 {
+        // this check works because after Encounter array
+        // goes Team array which starts with a non null ptr
+        if unwrapped.digimon_id > 500 {
             break;
         }
 
