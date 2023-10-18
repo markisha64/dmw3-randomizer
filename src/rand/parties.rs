@@ -172,6 +172,8 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         } else {
             dv_cond_unlimited(preset, objects, rng);
         }
+
+        blasts(objects);
     }
 
     if preset.parties.exp_modifier {
@@ -385,6 +387,25 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
 
                 cond.dv_index_2 = (cloned[cond_index].index) as u16;
             }
+        }
+    }
+}
+
+fn blasts(objects: &mut Objects) {
+    for r in 0..consts::ROOKIE_COUNT {
+        let rookie = &mut objects.rookie_data.modified[r];
+        for i in 0..5 {
+            if rookie.blast_indices[i] == 0 {
+                continue;
+            }
+
+            let index = objects.dv_cond.original[r]
+                .conditions
+                .iter()
+                .position(|x| x.index == rookie.blast_indices[i] as u32)
+                .unwrap();
+
+            rookie.blast_indices[i] = objects.dv_cond.modified[r].conditions[index].index as u8;
         }
     }
 }
