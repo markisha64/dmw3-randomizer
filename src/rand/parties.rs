@@ -27,25 +27,25 @@ enum Stat {
 }
 
 impl Stat {
-    fn update(&self, ddata: &mut DigivolutionData, amount: u16) {
-        let ptr = match self {
-            Stat::Str => &mut ddata.str,
-            Stat::Def => &mut ddata.def,
-            Stat::Spt => &mut ddata.spt,
-            Stat::Wis => &mut ddata.wis,
-            Stat::Spd => &mut ddata.spd,
-            // Stat::Chr => &mut ddata.startChr,
-            Stat::FirRes => &mut ddata.fir_res,
-            Stat::WtrRes => &mut ddata.wtr_res,
-            Stat::IceRes => &mut ddata.ice_res,
-            Stat::WndRes => &mut ddata.wnd_res,
-            Stat::ThdRes => &mut ddata.thd_res,
-            Stat::MchRes => &mut ddata.mch_res,
-            Stat::DrkRes => &mut ddata.drk_res,
-        };
+    // fn update(&self, ddata: &mut DigivolutionData, amount: u16) {
+    //     let ptr = match self {
+    //         Stat::Str => &mut ddata.str,
+    //         Stat::Def => &mut ddata.def,
+    //         Stat::Spt => &mut ddata.spt,
+    //         Stat::Wis => &mut ddata.wis,
+    //         Stat::Spd => &mut ddata.spd,
+    //         // Stat::Chr => &mut ddata.startChr,
+    //         Stat::FirRes => &mut ddata.fir_res,
+    //         Stat::WtrRes => &mut ddata.wtr_res,
+    //         Stat::IceRes => &mut ddata.ice_res,
+    //         Stat::WndRes => &mut ddata.wnd_res,
+    //         Stat::ThdRes => &mut ddata.thd_res,
+    //         Stat::MchRes => &mut ddata.mch_res,
+    //         Stat::DrkRes => &mut ddata.drk_res,
+    //     };
 
-        (*ptr) += amount;
-    }
+    //     (*ptr) += amount;
+    // }
 
     fn set(&self, ddata: &mut DigivolutionData, amount: u16) {
         let ptr = match self {
@@ -83,33 +83,28 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     }
 
     if preset.parties.stat_distribution {
-        let mut stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
+        let stats: Vec<Stat> = vec![Stat::Str, Stat::Def, Stat::Spt, Stat::Wis, Stat::Spd];
 
         let min_sum = preset.parties.min_starting_stat * 5;
+        let before_addition = (preset.parties.total_starting_stats - min_sum) as u64;
         for rookie_data in &mut objects.rookie_data.modified {
-            let mut leftover = preset.parties.total_starting_stats - min_sum;
+            let before_normalization: Vec<u64> =
+                stats.iter().map(|_| rng.next_u32() as u64).collect();
 
-            util::shuffle(&mut stats, preset.shuffles, rng);
+            let sum: u64 = before_normalization.iter().fold(0, |a, b| a + *b);
 
-            for stat in &stats {
-                stat.set(rookie_data, preset.parties.min_starting_stat);
-            }
-
-            for stat in &stats {
-                let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
-                leftover -= new_add;
-
-                stat.update(rookie_data, new_add);
-            }
-
-            if leftover > 0 {
-                stats.last().unwrap().update(rookie_data, leftover);
+            for i in 0..stats.len() {
+                stats[i].set(
+                    rookie_data,
+                    ((before_normalization[i] * before_addition) / sum) as u16
+                        + preset.parties.min_starting_stat,
+                )
             }
         }
     }
 
     if preset.parties.res_distribution {
-        let mut resistances: Vec<Stat> = vec![
+        let resistances: Vec<Stat> = vec![
             Stat::FirRes,
             Stat::WtrRes,
             Stat::IceRes,
@@ -120,24 +115,19 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         ];
 
         let min_sum = preset.parties.min_starting_res * 7;
+        let before_addition = (preset.parties.total_starting_res - min_sum) as u64;
         for rookie_data in &mut objects.rookie_data.modified {
-            let mut leftover = preset.parties.total_starting_res - min_sum;
+            let before_normalization: Vec<u64> =
+                resistances.iter().map(|_| rng.next_u32() as u64).collect();
 
-            util::shuffle(&mut resistances, preset.shuffles, rng);
+            let sum: u64 = before_normalization.iter().fold(0, |a, b| a + *b);
 
-            for res in &resistances {
-                res.set(rookie_data, preset.parties.min_starting_res);
-            }
-
-            for res in &resistances {
-                let new_add = ((rng.next_u64()) % ((leftover + 1) as u64)) as u16;
-                leftover -= new_add;
-
-                res.update(rookie_data, new_add);
-            }
-
-            if leftover > 0 {
-                resistances.last().unwrap().update(rookie_data, leftover);
+            for i in 0..resistances.len() {
+                resistances[i].set(
+                    rookie_data,
+                    ((before_normalization[i] * before_addition) / sum) as u16
+                        + preset.parties.min_starting_res,
+                )
             }
         }
     }
