@@ -351,6 +351,7 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
         dv_limited(Vec::from(consts::CHAMPIONS));
         dv_limited(Vec::from(consts::ULTIMATES));
         dv_limited(Vec::from(consts::MEGAS));
+        dv_limited(Vec::from(consts::MEGAPLUS));
         dv_limited(Vec::from(consts::ULTRAS));
 
         // we can clone because we're not touching index anymore
