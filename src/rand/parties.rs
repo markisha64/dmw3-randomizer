@@ -175,39 +175,30 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
     }
 
-    if preset.parties.hp_modifier {
-        let min = preset.parties.min_hp_modifier;
-        let range = (preset.parties.max_hp_modifier - min + 1) as u64;
+    if preset.parties.starting_hp_mp {
+        let min_hp = preset.parties.min_starting_hp;
+        let min_mp = preset.parties.min_starting_mp;
+        let hp_range = (preset.parties.max_starting_hp - min_hp + 1) as u64;
+        let mp_range = (preset.parties.max_starting_mp - min_mp + 1) as u64;
+
+        let min_hp_modifier = preset.parties.min_hp_modifier;
+        let min_mp_modifier = preset.parties.min_mp_modifier;
+        let hp_modifier_range = (preset.parties.max_hp_modifier - min_hp_modifier + 1) as u64;
+        let mp_modifier_range = (preset.parties.max_mp_modifier - min_mp_modifier + 1) as u64;
 
         for rookie in &mut objects.rookie_data.modified {
-            rookie.hp_modifier = min + (rng.next_u64() % range) as u8;
-        }
-    }
+            let hp_distribution = rng.next_u32() as u64;
+            let mp_distribution = rng.next_u32() as u64;
 
-    if preset.parties.mp_modifier {
-        let min = preset.parties.min_mp_modifier;
-        let range = (preset.parties.max_mp_modifier - min + 1) as u64;
+            let total = hp_distribution + mp_distribution;
 
-        for rookie in &mut objects.rookie_data.modified {
-            rookie.mp_modifier = min + (rng.next_u64() % range) as u8;
-        }
-    }
+            rookie.starting_hp = min_hp + ((hp_distribution * hp_range as u64) / total) as u8;
+            rookie.starting_mp = min_mp + ((mp_distribution * mp_range as u64) / total) as u8;
 
-    if preset.parties.starting_hp {
-        let min = preset.parties.min_starting_hp;
-        let range = (preset.parties.max_starting_hp - min + 1) as u64;
-
-        for rookie in &mut objects.rookie_data.modified {
-            rookie.starting_hp = min + (rng.next_u64() % range) as u8;
-        }
-    }
-
-    if preset.parties.starting_mp {
-        let min = preset.parties.min_starting_mp;
-        let range = (preset.parties.max_starting_mp - min + 1) as u64;
-
-        for rookie in &mut objects.rookie_data.modified {
-            rookie.starting_mp = min + (rng.next_u64() % range) as u8;
+            rookie.hp_modifier =
+                min_hp_modifier + ((hp_distribution * hp_modifier_range as u64) / total) as u8;
+            rookie.mp_modifier =
+                min_mp_modifier + ((mp_distribution * mp_modifier_range as u64) / total) as u8;
         }
     }
 }
