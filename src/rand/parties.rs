@@ -27,25 +27,25 @@ enum Stat {
 }
 
 impl Stat {
-    // fn update(&self, ddata: &mut DigivolutionData, amount: u16) {
-    //     let ptr = match self {
-    //         Stat::Str => &mut ddata.str,
-    //         Stat::Def => &mut ddata.def,
-    //         Stat::Spt => &mut ddata.spt,
-    //         Stat::Wis => &mut ddata.wis,
-    //         Stat::Spd => &mut ddata.spd,
-    //         // Stat::Chr => &mut ddata.startChr,
-    //         Stat::FirRes => &mut ddata.fir_res,
-    //         Stat::WtrRes => &mut ddata.wtr_res,
-    //         Stat::IceRes => &mut ddata.ice_res,
-    //         Stat::WndRes => &mut ddata.wnd_res,
-    //         Stat::ThdRes => &mut ddata.thd_res,
-    //         Stat::MchRes => &mut ddata.mch_res,
-    //         Stat::DrkRes => &mut ddata.drk_res,
-    //     };
+    fn set_affinity(&self, ddata: &mut DigivolutionData, amount: u8) {
+        let ptr = match self {
+            Stat::Str => &mut ddata.stat_offsets[0],
+            Stat::Def => &mut ddata.stat_offsets[1],
+            Stat::Spt => &mut ddata.stat_offsets[2],
+            Stat::Wis => &mut ddata.stat_offsets[3],
+            Stat::Spd => &mut ddata.stat_offsets[4],
+            // Stat::Chr => &mut ddata.stat_offsets[5]?,
+            Stat::FirRes => &mut ddata.res_offsets[0],
+            Stat::WtrRes => &mut ddata.res_offsets[1],
+            Stat::IceRes => &mut ddata.res_offsets[2],
+            Stat::WndRes => &mut ddata.res_offsets[3],
+            Stat::ThdRes => &mut ddata.res_offsets[4],
+            Stat::MchRes => &mut ddata.res_offsets[5],
+            Stat::DrkRes => &mut ddata.res_offsets[6],
+        };
 
-    //     (*ptr) += amount;
-    // }
+        (*ptr) = amount;
+    }
 
     fn set(&self, ddata: &mut DigivolutionData, amount: u16) {
         let ptr = match self {
@@ -87,6 +87,10 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
         let min_sum = preset.parties.min_starting_stat * 5;
         let before_addition = (preset.parties.total_starting_stats - min_sum) as u64;
+
+        let affinity_range = consts::MAX_STAT_AFFINITY - consts::MIN_STAT_AFFINITY;
+        let total_affinity = (affinity_range * stats.len() as u8) as u64;
+
         for rookie_data in &mut objects.rookie_data.modified {
             let before_normalization: Vec<u64> =
                 stats.iter().map(|_| rng.next_u32() as u64).collect();
@@ -98,7 +102,13 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                     rookie_data,
                     ((before_normalization[i] * before_addition) / sum) as u16
                         + preset.parties.min_starting_stat,
-                )
+                );
+
+                stats[i].set_affinity(
+                    rookie_data,
+                    ((before_normalization[i] * total_affinity) / (sum * 2)) as u8
+                        + consts::MIN_STAT_AFFINITY,
+                );
             }
         }
     }
@@ -114,8 +124,12 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             Stat::DrkRes,
         ];
 
-        let min_sum = preset.parties.min_starting_res * 7;
+        let min_sum = preset.parties.min_starting_res * 5;
         let before_addition = (preset.parties.total_starting_res - min_sum) as u64;
+
+        let affinity_range = consts::MAX_STAT_AFFINITY - consts::MIN_STAT_AFFINITY;
+        let total_affinity = (affinity_range * resistances.len() as u8) as u64;
+
         for rookie_data in &mut objects.rookie_data.modified {
             let before_normalization: Vec<u64> =
                 resistances.iter().map(|_| rng.next_u32() as u64).collect();
@@ -127,23 +141,13 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                     rookie_data,
                     ((before_normalization[i] * before_addition) / sum) as u16
                         + preset.parties.min_starting_res,
-                )
-            }
-        }
-    }
+                );
 
-    if preset.parties.stat_affinities {
-        for rookie_data in &mut objects.rookie_data.modified {
-            for stat in &mut rookie_data.stat_offsets {
-                (*stat) = 1 + (rng.next_u64() % 5) as u8;
-            }
-        }
-    }
-
-    if preset.parties.res_affinities {
-        for rookie_data in &mut objects.rookie_data.modified {
-            for res in &mut rookie_data.res_offsets {
-                (*res) = 1 + (rng.next_u64() % 5) as u8;
+                resistances[i].set_affinity(
+                    rookie_data,
+                    ((before_normalization[i] * total_affinity) / (sum * 2)) as u8
+                        + consts::MIN_STAT_AFFINITY,
+                );
             }
         }
     }

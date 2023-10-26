@@ -53,3 +53,6 @@ pub const ULTRAS: [u16; 3] = [0x97, 0x179, 0x17d];
 
 pub const ROOKIE_COUNT: usize = 8;
 pub const DIGIVOLUTION_COUNT: usize = 44;
+
+pub const MIN_STAT_AFFINITY: u8 = 1;
+pub const MAX_STAT_AFFINITY: u8 = 5;

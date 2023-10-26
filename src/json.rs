@@ -65,10 +65,6 @@ pub struct Parties {
     #[serde(default = "default_min_starting_res")]
     pub min_starting_res: u16,
     #[serde(default = "default_bool_true")]
-    pub stat_affinities: bool,
-    #[serde(default = "default_bool_true")]
-    pub res_affinities: bool,
-    #[serde(default = "default_bool_true")]
     pub learned_tech: bool,
     #[serde(default = "default_bool_true")]
     pub signatures: bool,
