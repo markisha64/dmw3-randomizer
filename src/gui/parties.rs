@@ -299,7 +299,7 @@ pub fn parties(cx: Scope) -> Element {
                 class: "tooltip",
                 span {
                     class: "tooltiptext",
-                    "Randomize starting HP/MP and HP/MP gain"
+                    "Randomize starting HP/MP and HP/MP affinity"
                 },
                 div {
                     class: "left",
@@ -411,7 +411,7 @@ pub fn parties(cx: Scope) -> Element {
                 },
                 div {
                     class: "left",
-                    div { style: "margin-right: 10px;", "HP Gain Range" }
+                    div { style: "margin-right: 10px;", "HP Affinity Range" }
                     number_field::number_field {
                         label: "Min",
                         id: "parties.min_hp_modifier",
@@ -459,7 +459,7 @@ pub fn parties(cx: Scope) -> Element {
                 },
                 div {
                     class: "left",
-                    div { style: "margin-right: 10px;", "MP Gain Range" }
+                    div { style: "margin-right: 10px;", "MP Affinity Range" }
                     number_field::number_field {
                         label: "Min",
                         id: "parties.min_mp_modifier",
