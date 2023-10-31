@@ -70,6 +70,11 @@ fn app(cx: Scope) -> Element {
         None => 64,
     };
 
+    let output_file = match &(*read_state).output {
+        Some(x) => x.clone(),
+        None => String::from(format!("{}", seed)),
+    };
+
     cx.render(rsx! {
         style { include_str!("../assets/style.css") },
         div {
@@ -148,7 +153,30 @@ fn app(cx: Scope) -> Element {
                     },
                     randomize::randomize {}
                 },
-                preset::preset {}
+                div {
+                    class: "center",
+                    preset::preset {},
+                    div {
+                        label {
+                            r#for: "test",
+                            "File name"
+                        }
+                        input {
+                            id: "test",
+                            r#type: "text",
+                            value: "{output_file}",
+                            minlength: 1,
+                            maxlength: 20,
+                            onchange: move |x| {
+                                if x.value == "" {
+                                    return;
+                                }
+
+                                state.write().output = Some(x.value.clone());
+                            }
+                        }
+                    },
+                },
             },
         },
         encounters::encounters {},

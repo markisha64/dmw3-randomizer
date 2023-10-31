@@ -101,6 +101,10 @@ input[type="button"] {
 	display: none;
 }
 
+input[type="text"] {
+	max-height: 20px;
+}
+
 input {
 	border: 1px solid rgba(255, 255, 255, 0.5);
 	border-radius: 5px;
