@@ -88,6 +88,8 @@ pub struct Parties {
     pub max_mp_modifier: u8,
     #[serde(default = "default_bool_true")]
     pub starting_hp_mp: bool,
+    #[serde(default = "default_bool_true")]
+    pub balance_hp_mp: bool,
     #[serde(default = "default_min_starting_hp")]
     pub min_starting_hp: u8,
     #[serde(default = "default_max_starting_hp")]

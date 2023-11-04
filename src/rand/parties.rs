@@ -180,30 +180,62 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     }
 
     if preset.parties.starting_hp_mp {
-        let min_hp = preset.parties.min_starting_hp;
-        let min_mp = preset.parties.min_starting_mp;
-        let hp_range = (preset.parties.max_starting_hp - min_hp + 1) as u64;
-        let mp_range = (preset.parties.max_starting_mp - min_mp + 1) as u64;
-
-        let min_hp_modifier = preset.parties.min_hp_modifier;
-        let min_mp_modifier = preset.parties.min_mp_modifier;
-        let hp_modifier_range = (preset.parties.max_hp_modifier - min_hp_modifier + 1) as u64;
-        let mp_modifier_range = (preset.parties.max_mp_modifier - min_mp_modifier + 1) as u64;
-
-        for rookie in &mut objects.rookie_data.modified {
-            let hp_distribution = rng.next_u32() as u64;
-            let mp_distribution = rng.next_u32() as u64;
-
-            let total = hp_distribution + mp_distribution;
-
-            rookie.starting_hp = min_hp + ((hp_distribution * hp_range as u64) / total) as u8;
-            rookie.starting_mp = min_mp + ((mp_distribution * mp_range as u64) / total) as u8;
-
-            rookie.hp_modifier =
-                min_hp_modifier + ((hp_distribution * hp_modifier_range as u64) / total) as u8;
-            rookie.mp_modifier =
-                min_mp_modifier + ((mp_distribution * mp_modifier_range as u64) / total) as u8;
+        match preset.parties.balance_hp_mp {
+            true => hp_mp_balanced(objects, rng, preset),
+            false => hp_mp_unbalanced(objects, rng, preset),
         }
+    }
+}
+
+fn hp_mp_unbalanced(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Randomizer) {
+    let min_hp = preset.parties.min_starting_hp;
+    let min_mp = preset.parties.min_starting_mp;
+    let hp_range = (preset.parties.max_starting_hp - min_hp + 1) as u64;
+    let mp_range = (preset.parties.max_starting_mp - min_mp + 1) as u64;
+
+    let min_hp_modifier = preset.parties.min_hp_modifier;
+    let min_mp_modifier = preset.parties.min_mp_modifier;
+    let hp_modifier_range = (preset.parties.max_hp_modifier - min_hp_modifier + 1) as u64;
+    let mp_modifier_range = (preset.parties.max_mp_modifier - min_mp_modifier + 1) as u64;
+
+    for rookie in &mut objects.rookie_data.modified {
+        let hp_distribution = rng.next_u64() % (hp_range + 1);
+        let mp_distribution = rng.next_u64() % (mp_range + 1);
+
+        rookie.starting_hp = min_hp + ((hp_distribution * hp_range as u64) / hp_range) as u8;
+        rookie.starting_mp = min_mp + ((mp_distribution * mp_range as u64) / mp_range) as u8;
+
+        rookie.hp_modifier =
+            min_hp_modifier + ((hp_distribution * hp_modifier_range as u64) / hp_range) as u8;
+        rookie.mp_modifier =
+            min_mp_modifier + ((mp_distribution * mp_modifier_range as u64) / mp_range) as u8;
+    }
+}
+
+fn hp_mp_balanced(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Randomizer) {
+    let min_hp = preset.parties.min_starting_hp;
+    let min_mp = preset.parties.min_starting_mp;
+    let hp_range = (preset.parties.max_starting_hp - min_hp + 1) as u64;
+    let mp_range = (preset.parties.max_starting_mp - min_mp + 1) as u64;
+
+    let min_hp_modifier = preset.parties.min_hp_modifier;
+    let min_mp_modifier = preset.parties.min_mp_modifier;
+    let hp_modifier_range = (preset.parties.max_hp_modifier - min_hp_modifier + 1) as u64;
+    let mp_modifier_range = (preset.parties.max_mp_modifier - min_mp_modifier + 1) as u64;
+
+    for rookie in &mut objects.rookie_data.modified {
+        let hp_distribution = rng.next_u32() as u64;
+        let mp_distribution = rng.next_u32() as u64;
+
+        let total = hp_distribution + mp_distribution;
+
+        rookie.starting_hp = min_hp + ((hp_distribution * hp_range as u64) / total) as u8;
+        rookie.starting_mp = min_mp + ((mp_distribution * mp_range as u64) / total) as u8;
+
+        rookie.hp_modifier =
+            min_hp_modifier + ((hp_distribution * hp_modifier_range as u64) / total) as u8;
+        rookie.mp_modifier =
+            min_mp_modifier + ((mp_distribution * mp_modifier_range as u64) / total) as u8;
     }
 }
 

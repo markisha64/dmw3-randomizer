@@ -35,6 +35,7 @@ pub fn parties(cx: Scope) -> Element {
     let max_mp_mod = read_state.randomizer.parties.max_mp_modifier;
 
     let starting_hp_mp = read_state.randomizer.parties.starting_hp_mp;
+    let balance_hp_mp = read_state.randomizer.parties.balance_hp_mp;
     let min_start_hp = read_state.randomizer.parties.min_starting_hp;
     let max_start_hp = read_state.randomizer.parties.max_starting_hp;
 
@@ -296,215 +297,219 @@ pub fn parties(cx: Scope) -> Element {
                 }
             },
             div {
-                class: "tooltip",
-                span {
-                    class: "tooltiptext",
-                    "Randomize starting HP/MP and HP/MP affinity"
-                },
-                div {
-                    class: "left",
-                    checkbox::checkbox {
-                        label: "Starting HP/MP",
-                        checked: starting_hp_mp,
-                        id: "parties.starting_hp_mp",
-                        disabled: !enabled,
-                        onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.parties.starting_hp_mp = x.data.value == "true";
-                        }
-                    },
-                },
-                div {
-                    class: "left",
-                    div { style: "margin-right: 10px;", "HP Range" }
-                    number_field::number_field {
-                        label: "Min",
-                        id: "parties.min_starting_hp",
-                        value: min_start_hp as i64,
-                        disabled: !starting_hp_mp|| !enabled,
-                        min: 1,
-                        max: max_start_hp as i64,
-                        onchange: move |x: Event<FormData>| {
-                            let new_hp_mod = match x.data.value.parse::<u8>() {
-                                Ok(s) => {
-                                    if s >= 1 {
-                                        s
-                                    } else {
-                                        min_mp_mod
-                                    }
-                                },
-                                _ => min_mp_mod
-                            };
-
-                            state.write().randomizer.parties.min_starting_hp = new_hp_mod
-                        }
-                    },
-                    number_field::number_field {
-                        label: "Max",
-                        id: "parties.max_starting_hp",
-                        value: max_start_hp as i64,
-                        disabled: !starting_hp_mp|| !enabled,
-                        min: min_start_hp as i64,
-                        max: 255,
-                        onchange: move |x: Event<FormData>| {
-                            let new_hp_mod = match x.data.value.parse::<u8>() {
-                                Ok(s) => {
-                                    if s >= 1 {
-                                        s
-                                    } else {
-                                        max_mp_mod
-                                    }
-                                },
-                                _ => max_mp_mod
-                            };
-
-                            state.write().randomizer.parties.max_starting_hp = new_hp_mod
-                        }
+                class: "left",
+                checkbox::checkbox {
+                    label: "Starting HP/MP",
+                    tooltip: "Randomize starting HP/MP and HP/MP affinity",
+                    checked: starting_hp_mp,
+                    id: "parties.starting_hp_mp",
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.starting_hp_mp = x.data.value == "true";
                     }
                 },
-                div {
-                    class: "left",
-                    div { style: "margin-right: 10px;", "MP Range" }
-                    number_field::number_field {
-                        label: "Min",
-                        id: "parties.min_starting_mp",
-                        value: min_start_mp as i64,
-                        disabled: !starting_hp_mp || !enabled,
-                        min: 1,
-                        max: max_start_mp as i64,
-                        onchange: move |x: Event<FormData>| {
-                            let new_mp_mod = match x.data.value.parse::<u8>() {
-                                Ok(s) => {
-                                    if s >= 1 {
-                                        s
-                                    } else {
-                                        min_mp_mod
-                                    }
-                                },
-                                _ => min_mp_mod
-                            };
-
-                            state.write().randomizer.parties.min_starting_mp = new_mp_mod
-                        }
-                    },
-                    number_field::number_field {
-                        label: "Max",
-                        id: "parties.max_starting_mp",
-                        value: max_start_mp as i64,
-                        disabled: !starting_hp_mp || !enabled,
-                        min: min_start_mp as i64,
-                        max: 255,
-                        onchange: move |x: Event<FormData>| {
-                            let new_mp_mod = match x.data.value.parse::<u8>() {
-                                Ok(s) => {
-                                    if s >= 1 {
-                                        s
-                                    } else {
-                                        max_mp_mod
-                                    }
-                                },
-                                _ => max_mp_mod
-                            };
-
-                            state.write().randomizer.parties.max_starting_mp = new_mp_mod
-                        }
+                checkbox::checkbox {
+                    label: "Balance HP/MP",
+                    tooltip: "Balance HP/MP as to be more vanilla like",
+                    checked: balance_hp_mp,
+                    disabled: !starting_hp_mp || !enabled,
+                    id: "parties.balance_hp_mp",
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.parties.balance_hp_mp = x.data.value == "true";
                     }
                 },
-                div {
-                    class: "left",
-                    div { style: "margin-right: 10px;", "HP Affinity Range" }
-                    number_field::number_field {
-                        label: "Min",
-                        id: "parties.min_hp_modifier",
-                        value: min_hp_mod as i64,
-                        disabled: !starting_hp_mp || !enabled,
-                        min: 1,
-                        max: max_hp_mod as i64,
-                        onchange: move |x: Event<FormData>| {
-                            let new_hp_mod = match x.data.value.parse::<u8>() {
-                                Ok(s) => {
-                                    if s >= 1 {
-                                        s
-                                    } else {
-                                        min_hp_mod
-                                    }
-                                },
-                                _ => min_hp_mod
-                            };
+            },
+            div {
+                class: "left",
+                div { style: "margin-right: 10px;", "HP Range" }
+                number_field::number_field {
+                    label: "Min",
+                    id: "parties.min_starting_hp",
+                    value: min_start_hp as i64,
+                    disabled: !starting_hp_mp|| !enabled,
+                    min: 1,
+                    max: max_start_hp as i64,
+                    onchange: move |x: Event<FormData>| {
+                        let new_hp_mod = match x.data.value.parse::<u8>() {
+                            Ok(s) => {
+                                if s >= 1 {
+                                    s
+                                } else {
+                                    min_mp_mod
+                                }
+                            },
+                            _ => min_mp_mod
+                        };
 
-                            state.write().randomizer.parties.min_hp_modifier = new_hp_mod
-                        }
-                    },
-                    number_field::number_field {
-                        label: "Max",
-                        id: "parties.max_hp_modifier",
-                        value: max_hp_mod as i64,
-                        disabled: !starting_hp_mp || !enabled,
-                        min: min_hp_mod as i64,
-                        max: 255,
-                        onchange: move |x: Event<FormData>| {
-                            let new_hp_mod = match x.data.value.parse::<u8>() {
-                                Ok(s) => {
-                                    if s >= 1 {
-                                        s
-                                    } else {
-                                        max_hp_mod
-                                    }
-                                },
-                                _ => max_hp_mod
-                            };
-
-                            state.write().randomizer.parties.max_hp_modifier = new_hp_mod
-                        }
+                        state.write().randomizer.parties.min_starting_hp = new_hp_mod
                     }
                 },
-                div {
-                    class: "left",
-                    div { style: "margin-right: 10px;", "MP Affinity Range" }
-                    number_field::number_field {
-                        label: "Min",
-                        id: "parties.min_mp_modifier",
-                        value: min_mp_mod as i64,
-                        disabled: !starting_hp_mp || !enabled,
-                        min: 1,
-                        max: max_mp_mod as i64,
-                        onchange: move |x: Event<FormData>| {
-                            let new_mp_mod = match x.data.value.parse::<u8>() {
-                                Ok(s) => {
-                                    if s >= 1 {
-                                        s
-                                    } else {
-                                        min_mp_mod
-                                    }
-                                },
-                                _ => min_mp_mod
-                            };
+                number_field::number_field {
+                    label: "Max",
+                    id: "parties.max_starting_hp",
+                    value: max_start_hp as i64,
+                    disabled: !starting_hp_mp|| !enabled,
+                    min: min_start_hp as i64,
+                    max: 255,
+                    onchange: move |x: Event<FormData>| {
+                        let new_hp_mod = match x.data.value.parse::<u8>() {
+                            Ok(s) => {
+                                if s >= 1 {
+                                    s
+                                } else {
+                                    max_mp_mod
+                                }
+                            },
+                            _ => max_mp_mod
+                        };
 
-                            state.write().randomizer.parties.min_mp_modifier = new_mp_mod
-                        }
-                    },
-                    number_field::number_field {
-                        label: "Max",
-                        id: "parties.max_mp_modifier",
-                        value: max_mp_mod as i64,
-                        disabled: !starting_hp_mp || !enabled,
-                        min: min_mp_mod as i64,
-                        max: 255,
-                        onchange: move |x: Event<FormData>| {
-                            let new_mp_mod = match x.data.value.parse::<u8>() {
-                                Ok(s) => {
-                                    if s >= 1 {
-                                        s
-                                    } else {
-                                        max_mp_mod
-                                    }
-                                },
-                                _ => max_mp_mod
-                            };
+                        state.write().randomizer.parties.max_starting_hp = new_hp_mod
+                    }
+                }
+            },
+            div {
+                class: "left",
+                div { style: "margin-right: 10px;", "MP Range" }
+                number_field::number_field {
+                    label: "Min",
+                    id: "parties.min_starting_mp",
+                    value: min_start_mp as i64,
+                    disabled: !starting_hp_mp || !enabled,
+                    min: 1,
+                    max: max_start_mp as i64,
+                    onchange: move |x: Event<FormData>| {
+                        let new_mp_mod = match x.data.value.parse::<u8>() {
+                            Ok(s) => {
+                                if s >= 1 {
+                                    s
+                                } else {
+                                    min_mp_mod
+                                }
+                            },
+                            _ => min_mp_mod
+                        };
 
-                            state.write().randomizer.parties.max_mp_modifier = new_mp_mod
-                        }
+                        state.write().randomizer.parties.min_starting_mp = new_mp_mod
                     }
                 },
+                number_field::number_field {
+                    label: "Max",
+                    id: "parties.max_starting_mp",
+                    value: max_start_mp as i64,
+                    disabled: !starting_hp_mp || !enabled,
+                    min: min_start_mp as i64,
+                    max: 255,
+                    onchange: move |x: Event<FormData>| {
+                        let new_mp_mod = match x.data.value.parse::<u8>() {
+                            Ok(s) => {
+                                if s >= 1 {
+                                    s
+                                } else {
+                                    max_mp_mod
+                                }
+                            },
+                            _ => max_mp_mod
+                        };
+
+                        state.write().randomizer.parties.max_starting_mp = new_mp_mod
+                    }
+                }
+            },
+            div {
+                class: "left",
+                div { style: "margin-right: 10px;", "HP Affinity Range" }
+                number_field::number_field {
+                    label: "Min",
+                    id: "parties.min_hp_modifier",
+                    value: min_hp_mod as i64,
+                    disabled: !starting_hp_mp || !enabled,
+                    min: 1,
+                    max: max_hp_mod as i64,
+                    onchange: move |x: Event<FormData>| {
+                        let new_hp_mod = match x.data.value.parse::<u8>() {
+                            Ok(s) => {
+                                if s >= 1 {
+                                    s
+                                } else {
+                                    min_hp_mod
+                                }
+                            },
+                            _ => min_hp_mod
+                        };
+
+                        state.write().randomizer.parties.min_hp_modifier = new_hp_mod
+                    }
+                },
+                number_field::number_field {
+                    label: "Max",
+                    id: "parties.max_hp_modifier",
+                    value: max_hp_mod as i64,
+                    disabled: !starting_hp_mp || !enabled,
+                    min: min_hp_mod as i64,
+                    max: 255,
+                    onchange: move |x: Event<FormData>| {
+                        let new_hp_mod = match x.data.value.parse::<u8>() {
+                            Ok(s) => {
+                                if s >= 1 {
+                                    s
+                                } else {
+                                    max_hp_mod
+                                }
+                            },
+                            _ => max_hp_mod
+                        };
+
+                        state.write().randomizer.parties.max_hp_modifier = new_hp_mod
+                    }
+                }
+            },
+            div {
+                class: "left",
+                div { style: "margin-right: 10px;", "MP Affinity Range" }
+                number_field::number_field {
+                    label: "Min",
+                    id: "parties.min_mp_modifier",
+                    value: min_mp_mod as i64,
+                    disabled: !starting_hp_mp || !enabled,
+                    min: 1,
+                    max: max_mp_mod as i64,
+                    onchange: move |x: Event<FormData>| {
+                        let new_mp_mod = match x.data.value.parse::<u8>() {
+                            Ok(s) => {
+                                if s >= 1 {
+                                    s
+                                } else {
+                                    min_mp_mod
+                                }
+                            },
+                            _ => min_mp_mod
+                        };
+
+                        state.write().randomizer.parties.min_mp_modifier = new_mp_mod
+                    }
+                },
+                number_field::number_field {
+                    label: "Max",
+                    id: "parties.max_mp_modifier",
+                    value: max_mp_mod as i64,
+                    disabled: !starting_hp_mp || !enabled,
+                    min: min_mp_mod as i64,
+                    max: 255,
+                    onchange: move |x: Event<FormData>| {
+                        let new_mp_mod = match x.data.value.parse::<u8>() {
+                            Ok(s) => {
+                                if s >= 1 {
+                                    s
+                                } else {
+                                    max_mp_mod
+                                }
+                            },
+                            _ => max_mp_mod
+                        };
+
+                        state.write().randomizer.parties.max_mp_modifier = new_mp_mod
+                    }
+                }
             },
         }
     }
