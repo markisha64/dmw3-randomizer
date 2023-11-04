@@ -202,8 +202,8 @@ fn hp_mp_unbalanced(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset:
         let hp_distribution = rng.next_u64() % (hp_range + 1);
         let mp_distribution = rng.next_u64() % (mp_range + 1);
 
-        rookie.starting_hp = min_hp + ((hp_distribution * hp_range as u64) / hp_range) as u8;
-        rookie.starting_mp = min_mp + ((mp_distribution * mp_range as u64) / mp_range) as u8;
+        rookie.starting_hp = min_hp + hp_distribution as u8;
+        rookie.starting_mp = min_mp + mp_distribution as u8;
 
         rookie.hp_modifier =
             min_hp_modifier + ((hp_distribution * hp_modifier_range as u64) / hp_range) as u8;
