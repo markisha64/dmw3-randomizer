@@ -6,6 +6,8 @@ use rand_xoshiro::Xoshiro256StarStar;
 use crate::consts;
 use crate::rand::{structs::EncounterData, Objects};
 
+use std::cmp::max;
+
 pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let len = objects.encounters.original.len();
     let modified_encounters = &mut objects.encounters.modified;
@@ -25,11 +27,15 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
     }
 
     for enemy_stats in &mut *modified_enemy_stats {
-        let min_lv: &mut EncounterData = modified_encounters
-            .iter_mut()
-            .filter(|&&mut x| x.digimon_id == enemy_stats.digimon_id as u32)
-            .min_by(|&&mut x, &&mut y| x.lv.cmp(&y.lv))
-            .unwrap();
+        let min_lv_index: usize = modified_encounters
+            .iter()
+            .enumerate()
+            .filter(|(_, x)| x.digimon_id == enemy_stats.digimon_id as u32)
+            .min_by(|(_, x), (_, y)| x.lv.cmp(&y.lv))
+            .unwrap()
+            .0;
+
+        let min_lv: &mut EncounterData = &mut modified_encounters[min_lv_index];
 
         let modifier = match preset.scaling_offset {
             0 => 0,
@@ -41,8 +47,11 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
             }
         };
 
-        let expected_stats = preset.base_stats + min_lv.lv as i32 * preset.stat_modifier + modifier;
-        let expect_res = preset.base_res + min_lv.lv as i32 * preset.res_modifier + modifier;
+        let target_stats = preset.base_stats + min_lv.lv as i32 * preset.stat_modifier + modifier;
+        let target_res = preset.base_res + min_lv.lv as i32 * preset.res_modifier + modifier;
+
+        let mut target_stats_normalized = target_stats;
+        let mut target_res_normalized = target_res;
 
         let current_stats: i32 = (enemy_stats.str
             + enemy_stats.def
@@ -58,55 +67,70 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
             + enemy_stats.mch_res
             + enemy_stats.drk_res) as i32;
 
-        // base stats
-        enemy_stats.str = (enemy_stats.str as i32 * expected_stats / current_stats) as i16;
-        enemy_stats.def = (enemy_stats.def as i32 * expected_stats / current_stats) as i16;
-        enemy_stats.wis = (enemy_stats.wis as i32 * expected_stats / current_stats) as i16;
-        enemy_stats.spt = (enemy_stats.spt as i32 * expected_stats / current_stats) as i16;
-        enemy_stats.spd = (enemy_stats.spd as i32 * expected_stats / current_stats) as i16;
-
-        // resistances
-        enemy_stats.fir_res = (enemy_stats.fir_res as i32 * expect_res / current_res) as i16;
-        enemy_stats.wtr_res = (enemy_stats.wtr_res as i32 * expect_res / current_res) as i16;
-        enemy_stats.ice_res = (enemy_stats.ice_res as i32 * expect_res / current_res) as i16;
-        enemy_stats.wnd_res = (enemy_stats.wnd_res as i32 * expect_res / current_res) as i16;
-        enemy_stats.thd_res = (enemy_stats.thd_res as i32 * expect_res / current_res) as i16;
-        enemy_stats.mch_res = (enemy_stats.mch_res as i32 * expect_res / current_res) as i16;
-        enemy_stats.drk_res = (enemy_stats.drk_res as i32 * expect_res / current_res) as i16;
-
+        let mut base_multiplier: u16 = 16;
         if enemy_stats.attack > 0 {
-            let move_data = &mut objects.move_data.modified[enemy_stats.attack as usize - 1];
+            let move_data = &objects.move_data.modified[enemy_stats.attack as usize - 1];
 
-            move_data.power = 40 + min_lv.lv * 10;
+            let mut power = 40 + min_lv.lv * 10;
 
             if move_data.hit_effect == consts::MULTI_HIT && move_data.freq > 1 {
-                move_data.power = (move_data.power * 6) / (move_data.freq as u16 * 5);
+                power = (move_data.power * 6) / (move_data.freq as u16 * 5);
             }
+
+            let current_power = move_data.power;
+            let target_power = power;
+
+            base_multiplier = max((16 * target_power) / current_power, 1);
+
+            target_stats_normalized =
+                (target_stats_normalized * current_power as i32) / (target_power as i32);
+            target_res_normalized =
+                (target_res_normalized * current_power as i32) / (target_power as i32);
         }
 
-        // modify multipliers
-        min_lv.multiplier = 16;
+        // base stats
+        enemy_stats.str = (enemy_stats.str as i32 * target_stats_normalized / current_stats) as i16;
+        enemy_stats.def = (enemy_stats.def as i32 * target_stats_normalized / current_stats) as i16;
+        enemy_stats.wis = (enemy_stats.wis as i32 * target_stats_normalized / current_stats) as i16;
+        enemy_stats.spt = (enemy_stats.spt as i32 * target_stats_normalized / current_stats) as i16;
+        enemy_stats.spd = (enemy_stats.spd as i32 * target_stats_normalized / current_stats) as i16;
 
-        let min_lv: EncounterData = modified_encounters
-            .iter()
-            .filter(|&x| x.digimon_id == enemy_stats.digimon_id as u32)
-            .min_by(|&x, &y| x.lv.cmp(&y.lv))
-            .unwrap()
-            .clone();
+        // resistances
+        enemy_stats.fir_res =
+            (enemy_stats.fir_res as i32 * target_res_normalized / current_res) as i16;
+        enemy_stats.wtr_res =
+            (enemy_stats.wtr_res as i32 * target_res_normalized / current_res) as i16;
+        enemy_stats.ice_res =
+            (enemy_stats.ice_res as i32 * target_res_normalized / current_res) as i16;
+        enemy_stats.wnd_res =
+            (enemy_stats.wnd_res as i32 * target_res_normalized / current_res) as i16;
+        enemy_stats.thd_res =
+            (enemy_stats.thd_res as i32 * target_res_normalized / current_res) as i16;
+        enemy_stats.mch_res =
+            (enemy_stats.mch_res as i32 * target_res_normalized / current_res) as i16;
+        enemy_stats.drk_res =
+            (enemy_stats.drk_res as i32 * target_res_normalized / current_res) as i16;
+
+        // modify multipliers
+        min_lv.multiplier = base_multiplier;
+
+        let min_lv: EncounterData = modified_encounters[min_lv_index];
 
         let encounters: Vec<&mut EncounterData> = modified_encounters
             .iter_mut()
-            .filter(|&&mut x| {
-                x.digimon_id == enemy_stats.digimon_id as u32
-                    && !(x.lv == min_lv.lv && x.multiplier == 16)
+            .enumerate()
+            .filter(|(index, x)| {
+                x.digimon_id == enemy_stats.digimon_id as u32 && *index != min_lv_index
             })
+            .map(|(_, x)| x)
             .collect();
 
         for encounter in encounters {
-            encounter.multiplier =
-                (((preset.base_stats + preset.stat_modifier * encounter.lv as i32) * 16)
-                    / (preset.base_stats + preset.stat_modifier * min_lv.lv as i32))
-                    as u16;
+            encounter.multiplier = (((preset.base_stats
+                + preset.stat_modifier * encounter.lv as i32)
+                * base_multiplier as i32)
+                / (preset.base_stats + preset.stat_modifier * min_lv.lv as i32))
+                as u16;
         }
     }
 
