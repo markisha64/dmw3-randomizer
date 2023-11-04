@@ -23,3 +23,6 @@ preset.json
 
 # dioxus
 dist/
+
+# submodules for editor sake
+mkpsxiso
