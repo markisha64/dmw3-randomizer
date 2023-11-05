@@ -1,13 +1,10 @@
 use crate::json::Scaling;
 
-use dioxus::core::Mutation;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::consts;
 use crate::rand::{structs::EncounterData, Objects};
-
-use std::cmp::max;
 
 pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let len = objects.encounters.original.len();
