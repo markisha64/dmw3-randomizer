@@ -1,5 +1,6 @@
 use crate::json::Scaling;
 
+use dioxus::core::Mutation;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -80,7 +81,12 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
             let current_power = move_data.power;
             let target_power = power;
 
-            base_multiplier = max((16 * target_power) / current_power, 1);
+            // equivalent to ceil() division without converting to floats
+            let before_division = 16 * target_power;
+            base_multiplier = match before_division % current_power {
+                0 => before_division / current_power,
+                _ => (before_division / current_power) + 1,
+            };
 
             target_stats_normalized =
                 (target_stats_normalized * current_power as i32) / (target_power as i32);
