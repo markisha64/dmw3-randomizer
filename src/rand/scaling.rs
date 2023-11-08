@@ -49,7 +49,6 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
         let target_res = preset.base_res + min_lv.lv as i32 * preset.res_modifier + modifier;
 
         let mut target_stats_normalized = target_stats;
-        let mut target_res_normalized = target_res;
 
         let current_stats: i32 = (enemy_stats.str
             + enemy_stats.def
@@ -87,8 +86,6 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
 
             target_stats_normalized =
                 (target_stats_normalized * current_power as i32) / (target_power as i32);
-            target_res_normalized =
-                (target_res_normalized * current_power as i32) / (target_power as i32);
         }
 
         // base stats
@@ -99,20 +96,13 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
         enemy_stats.spd = (enemy_stats.spd as i32 * target_stats_normalized / current_stats) as i16;
 
         // resistances
-        enemy_stats.fir_res =
-            (enemy_stats.fir_res as i32 * target_res_normalized / current_res) as i16;
-        enemy_stats.wtr_res =
-            (enemy_stats.wtr_res as i32 * target_res_normalized / current_res) as i16;
-        enemy_stats.ice_res =
-            (enemy_stats.ice_res as i32 * target_res_normalized / current_res) as i16;
-        enemy_stats.wnd_res =
-            (enemy_stats.wnd_res as i32 * target_res_normalized / current_res) as i16;
-        enemy_stats.thd_res =
-            (enemy_stats.thd_res as i32 * target_res_normalized / current_res) as i16;
-        enemy_stats.mch_res =
-            (enemy_stats.mch_res as i32 * target_res_normalized / current_res) as i16;
-        enemy_stats.drk_res =
-            (enemy_stats.drk_res as i32 * target_res_normalized / current_res) as i16;
+        enemy_stats.fir_res = (enemy_stats.fir_res as i32 * target_res / current_res) as i16;
+        enemy_stats.wtr_res = (enemy_stats.wtr_res as i32 * target_res / current_res) as i16;
+        enemy_stats.ice_res = (enemy_stats.ice_res as i32 * target_res / current_res) as i16;
+        enemy_stats.wnd_res = (enemy_stats.wnd_res as i32 * target_res / current_res) as i16;
+        enemy_stats.thd_res = (enemy_stats.thd_res as i32 * target_res / current_res) as i16;
+        enemy_stats.mch_res = (enemy_stats.mch_res as i32 * target_res / current_res) as i16;
+        enemy_stats.drk_res = (enemy_stats.drk_res as i32 * target_res / current_res) as i16;
 
         // modify multipliers
         min_lv.multiplier = base_multiplier;
