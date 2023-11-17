@@ -66,16 +66,15 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
 
         let mut base_multiplier: u16 = 16;
         if enemy_stats.attack > 0 {
-            let move_data = &objects.move_data.modified[enemy_stats.attack as usize - 1];
+            let move_data = &mut objects.move_data.modified[enemy_stats.attack as usize - 1];
 
-            let mut power = 40 + min_lv.lv * 10;
+            let mut target_power = 40 + min_lv.lv * 10;
 
             if move_data.hit_effect == consts::MULTI_HIT && move_data.freq > 1 {
-                power = (move_data.power * 6) / (move_data.freq as u16 * 5);
+                target_power = (move_data.power * 6) / (move_data.freq as u16 * 5);
             }
 
             let current_power = move_data.power;
-            let target_power = power;
 
             // equivalent to ceil() division without converting to floats
             let before_division = 16 * target_power;
@@ -84,8 +83,14 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
                 _ => (before_division / current_power) + 1,
             };
 
-            target_stats_normalized =
-                (target_stats_normalized * current_power as i32) / (target_power as i32);
+            // base multiplier is rounded up so need
+            // to adjust power accordingly
+            // target power = move power * multiplier
+            // => move power = target power / multiplier
+            move_data.power = (target_power * 16) / base_multiplier;
+
+            // need to do same thing on stats
+            target_stats_normalized = (target_stats_normalized * 16) / (base_multiplier as i32);
         }
 
         // base stats
