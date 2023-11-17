@@ -9,9 +9,13 @@ Support is added for all 3 versions, if you notice any problems, fill out an iss
 
 ## Features
 
-- Randomize wild Digimon encounters throughout the game.
+- Randomized wild Digimon encounters
+- Randomized bosses
 - Randomized starting parties (currently not previewable)
-- Randomized shops
+- Randomized shops and item prices
+- Randomized learned moves
+- Randomized digivolutions
+- Randomized starting stats and affinities
 
 ## Binary Download
 
