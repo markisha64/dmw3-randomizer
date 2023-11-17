@@ -10,6 +10,8 @@ pub fn scaling(cx: Scope) -> Element {
 
     let enabled = read_state.scaling.enabled;
 
+    let natural_scaling = read_state.scaling.natural_scaling;
+
     let scaling_offset = read_state.scaling.scaling_offset;
     let base_stats = read_state.scaling.base_stats;
     let base_res = read_state.scaling.base_res;
@@ -63,6 +65,18 @@ pub fn scaling(cx: Scope) -> Element {
                     min: consts::MIN_STAT_RANGE,
                     max: consts::MAX_STAT_RANGE
                 },
+            },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Natural Scaling",
+                    id: "scaling.natural_scaling",
+                    tooltip: "More natural scaling, scales tech",
+                    checked: natural_scaling,
+                    onchange: move |x: Event<FormData>| {
+                        preset_state.write().scaling.natural_scaling = x.data.value == "true";
+                    }
+                }
             },
             div {
                 class: "center",

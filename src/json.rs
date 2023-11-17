@@ -143,6 +143,8 @@ pub struct Scaling {
     pub res_modifier: i32,
     #[serde(default = "default_hp_modifier")]
     pub hp_modifier: f64,
+    #[serde(default = "default_bool_true")]
+    pub natural_scaling: bool,
 }
 
 fn default_shop_limit() -> Option<u8> {

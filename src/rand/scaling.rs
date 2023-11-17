@@ -76,21 +76,25 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
 
             let current_power = move_data.power;
 
-            // equivalent to ceil() division without converting to floats
-            let before_division = 16 * target_power;
-            base_multiplier = match before_division % current_power {
-                0 => before_division / current_power,
-                _ => (before_division / current_power) + 1,
-            };
+            if preset.natural_scaling {
+                // equivalent to ceil() division without converting to floats
+                let before_division = 16 * target_power;
+                base_multiplier = match before_division % current_power {
+                    0 => before_division / current_power,
+                    _ => (before_division / current_power) + 1,
+                };
 
-            // base multiplier is rounded up so need
-            // to adjust power accordingly
-            // target power = move power * multiplier
-            // => move power = target power / multiplier
-            move_data.power = (target_power * 16) / base_multiplier;
+                // base multiplier is rounded up so need
+                // to adjust power accordingly
+                // target power = move power * multiplier
+                // => move power = target power / multiplier
+                move_data.power = (target_power * 16) / base_multiplier;
 
-            // need to do same thing on stats
-            target_stats_normalized = (target_stats_normalized * 16) / (base_multiplier as i32);
+                // need to do same thing on stats
+                target_stats_normalized = (target_stats_normalized * 16) / (base_multiplier as i32);
+            } else {
+                move_data.power = target_power;
+            }
         }
 
         // base stats
