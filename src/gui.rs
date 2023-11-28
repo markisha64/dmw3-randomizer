@@ -76,8 +76,9 @@ fn app(cx: Scope) -> Element {
     };
 
     cx.render(rsx! {
-        style { include_str!("../assets/style.css") },
         div {
+            link { href: "../assets/style.css", rel: "stylesheet" },
+            link { href: "style.css", rel: "stylesheet" },
             div {
                 class: "inline",
                 div {

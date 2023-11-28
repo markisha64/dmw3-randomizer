@@ -9,9 +9,7 @@ asset_dir = "assets"
 title = "DMW3 Randomizer"
 
 [web.resource]
-style = [
-	"./assets/style.css"
-]
+style = []
 script = []
 
 [web.resource.dev]

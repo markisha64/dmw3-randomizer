@@ -116,7 +116,7 @@ input {
 }
 
 html {
-	background-image: url('./assets/bg.png');
+	background-image: url('./assets/bg.png'), url('./bg.png');
 	padding: 2px;
 	animation: bg 3s linear infinite;
 	color: white;
