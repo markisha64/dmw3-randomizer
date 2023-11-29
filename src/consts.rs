@@ -18,6 +18,7 @@ pub const EXP_FILE: &str = "AAA/PRO/STFGTREP.PRO";
 pub const SHOPS_LEN: usize = 30;
 
 pub const OVERLAYADDRESS: u32 = 0x800100c4;
+pub const STAGEADDRESS: u32 = 0x800100c8;
 
 // min is 0, max is how much space there is for shops
 pub const MIN_SHOP_ITEMS: i64 = 0;

@@ -224,6 +224,19 @@ pub struct DigivolutionConditions {
     pub conditions: Vec<DigivolutionCondition>,
 }
 
+#[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct Environmental {
+    #[br(count = 2)]
+    conditions: Vec<u32>,
+    pub environmental_type: u16,
+    pub next_stage_id: u16,
+    pub next_stage_x: u16,
+    pub next_stage_y: u16,
+    next_stage_direction: u16,
+    unk: u16,
+    unk1: u64,
+}
+
 impl Pointer {
     pub fn to_index(&self) -> u32 {
         self.value - 0x8000f800

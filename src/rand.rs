@@ -59,7 +59,6 @@ pub struct MapObject {
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
-    // overlay_address_pointer: Pointer,
     pub enemy_stats: Object<EnemyStats>,
     pub encounters: Object<EncounterData>,
     pub parties: Object<u8>,
@@ -96,9 +95,17 @@ impl Executable {
             _ => None,
         }
     }
+
+    fn environmentals_address(&self) -> Pointer {
+        match self {
+            Executable::PAL => Pointer { value: 0x80099d94 },
+            Executable::USA => Pointer { value: 0x800990c8 },
+            Executable::JAP => Pointer { value: 0x80099aa8 },
+        }
+    }
 }
 
-fn read_map_objects(path: &PathBuf) -> Vec<MapObject> {
+fn read_map_objects(path: &PathBuf, executable: &Executable) -> Vec<MapObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).unwrap();
 
@@ -432,7 +439,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         slen: 0x2c0,
     };
 
-    let map_objects = read_map_objects(path);
+    let map_objects = read_map_objects(path, &executable);
 
     Objects {
         executable,
