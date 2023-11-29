@@ -51,6 +51,11 @@ struct Bufs {
     exp_buf: Vec<u8>,
 }
 
+pub struct MapObject {
+    file_name: String,
+    buf: Vec<u8>,
+}
+
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
@@ -65,6 +70,7 @@ pub struct Objects {
     pub item_shop_data: Object<ItemShopData>,
     pub move_data: Object<MoveData>,
     pub dv_cond: Object<DigivolutionConditions>,
+    pub map_objects: Vec<MapObject>,
 }
 
 enum Executable {
@@ -90,6 +96,32 @@ impl Executable {
             _ => None,
         }
     }
+}
+
+fn read_map_objects(path: &PathBuf) -> Vec<MapObject> {
+    let rom_name = path.file_name().unwrap().to_str().unwrap();
+    let pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).unwrap();
+
+    let mut result: Vec<MapObject> = Vec::new();
+
+    for file_res in pro_folder {
+        let file = file_res.unwrap();
+
+        if let Ok(file_type) = file.file_type() {
+            if file_type.is_dir() {
+                continue;
+            }
+        }
+
+        let file_name = file.file_name().into_string().unwrap();
+        if file_name.starts_with("WSTAG") {
+            let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name)).unwrap();
+
+            result.push(MapObject { file_name, buf });
+        }
+    }
+
+    return result;
 }
 
 fn read_objects(path: &PathBuf) -> Objects {
@@ -400,6 +432,8 @@ fn read_objects(path: &PathBuf) -> Objects {
         slen: 0x2c0,
     };
 
+    let map_objects = read_map_objects(path);
+
     Objects {
         executable,
         // overlay_address_pointer: overlay,
@@ -420,7 +454,27 @@ fn read_objects(path: &PathBuf) -> Objects {
         item_shop_data: item_shop_data_object,
         move_data: move_data_object,
         dv_cond: dv_cond_object,
+        map_objects,
     }
+}
+
+fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(), ()> {
+    let rom_name = path.file_name().unwrap().to_str().unwrap();
+
+    for object in objects {
+        // execute Object.write_buf for every object
+
+        // write file
+        let mut new_file =
+            File::create(format!("extract/{}/AAA/PRO/{}", rom_name, object.file_name)).unwrap();
+
+        match new_file.write_all(&object.buf) {
+            Err(_) => return Err(()),
+            _ => {}
+        }
+    }
+
+    Ok(())
 }
 
 fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
@@ -476,6 +530,11 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     }
 
     match new_exp.write_all(&objects.bufs.exp_buf) {
+        Err(_) => return Err(()),
+        _ => {}
+    }
+
+    match write_map_objects(path, &mut objects.map_objects) {
         Err(_) => return Err(()),
         _ => {}
     }
