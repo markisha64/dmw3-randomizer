@@ -227,14 +227,14 @@ pub struct DigivolutionConditions {
 #[derive(BinRead, Debug, Clone, BinWrite)]
 pub struct Environmental {
     #[br(count = 2)]
-    conditions: Vec<u32>,
+    pub conditions: Vec<u32>,
     pub environmental_type: u16,
     pub next_stage_id: u16,
     pub next_stage_x: u16,
     pub next_stage_y: u16,
     next_stage_direction: u16,
     unk: u16,
-    unk1: u64,
+    unk1: u32,
 }
 
 impl Pointer {
@@ -257,6 +257,14 @@ impl Pointer {
 
 impl From<&[u8]> for Pointer {
     fn from(buf: &[u8]) -> Self {
+        Pointer {
+            value: u32::from_ne_bytes([buf[0], buf[1], buf[2], buf[3]]),
+        }
+    }
+}
+
+impl From<[u8; 4]> for Pointer {
+    fn from(buf: [u8; 4]) -> Self {
         Pointer {
             value: u32::from_ne_bytes([buf[0], buf[1], buf[2], buf[3]]),
         }

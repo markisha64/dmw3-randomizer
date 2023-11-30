@@ -20,6 +20,7 @@ pub mod structs;
 use structs::{DigivolutionData, EncounterData, EnemyStats, MoveData, Pointer, Shop};
 
 use self::structs::DigivolutionConditions;
+use self::structs::Environmental;
 use self::structs::ItemShopData;
 
 pub struct Object<T> {
@@ -54,6 +55,7 @@ struct Bufs {
 pub struct MapObject {
     file_name: String,
     buf: Vec<u8>,
+    environmentals: Object<Environmental>,
 }
 
 pub struct Objects {
@@ -96,16 +98,16 @@ impl Executable {
         }
     }
 
-    fn environmentals_address(&self) -> Pointer {
-        match self {
-            Executable::PAL => Pointer { value: 0x80099d94 },
-            Executable::USA => Pointer { value: 0x800990c8 },
-            Executable::JAP => Pointer { value: 0x80099aa8 },
-        }
-    }
+    // fn environmentals_address(&self) -> Pointer {
+    //     match self {
+    //         Executable::PAL => Pointer { value: 0x80099d94 },
+    //         Executable::USA => Pointer { value: 0x800990c8 },
+    //         Executable::JAP => Pointer { value: 0x80099aa8 },
+    //     }
+    // }
 }
 
-fn read_map_objects(path: &PathBuf, executable: &Executable) -> Vec<MapObject> {
+fn read_map_objects(path: &PathBuf, executable: &Executable, stage: &Pointer) -> Vec<MapObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).unwrap();
 
@@ -121,11 +123,62 @@ fn read_map_objects(path: &PathBuf, executable: &Executable) -> Vec<MapObject> {
         }
 
         let file_name = file.file_name().into_string().unwrap();
-        if file_name.starts_with("WSTAG") {
-            let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name)).unwrap();
-
-            result.push(MapObject { file_name, buf });
+        if !file_name.starts_with("WSTAG") {
+            continue;
         }
+
+        let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name)).unwrap();
+
+        let mut environmentals: Vec<Environmental> = Vec::new();
+        let mut environmentals_index: u32 = 0;
+
+        if let Some(environmental_set) = buf
+            .windows(4)
+            .position(|x| x == consts::ENVIRONMENTAL_INSTRUCTION)
+        {
+            let bp = u16::from_le_bytes([buf[environmental_set - 8], buf[environmental_set - 7]]);
+            let lp = i16::from_le_bytes([buf[environmental_set - 4], buf[environmental_set - 3]]);
+
+            let environmental_address = Pointer {
+                value: (((bp as u32) << 16) as i32 + lp as i32) as u32,
+            };
+
+            environmentals_index = environmental_address.to_index_overlay(stage.value as u32);
+
+            let mut environmentals_reader = Cursor::new(&buf[environmentals_index as usize..]);
+
+            loop {
+                let environmental = Environmental::read(&mut environmentals_reader);
+                let unwrapped;
+
+                match environmental {
+                    Ok(env) => unwrapped = env,
+                    Err(_) => {
+                        break;
+                    }
+                }
+
+                if !(unwrapped.conditions[0] == 0xffff0000
+                    && unwrapped.conditions[1] == 0xffff0000
+                    && unwrapped.next_stage_id == 0)
+                {
+                    environmentals.push(unwrapped);
+                }
+            }
+        }
+
+        let environmental_object = Object {
+            original: environmentals.clone(),
+            modified: environmentals.clone(),
+            index: environmentals_index as usize,
+            slen: 0x18,
+        };
+
+        result.push(MapObject {
+            file_name,
+            buf,
+            environmentals: environmental_object,
+        });
     }
 
     return result;
@@ -167,6 +220,14 @@ fn read_objects(path: &PathBuf) -> Objects {
 
     let overlay = Pointer::from(
         &main_buf[overlay_address.to_index() as usize..overlay_address.to_index() as usize + 4],
+    );
+
+    let stage_address = Pointer {
+        value: consts::STAGEADDRESS,
+    };
+
+    let stage = Pointer::from(
+        &main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
     );
 
     let enemy_stats_index = stats_buf
@@ -439,7 +500,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         slen: 0x2c0,
     };
 
-    let map_objects = read_map_objects(path, &executable);
+    let map_objects = read_map_objects(path, &executable, &stage);
 
     Objects {
         executable,
@@ -469,13 +530,17 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 
     for object in objects {
-        // execute Object.write_buf for every object
+        let buf = &mut object.buf;
+
+        if object.environmentals.index > 0 {
+            object.environmentals.write_buf(buf);
+        }
 
         // write file
         let mut new_file =
             File::create(format!("extract/{}/AAA/PRO/{}", rom_name, object.file_name)).unwrap();
 
-        match new_file.write_all(&object.buf) {
+        match new_file.write_all(buf) {
             Err(_) => return Err(()),
             _ => {}
         }
