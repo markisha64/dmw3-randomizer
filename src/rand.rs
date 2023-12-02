@@ -105,6 +105,14 @@ impl Executable {
     //         Executable::JAP => Pointer { value: 0x80099aa8 },
     //     }
     // }
+
+    fn to_stage_load_data_address(&self) -> Pointer {
+        match self {
+            Executable::PAL => Pointer { value: 0x8009a884 },
+            Executable::USA => Pointer { value: 0x800998e4 },
+            Executable::JAP => Pointer { value: 0x8009a598 },
+        }
+    }
 }
 
 fn read_map_objects(path: &PathBuf, executable: &Executable, stage: &Pointer) -> Vec<MapObject> {
@@ -210,7 +218,7 @@ fn read_objects(path: &PathBuf) -> Objects {
     let exp_buf = fs::read(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
 
     let overlay_address = Pointer {
-        value: consts::OVERLAYADDRESS,
+        value: consts::OVERLAY_ADDRESS,
     };
 
     let overlay = Pointer::from(
@@ -218,7 +226,7 @@ fn read_objects(path: &PathBuf) -> Objects {
     );
 
     let stage_address = Pointer {
-        value: consts::STAGEADDRESS,
+        value: consts::STAGE_ADDRESS,
     };
 
     let stage = Pointer::from(

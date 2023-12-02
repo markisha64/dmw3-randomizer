@@ -17,8 +17,8 @@ pub const EXP_FILE: &str = "AAA/PRO/STFGTREP.PRO";
 
 pub const SHOPS_LEN: usize = 30;
 
-pub const OVERLAYADDRESS: u32 = 0x800100c4;
-pub const STAGEADDRESS: u32 = 0x800100c8;
+pub const OVERLAY_ADDRESS: u32 = 0x800100c4;
+pub const STAGE_ADDRESS: u32 = 0x800100c8;
 
 pub const ENVIRONMENTAL_INSTRUCTION: &[u8; 4] = b"\x14\x00\x22\xae";
 
@@ -59,3 +59,5 @@ pub const DIGIVOLUTION_COUNT: usize = 44;
 
 pub const MIN_STAT_AFFINITY: u8 = 1;
 pub const MAX_STAT_AFFINITY: u8 = 5;
+
+pub const STAGE_LOAD_DATA_LENGTH: usize = 241;
