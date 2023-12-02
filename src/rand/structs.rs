@@ -246,6 +246,15 @@ impl Pointer {
         self.value - index
     }
 
+    pub fn from_instruction(buf: &[u8], index: usize) -> Pointer {
+        let bp = u16::from_le_bytes([buf[index - 8], buf[index - 7]]);
+        let lp = i16::from_le_bytes([buf[index - 4], buf[index - 3]]);
+
+        return Pointer {
+            value: (((bp as u32) << 16) as i32 + lp as i32) as u32,
+        };
+    }
+
     // pub fn from_index(index: u32) -> u32 {
     //     index + 0x8000f800
     // }

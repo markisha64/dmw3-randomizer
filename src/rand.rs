@@ -136,12 +136,7 @@ fn read_map_objects(path: &PathBuf, executable: &Executable, stage: &Pointer) ->
             .windows(4)
             .position(|x| x == consts::ENVIRONMENTAL_INSTRUCTION)
         {
-            let bp = u16::from_le_bytes([buf[environmental_set - 8], buf[environmental_set - 7]]);
-            let lp = i16::from_le_bytes([buf[environmental_set - 4], buf[environmental_set - 3]]);
-
-            let environmental_address = Pointer {
-                value: (((bp as u32) << 16) as i32 + lp as i32) as u32,
-            };
+            let environmental_address = Pointer::from_instruction(&buf, environmental_set);
 
             environmentals_index = environmental_address.to_index_overlay(stage.value as u32);
 
