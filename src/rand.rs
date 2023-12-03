@@ -811,7 +811,7 @@ pub fn patch(path: &PathBuf, preset: &Preset) {
     }
 
     if preset.randomizer.maps.enabled {
-        maps::patch(&preset.randomizer.maps, &mut objects, &mut rng);
+        maps::patch(&preset.randomizer, &mut objects, &mut rng);
     }
 
     match write_objects(path, &mut objects) {

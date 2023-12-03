@@ -54,6 +54,8 @@ pub struct Maps {
     pub enabled: bool,
     #[serde(default = "default_bool_false")]
     pub color: bool,
+    #[serde(default = "default_bool_true")]
+    pub backgrounds: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
