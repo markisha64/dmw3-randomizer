@@ -25,7 +25,7 @@ use self::structs::DigivolutionConditions;
 use self::structs::Environmental;
 use self::structs::ItemShopData;
 
-pub struct Object<T> {
+pub struct ObjectArray<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,
     index: usize,
@@ -36,7 +36,7 @@ trait WriteObjects {
     fn write_buf(&self, source_buf: &mut Vec<u8>);
 }
 
-impl<T: BinWrite> WriteObjects for Object<T> {
+impl<T: BinWrite> WriteObjects for ObjectArray<T> {
     fn write_buf(&self, write_buf: &mut Vec<u8>) {
         let mut buf = vec![];
 
@@ -58,22 +58,22 @@ struct Bufs {
 pub struct MapObject {
     file_name: String,
     buf: Vec<u8>,
-    environmentals: Option<Object<Environmental>>,
+    environmentals: Option<ObjectArray<Environmental>>,
 }
 
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
-    pub enemy_stats: Object<EnemyStats>,
-    pub encounters: Object<EncounterData>,
-    pub parties: Object<u8>,
-    pub rookie_data: Object<DigivolutionData>,
-    pub digivolution_data: Object<DigivolutionData>,
-    pub shops: Object<Shop>,
-    pub shop_items: Object<u16>,
-    pub item_shop_data: Object<ItemShopData>,
-    pub move_data: Object<MoveData>,
-    pub dv_cond: Object<DigivolutionConditions>,
+    pub enemy_stats: ObjectArray<EnemyStats>,
+    pub encounters: ObjectArray<EncounterData>,
+    pub parties: ObjectArray<u8>,
+    pub rookie_data: ObjectArray<DigivolutionData>,
+    pub digivolution_data: ObjectArray<DigivolutionData>,
+    pub shops: ObjectArray<Shop>,
+    pub shop_items: ObjectArray<u16>,
+    pub item_shop_data: ObjectArray<ItemShopData>,
+    pub move_data: ObjectArray<MoveData>,
+    pub dv_cond: ObjectArray<DigivolutionConditions>,
     pub stage_load_data: Vec<StageLoadData>,
     pub map_objects: Vec<MapObject>,
 }
@@ -180,7 +180,7 @@ fn read_map_objects(
         }
 
         let environmental_object = match environmentals_index {
-            Some(idx) => Some(Object {
+            Some(idx) => Some(ObjectArray {
                 original: environmentals.clone(),
                 modified: environmentals.clone(),
                 index: idx as usize,
@@ -464,70 +464,70 @@ fn read_objects(path: &PathBuf) -> Objects {
     let digivolution_data_copy = digivolution_data_arr.clone();
     let dv_cond_copy = dv_cond_arr.clone();
 
-    let enemy_stats_object = Object {
+    let enemy_stats_object = ObjectArray {
         original: enemy_stats_arr,
         modified: enemy_stats_arr_copy,
         index: enemy_stats_index,
         slen: 0x46,
     };
 
-    let encounters_object = Object {
+    let encounters_object = ObjectArray {
         original: encounter_data_arr,
         modified: encounter_data_arr_copy,
         index: encounter_data_index,
         slen: 0xc,
     };
 
-    let parties_object: Object<u8> = Object {
+    let parties_object: ObjectArray<u8> = ObjectArray {
         original: main_buf[parties_index..parties_index + 9].to_vec(),
         modified: main_buf[parties_index..parties_index + 9].to_vec(),
         index: parties_index,
         slen: 0x1,
     };
 
-    let rookie_data_object: Object<DigivolutionData> = Object {
+    let rookie_data_object: ObjectArray<DigivolutionData> = ObjectArray {
         original: rookie_data_arr,
         modified: rookie_data_copy,
         index: digivolution_data_index,
         slen: 0x58,
     };
 
-    let digivolution_data_object: Object<DigivolutionData> = Object {
+    let digivolution_data_object: ObjectArray<DigivolutionData> = ObjectArray {
         original: digivolution_data_arr,
         modified: digivolution_data_copy,
         index: digivolution_data_index + 0x58 * 8,
         slen: 0x58,
     };
 
-    let shops_object: Object<Shop> = Object {
+    let shops_object: ObjectArray<Shop> = ObjectArray {
         original: shops_arr.clone(),
         modified: shops_arr.clone(),
         index: shops_index,
         slen: 0x8,
     };
 
-    let shop_items_object: Object<u16> = Object {
+    let shop_items_object: ObjectArray<u16> = ObjectArray {
         original: shop_items_arr.clone(),
         modified: shop_items_arr.clone(),
         index: front_index,
         slen: 0x2,
     };
 
-    let item_shop_data_object: Object<ItemShopData> = Object {
+    let item_shop_data_object: ObjectArray<ItemShopData> = ObjectArray {
         original: item_shop_data_arr.clone(),
         modified: item_shop_data_arr.clone(),
         index: item_shop_data_index,
         slen: 0xc,
     };
 
-    let move_data_object: Object<MoveData> = Object {
+    let move_data_object: ObjectArray<MoveData> = ObjectArray {
         original: move_data_arr.clone(),
         modified: move_data_arr.clone(),
         index: move_data_index,
         slen: 0x12,
     };
 
-    let dv_cond_object: Object<DigivolutionConditions> = Object {
+    let dv_cond_object: ObjectArray<DigivolutionConditions> = ObjectArray {
         original: dv_cond_arr,
         modified: dv_cond_copy,
         index: dv_cond_index,
