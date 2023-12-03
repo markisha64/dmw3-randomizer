@@ -58,7 +58,7 @@ struct Bufs {
 pub struct MapObject {
     file_name: String,
     buf: Vec<u8>,
-    environmentals: Object<Environmental>,
+    environmentals: Option<Object<Environmental>>,
 }
 
 pub struct Objects {
@@ -146,7 +146,7 @@ fn read_map_objects(
         let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name)).unwrap();
 
         let mut environmentals: Vec<Environmental> = Vec::new();
-        let mut environmentals_index: u32 = 0;
+        let mut environmentals_index: Option<u32> = None;
 
         if let Some(environmental_set) = buf
             .windows(4)
@@ -154,9 +154,10 @@ fn read_map_objects(
         {
             let environmental_address = Pointer::from_instruction(&buf, environmental_set);
 
-            environmentals_index = environmental_address.to_index_overlay(stage.value as u32);
+            let idx = environmental_address.to_index_overlay(stage.value as u32);
+            environmentals_index = Some(idx);
 
-            let mut environmentals_reader = Cursor::new(&buf[environmentals_index as usize..]);
+            let mut environmentals_reader = Cursor::new(&buf[idx as usize..]);
 
             loop {
                 let environmental = Environmental::read(&mut environmentals_reader);
@@ -164,25 +165,28 @@ fn read_map_objects(
 
                 match environmental {
                     Ok(env) => unwrapped = env,
-                    Err(_) => {
-                        break;
-                    }
+                    Err(_) => panic!("binread error"),
                 }
 
-                if !(unwrapped.conditions[0] == 0xffff0000
-                    && unwrapped.conditions[1] == 0xffff0000
-                    && unwrapped.next_stage_id == 0)
+                if unwrapped.conditions[0] == 0x0000ffff
+                    && unwrapped.conditions[1] == 0x0000ffff
+                    && unwrapped.next_stage_id == 0
                 {
-                    environmentals.push(unwrapped);
+                    break;
                 }
+
+                environmentals.push(unwrapped);
             }
         }
 
-        let environmental_object = Object {
-            original: environmentals.clone(),
-            modified: environmentals.clone(),
-            index: environmentals_index as usize,
-            slen: 0x18,
+        let environmental_object = match environmentals_index {
+            Some(idx) => Some(Object {
+                original: environmentals.clone(),
+                modified: environmentals.clone(),
+                index: idx as usize,
+                slen: 0x18,
+            }),
+            None => None,
         };
 
         result.push(MapObject {
@@ -564,8 +568,8 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
     for object in objects {
         let buf = &mut object.buf;
 
-        if object.environmentals.index > 0 {
-            object.environmentals.write_buf(buf);
+        if let Some(environmentals) = &mut object.environmentals {
+            environmentals.write_buf(buf);
         }
 
         // write file
