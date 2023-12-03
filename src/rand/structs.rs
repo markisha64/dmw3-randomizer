@@ -244,6 +244,14 @@ pub struct Environmental {
     unk1: u32,
 }
 
+#[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct MapColor {
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
+    pub tint: u8,
+}
+
 impl Pointer {
     pub fn to_index(&self) -> u32 {
         self.value - 0x8000f800

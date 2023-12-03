@@ -22,6 +22,8 @@ pub const OVERLAY_ADDRESS: u32 = 0x800100c4;
 pub const STAGE_ADDRESS: u32 = 0x800100c8;
 
 pub const ENVIRONMENTAL_INSTRUCTION: &[u8; 4] = b"\x14\x00\x22\xae";
+// TODO: actual instruction
+pub const MAP_COLOR_INSTRUCTION: &[u8; 4] = b"\x14\x00\x22\xae";
 
 // min is 0, max is how much space there is for shops
 pub const MIN_SHOP_ITEMS: i64 = 0;

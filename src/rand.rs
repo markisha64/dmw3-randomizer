@@ -18,12 +18,9 @@ mod scaling;
 mod shops;
 pub mod structs;
 use structs::{
-    DigivolutionData, EncounterData, EnemyStats, MoveData, Pointer, Shop, StageLoadData,
+    DigivolutionConditions, DigivolutionData, EncounterData, EnemyStats, Environmental,
+    ItemShopData, MapColor, MoveData, Pointer, Shop, StageLoadData,
 };
-
-use self::structs::DigivolutionConditions;
-use self::structs::Environmental;
-use self::structs::ItemShopData;
 
 pub struct Object<T> {
     pub original: T,
@@ -75,6 +72,7 @@ pub struct MapObject {
     file_name: String,
     buf: Vec<u8>,
     environmentals: Option<ObjectArray<Environmental>>,
+    map_color: Option<Object<MapColor>>,
 }
 
 pub struct Objects {
@@ -164,6 +162,8 @@ fn read_map_objects(
         let mut environmentals: Vec<Environmental> = Vec::new();
         let mut environmentals_index: Option<u32> = None;
 
+        let mut map_color: Option<Object<MapColor>> = None;
+
         if let Some(environmental_set) = buf
             .windows(4)
             .position(|x| x == consts::ENVIRONMENTAL_INSTRUCTION)
@@ -195,6 +195,30 @@ fn read_map_objects(
             }
         }
 
+        if let Some(map_color_set) = buf
+            .windows(4)
+            .position(|x| x == consts::MAP_COLOR_INSTRUCTION)
+        {
+            let map_color_address = Pointer::from_instruction(&buf, map_color_set);
+
+            let idx = map_color_address.to_index_overlay(stage.value as u32);
+
+            let mut map_color_reader = Cursor::new(&buf[idx as usize..idx as usize + 4]);
+            let res = MapColor::read(&mut map_color_reader);
+
+            match res {
+                Ok(color) => {
+                    map_color = Some(Object {
+                        original: color.clone(),
+                        modified: color.clone(),
+                        index: idx as usize,
+                        slen: 0x4,
+                    });
+                }
+                Err(_) => panic!("binread error"),
+            }
+        }
+
         let environmental_object = match environmentals_index {
             Some(idx) => Some(ObjectArray {
                 original: environmentals.clone(),
@@ -209,6 +233,7 @@ fn read_map_objects(
             file_name,
             buf,
             environmentals: environmental_object,
+            map_color,
         });
     }
 
@@ -586,6 +611,10 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
 
         if let Some(environmentals) = &mut object.environmentals {
             environmentals.write_buf(buf);
+        }
+
+        if let Some(map_color) = &mut object.map_color {
+            map_color.write_buf(buf);
         }
 
         // write file
