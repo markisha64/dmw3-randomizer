@@ -163,7 +163,7 @@ fn read_map_objects(
         let mut environmentals: Vec<Environmental> = Vec::new();
         let mut environmentals_index: Option<u32> = None;
 
-        let mut map_color: Option<Object<MapColor>> = None;
+        let map_color: Option<Object<MapColor>> = None;
 
         if let Some(environmental_set) = buf
             .windows(4)
@@ -196,29 +196,30 @@ fn read_map_objects(
             }
         }
 
-        if let Some(map_color_set) = buf
-            .windows(4)
-            .position(|x| x == consts::MAP_COLOR_INSTRUCTION)
-        {
-            let map_color_address = Pointer::from_instruction(&buf, map_color_set);
+        // TODO: figure out how this works (its not a pointer set)
+        // if let Some(map_color_set) = buf
+        //     .windows(4)
+        //     .position(|x| x == consts::MAP_COLOR_INSTRUCTION)
+        // {
+        //     let map_color_address = Pointer::from_instruction(&buf, map_color_set);
 
-            let idx = map_color_address.to_index_overlay(stage.value as u32);
+        //     let idx = map_color_address.to_index_overlay(stage.value as u32);
 
-            let mut map_color_reader = Cursor::new(&buf[idx as usize..idx as usize + 4]);
-            let res = MapColor::read(&mut map_color_reader);
+        //     let mut map_color_reader = Cursor::new(&buf[idx as usize..idx as usize + 4]);
+        //     let res = MapColor::read(&mut map_color_reader);
 
-            match res {
-                Ok(color) => {
-                    map_color = Some(Object {
-                        original: color.clone(),
-                        modified: color.clone(),
-                        index: idx as usize,
-                        slen: 0x4,
-                    });
-                }
-                Err(_) => panic!("binread error"),
-            }
-        }
+        //     match res {
+        //         Ok(color) => {
+        //             map_color = Some(Object {
+        //                 original: color.clone(),
+        //                 modified: color.clone(),
+        //                 index: idx as usize,
+        //                 slen: 0x4,
+        //             });
+        //         }
+        //         Err(_) => panic!("binread error"),
+        //     }
+        // }
 
         let environmental_object = match environmentals_index {
             Some(idx) => Some(ObjectArray {
