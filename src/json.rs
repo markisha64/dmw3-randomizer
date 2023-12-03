@@ -26,6 +26,8 @@ pub struct Randomizer {
     pub parties: Parties,
     #[serde(default = "default_shops")]
     pub shops: Shops,
+    #[serde(default = "default_map")]
+    pub maps: Maps,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -43,6 +45,15 @@ pub struct Encounters {
     pub keep_galacticmon: bool,
     #[serde(default = "TNTStrategy::default")]
     pub strategy: TNTStrategy,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Maps {
+    #[serde(default = "default_bool_true")]
+    pub enabled: bool,
+    #[serde(default = "default_bool_false")]
+    pub color: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -172,6 +183,10 @@ fn default_parties() -> Parties {
 }
 
 fn default_shops() -> Shops {
+    serde_json::from_str("{}").unwrap()
+}
+
+fn default_map() -> Maps {
     serde_json::from_str("{}").unwrap()
 }
 

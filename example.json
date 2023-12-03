@@ -46,6 +46,10 @@
 			"min_sell_price": 6,
 			"max_sell_price": 6000,
 			"keep_tnt": true
+		},
+		"maps": {
+			"enabled": true,
+			"color": false
 		}
 	},
 	"scaling": {

@@ -12,6 +12,7 @@ use std::path::PathBuf;
 mod checkbox;
 mod encounters;
 mod file_upload;
+mod maps;
 mod number_field;
 mod number_field_float;
 mod parties;
@@ -183,6 +184,7 @@ fn app(cx: Scope) -> Element {
         encounters::encounters {},
         scaling::scaling {},
         parties::parties {},
-        shops::shops {}
+        shops::shops {},
+        maps::maps {}
     })
 }
