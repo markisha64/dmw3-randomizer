@@ -119,7 +119,11 @@ impl Executable {
     }
 }
 
-fn read_map_objects(path: &PathBuf, executable: &Executable, stage: &Pointer) -> Vec<MapObject> {
+fn read_map_objects(
+    path: &PathBuf,
+    stage_load_data: &Vec<StageLoadData>,
+    stage: &Pointer,
+) -> Vec<MapObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).unwrap();
 
@@ -526,7 +530,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         slen: 0x2c0,
     };
 
-    let map_objects = read_map_objects(path, &executable, &stage);
+    let map_objects = read_map_objects(path, &stage_load_data_arr, &stage);
 
     Objects {
         executable,
