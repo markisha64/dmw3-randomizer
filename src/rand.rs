@@ -25,6 +25,13 @@ use self::structs::DigivolutionConditions;
 use self::structs::Environmental;
 use self::structs::ItemShopData;
 
+pub struct Object<T> {
+    pub original: T,
+    pub modified: T,
+    index: usize,
+    slen: usize,
+}
+
 pub struct ObjectArray<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,
@@ -34,6 +41,15 @@ pub struct ObjectArray<T> {
 
 trait WriteObjects {
     fn write_buf(&self, source_buf: &mut Vec<u8>);
+}
+
+impl<T: BinWrite> WriteObjects for Object<T> {
+    fn write_buf(&self, write_buf: &mut Vec<u8>) {
+        let mut buf = vec![];
+
+        self.modified.write(&mut buf).unwrap();
+        write_buf[self.index..(self.index + self.slen)].copy_from_slice(&mut buf);
+    }
 }
 
 impl<T: BinWrite> WriteObjects for ObjectArray<T> {
