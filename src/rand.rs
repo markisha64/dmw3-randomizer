@@ -441,11 +441,11 @@ fn read_objects(path: &PathBuf) -> Objects {
         .to_index_overlay(overlay.value as u32) as usize;
 
     let mut stage_load_data_arr: Vec<StageLoadData> = Vec::new();
-    stage_load_data_arr.reserve(241);
+    stage_load_data_arr.reserve(consts::STAGE_LOAD_DATA_LENGTH);
 
     let mut stage_load_data_reader = Cursor::new(&map_buf[stage_load_data_index..]);
 
-    for _ in 0..241 {
+    for _ in 0..consts::STAGE_LOAD_DATA_LENGTH {
         let res = StageLoadData::read(&mut stage_load_data_reader);
 
         match res {
