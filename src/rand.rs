@@ -13,6 +13,7 @@ use crate::json::Preset;
 
 mod encounters;
 mod fixes;
+mod maps;
 mod parties;
 mod scaling;
 mod shops;
@@ -718,6 +719,10 @@ pub fn patch(path: &PathBuf, preset: &Preset) {
 
     if preset.randomizer.shops.enabled {
         shops::patch(&preset.randomizer.shops, &mut objects, &mut rng);
+    }
+
+    if preset.randomizer.maps.enabled {
+        maps::patch(&preset.randomizer.maps, &mut objects, &mut rng);
     }
 
     match write_objects(path, &mut objects) {
