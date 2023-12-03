@@ -17,7 +17,9 @@ mod parties;
 mod scaling;
 mod shops;
 pub mod structs;
-use structs::{DigivolutionData, EncounterData, EnemyStats, MoveData, Pointer, Shop};
+use structs::{
+    DigivolutionData, EncounterData, EnemyStats, MoveData, Pointer, Shop, StageLoadData,
+};
 
 use self::structs::DigivolutionConditions;
 use self::structs::Environmental;
@@ -50,6 +52,7 @@ struct Bufs {
     main_buf: Vec<u8>,
     shops_buf: Vec<u8>,
     exp_buf: Vec<u8>,
+    map_buf: Vec<u8>,
 }
 
 pub struct MapObject {
@@ -71,6 +74,7 @@ pub struct Objects {
     pub item_shop_data: Object<ItemShopData>,
     pub move_data: Object<MoveData>,
     pub dv_cond: Object<DigivolutionConditions>,
+    pub stage_load_data: Vec<StageLoadData>,
     pub map_objects: Vec<MapObject>,
 }
 
@@ -216,6 +220,7 @@ fn read_objects(path: &PathBuf) -> Objects {
     let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str())).unwrap();
     let shops_buf = fs::read(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
     let exp_buf = fs::read(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
+    let map_buf = fs::read(format!("extract/{}/{}", rom_name, consts::MAP_FILE)).unwrap();
 
     let overlay_address = Pointer {
         value: consts::OVERLAY_ADDRESS,
@@ -427,6 +432,24 @@ fn read_objects(path: &PathBuf) -> Objects {
         }
     }
 
+    let stage_load_data_index = executable
+        .to_stage_load_data_address()
+        .to_index_overlay(overlay.value as u32) as usize;
+
+    let mut stage_load_data_arr: Vec<StageLoadData> = Vec::new();
+    stage_load_data_arr.reserve(241);
+
+    let mut stage_load_data_reader = Cursor::new(&map_buf[stage_load_data_index..]);
+
+    for _ in 0..241 {
+        let res = StageLoadData::read(&mut stage_load_data_reader);
+
+        match res {
+            Ok(stage_load_data) => stage_load_data_arr.push(stage_load_data),
+            Err(_) => panic!("Binread error"),
+        }
+    }
+
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let rookie_data_copy = rookie_data_arr.clone();
@@ -514,6 +537,7 @@ fn read_objects(path: &PathBuf) -> Objects {
             main_buf,
             shops_buf,
             exp_buf,
+            map_buf,
         },
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
@@ -525,6 +549,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         item_shop_data: item_shop_data_object,
         move_data: move_data_object,
         dv_cond: dv_cond_object,
+        stage_load_data: stage_load_data_arr,
         map_objects,
     }
 }

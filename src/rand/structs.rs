@@ -225,6 +225,13 @@ pub struct DigivolutionConditions {
 }
 
 #[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct StageLoadData {
+    pub stage_id: u32,
+    pub file_index: u32,
+    entry_function: Pointer,
+}
+
+#[derive(BinRead, Debug, Clone, BinWrite)]
 pub struct Environmental {
     #[br(count = 2)]
     pub conditions: Vec<u32>,
