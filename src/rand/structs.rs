@@ -277,12 +277,16 @@ impl Pointer {
     // pub fn from_index_overlay(index: u32, overlay: u32) -> u32 {
     //     index + overlay
     // }
+
+    pub fn is_valid(&self) -> bool {
+        return 0x80000000 <= self.value && self.value <= 0x80100000;
+    }
 }
 
 impl From<&[u8]> for Pointer {
     fn from(buf: &[u8]) -> Self {
         Pointer {
-            value: u32::from_ne_bytes([buf[0], buf[1], buf[2], buf[3]]),
+            value: u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]),
         }
     }
 }
@@ -290,7 +294,7 @@ impl From<&[u8]> for Pointer {
 impl From<[u8; 4]> for Pointer {
     fn from(buf: [u8; 4]) -> Self {
         Pointer {
-            value: u32::from_ne_bytes([buf[0], buf[1], buf[2], buf[3]]),
+            value: u32::from_le_bytes([buf[0], buf[1], buf[2], buf[3]]),
         }
     }
 }

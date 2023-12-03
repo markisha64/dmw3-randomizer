@@ -66,7 +66,7 @@ struct Bufs {
     main_buf: Vec<u8>,
     shops_buf: Vec<u8>,
     exp_buf: Vec<u8>,
-    map_buf: Vec<u8>,
+    _map_buf: Vec<u8>,
 }
 
 pub struct MapObject {
@@ -74,6 +74,8 @@ pub struct MapObject {
     buf: Vec<u8>,
     environmentals: Option<ObjectArray<Environmental>>,
     map_color: Option<Object<MapColor>>,
+    background_file_index: Option<Object<u16>>,
+    _stage_id: Option<u16>,
 }
 
 pub struct Objects {
@@ -160,6 +162,42 @@ fn read_map_objects(
 
         let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name)).unwrap();
 
+        let mut offset: usize = 0x4;
+        let mut idx = buf.len() - offset;
+        let mut sstart_idx = buf.len() - offset - 0x10;
+        let mut sstart = u32::from_le_bytes([
+            buf[sstart_idx],
+            buf[sstart_idx + 1],
+            buf[sstart_idx + 2],
+            buf[sstart_idx + 3],
+        ]);
+        let mut ptr = Pointer::from(&buf[idx..idx + 4]);
+
+        while !(ptr.is_valid() && sstart == 0) && (offset + 0x24) <= buf.len() {
+            offset += 0x14;
+
+            idx = buf.len() - offset;
+            sstart_idx = buf.len() - offset - 0x10;
+
+            sstart = u32::from_le_bytes([
+                buf[sstart_idx],
+                buf[sstart_idx + 1],
+                buf[sstart_idx + 2],
+                buf[sstart_idx + 3],
+            ]);
+
+            ptr = Pointer::from(&buf[idx..idx + 4]);
+        }
+
+        let init_stage_ptrs: Option<Pointer> = match ptr.is_valid() {
+            true => Some(ptr),
+            false => None,
+        };
+
+        let mut stage_id: Option<u16> = None;
+        let mut background_file_index_index: Option<usize> = None;
+        let mut background_file_index: Option<u16> = None;
+
         let mut environmentals: Vec<Environmental> = Vec::new();
         let mut environmentals_index: Option<u32> = None;
 
@@ -231,11 +269,57 @@ fn read_map_objects(
             None => None,
         };
 
+        if file_name != "WSTAG780.PRO" {
+            if let Some(init_stage_idx) = init_stage_ptrs {
+                let idx = init_stage_idx.to_index_overlay(stage.value as u32) as usize;
+
+                if let Some(bg_set_offset) = buf[idx..].windows(2).position(|x| x == b"\x08\x00") {
+                    let bg_set_idx = idx + bg_set_offset;
+
+                    let li_instruction_offset = buf[idx..bg_set_idx]
+                        .windows(2)
+                        .position(|x| x == consts::LI_INSTRUCTION)
+                        .unwrap();
+
+                    let li_instruction = idx + li_instruction_offset;
+
+                    let bg_file_index =
+                        u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
+
+                    background_file_index_index = Some(li_instruction - 2);
+                    background_file_index = Some(bg_file_index);
+
+                    let stage_file_index = (bg_file_index + 2) as u32;
+
+                    let stage_load_row = stage_load_data
+                        .iter()
+                        .find(|x| x.file_index == stage_file_index);
+
+                    stage_id = match stage_load_row {
+                        Some(stage_load) => Some(stage_load.stage_id as u16),
+                        None => None,
+                    };
+                }
+            }
+        }
+
+        let background_object = match background_file_index {
+            Some(idx) => Some(Object {
+                original: idx,
+                modified: idx,
+                slen: 0x2,
+                index: background_file_index_index.unwrap() as usize,
+            }),
+            None => None,
+        };
+
         result.push(MapObject {
             file_name,
             buf,
             environmentals: environmental_object,
             map_color,
+            background_file_index: background_object,
+            _stage_id: stage_id,
         });
     }
 
@@ -588,7 +672,7 @@ fn read_objects(path: &PathBuf) -> Objects {
             main_buf,
             shops_buf,
             exp_buf,
-            map_buf,
+            _map_buf: map_buf,
         },
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
@@ -617,6 +701,10 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
 
         if let Some(map_color) = &mut object.map_color {
             map_color.write_buf(buf);
+        }
+
+        if let Some(background_file_index) = &mut object.background_file_index {
+            background_file_index.write_buf(buf);
         }
 
         // write file
