@@ -74,8 +74,8 @@ pub struct MapObject {
     buf: Vec<u8>,
     environmentals: Option<ObjectArray<Environmental>>,
     map_color: Option<Object<MapColor>>,
-    background_file_index: Option<Object<u16>>,
-    _stage_id: Option<u16>,
+    background_file_index: Object<u16>,
+    _stage_id: u16,
 }
 
 pub struct Objects {
@@ -168,9 +168,9 @@ fn read_map_objects(
         let mut sstart = buf[sstart_idx..sstart_idx + 8]
             .iter()
             .fold(0, |a, b| a + *b as u32);
-        let mut ptr = Pointer::from(&buf[idx..idx + 4]);
+        let mut init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
 
-        while !(ptr.is_valid() && sstart == 0) && (offset + 0x24) <= buf.len() {
+        while !(init_stage_pointers.is_valid() && sstart == 0) && (offset + 0x24) <= buf.len() {
             offset += 0x14;
 
             idx = buf.len() - offset;
@@ -180,40 +180,37 @@ fn read_map_objects(
                 .iter()
                 .fold(0, |a, b| a + *b as u32);
 
-            ptr = Pointer::from(&buf[idx..idx + 4]);
+            init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
         }
 
-        if ptr.is_valid() {
+        if init_stage_pointers.is_valid() {
             let mut pptr = Pointer::from(&buf[idx - 4..idx]);
             while pptr.is_valid() {
                 idx -= 4;
 
-                ptr = Pointer::from(&buf[idx..idx + 4]);
+                init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
                 pptr = Pointer::from(&buf[idx - 4..idx]);
             }
         }
 
-        let init_stage_ptrs: Option<Pointer> = match ptr.is_valid() {
-            true => Some(ptr),
-            false => None,
-        };
+        if !init_stage_pointers.is_valid() {
+            continue;
+        }
 
-        let jump_return: Option<Pointer> = match ptr.is_valid() {
-            true => {
-                let idx = ptr.to_index_overlay(stage.value as u32) as usize;
+        let idx = init_stage_pointers.to_index_overlay(stage.value as u32) as usize;
 
-                let jr_ra_instruction_index = buf[idx..]
-                    .windows(4)
-                    .position(|x| x == consts::JR_RA_INSTRUCTION);
+        let jr_ra_instruction_index = buf[idx..]
+            .windows(4)
+            .position(|x| x == consts::JR_RA_INSTRUCTION);
 
-                match jr_ra_instruction_index {
-                    Some(jidx) => Some(Pointer {
-                        value: ptr.value + jidx as u32,
-                    }),
-                    None => None,
-                }
-            }
-            false => None,
+        if jr_ra_instruction_index.is_none() {
+            println!("{}", file_name);
+            println!("exited here");
+            continue;
+        }
+
+        let jump_return = Pointer {
+            value: init_stage_pointers.value + jr_ra_instruction_index.unwrap() as u32,
         };
 
         // leaving this for when I work on post game maps?
@@ -230,10 +227,6 @@ fn read_map_objects(
         //         buf[idx + 3]
         //     );
         // }
-
-        let mut stage_id: Option<u16> = None;
-        let mut background_file_index_index: Option<usize> = None;
-        let mut background_file_index: Option<u16> = None;
 
         let mut environmentals: Vec<Environmental> = Vec::new();
         let mut environmentals_index: Option<u32> = None;
@@ -306,48 +299,54 @@ fn read_map_objects(
             None => None,
         };
 
-        if let Some(init_stage_idx) = init_stage_ptrs {
-            let idx = init_stage_idx.to_index_overlay(stage.value as u32) as usize;
-            let jidx = jump_return.unwrap().to_index_overlay(stage.value as u32) as usize;
+        let idx = init_stage_pointers.to_index_overlay(stage.value as u32) as usize;
+        let jidx = jump_return.to_index_overlay(stage.value as u32) as usize;
 
-            if let Some(bg_set_offset) = buf[idx..jidx].windows(2).position(|x| x == b"\x08\x00") {
-                let bg_set_idx = idx + bg_set_offset;
+        let bg_set_offset_result = buf[idx..jidx].windows(2).position(|x| x == b"\x08\x00");
 
-                let res = buf[idx..bg_set_idx]
-                    .windows(2)
-                    .position(|x| x == consts::LI_INSTRUCTION);
-
-                if let Some(li_instruction_offset) = res {
-                    let li_instruction = idx + li_instruction_offset;
-
-                    let bg_file_index =
-                        u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
-
-                    background_file_index_index = Some(li_instruction - 2);
-                    background_file_index = Some(bg_file_index);
-
-                    let stage_file_index = (bg_file_index + 2) as u32;
-
-                    let stage_load_row = stage_load_data
-                        .iter()
-                        .find(|x| x.file_index == stage_file_index);
-
-                    stage_id = match stage_load_row {
-                        Some(stage_load) => Some(stage_load.stage_id as u16),
-                        None => None,
-                    };
-                }
-            }
+        if bg_set_offset_result.is_none() {
+            continue;
         }
 
-        let background_object = match background_file_index {
-            Some(idx) => Some(Object {
-                original: idx,
-                modified: idx,
-                slen: 0x2,
-                index: background_file_index_index.unwrap() as usize,
-            }),
-            None => None,
+        let bg_set_offset = bg_set_offset_result.unwrap();
+
+        let bg_set_idx = idx + bg_set_offset;
+
+        let res = buf[idx..bg_set_idx]
+            .windows(2)
+            .position(|x| x == consts::LI_INSTRUCTION);
+
+        if res.is_none() {
+            println!("here");
+            continue;
+        }
+
+        let li_instruction_offset = res.unwrap();
+
+        let li_instruction = idx + li_instruction_offset;
+
+        let bg_file_index = u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
+
+        let background_file_index_index = li_instruction - 2;
+        let background_file_index = bg_file_index;
+
+        let stage_file_index = (bg_file_index + 2) as u32;
+
+        let stage_load_row = stage_load_data
+            .iter()
+            .find(|x| x.file_index == stage_file_index);
+
+        if stage_load_row.is_none() {
+            continue;
+        }
+
+        let stage_load_data = stage_load_row.unwrap();
+
+        let background_object = Object {
+            original: background_file_index,
+            modified: background_file_index,
+            slen: 0x2,
+            index: background_file_index_index as usize,
         };
 
         result.push(MapObject {
@@ -356,7 +355,7 @@ fn read_map_objects(
             environmentals: environmental_object,
             map_color,
             background_file_index: background_object,
-            _stage_id: stage_id,
+            _stage_id: stage_load_data.stage_id as u16,
         });
     }
 
@@ -740,9 +739,7 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
             map_color.write_buf(buf);
         }
 
-        if let Some(background_file_index) = &mut object.background_file_index {
-            background_file_index.write_buf(buf);
-        }
+        object.background_file_index.write_buf(buf);
 
         // write file
         let mut new_file =
