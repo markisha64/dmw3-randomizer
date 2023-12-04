@@ -156,7 +156,8 @@ fn read_map_objects(
         }
 
         let file_name = file.file_name().into_string().unwrap();
-        if !file_name.starts_with("WSTAG") {
+        // WSTAG9* files are post game and don't really work atm
+        if !file_name.starts_with("WSTAG") || file_name.starts_with("WSTAG9") {
             continue;
         }
 
@@ -165,12 +166,9 @@ fn read_map_objects(
         let mut offset: usize = 0x4;
         let mut idx = buf.len() - offset;
         let mut sstart_idx = buf.len() - offset - 0x10;
-        let mut sstart = u32::from_le_bytes([
-            buf[sstart_idx],
-            buf[sstart_idx + 1],
-            buf[sstart_idx + 2],
-            buf[sstart_idx + 3],
-        ]);
+        let mut sstart = buf[sstart_idx..sstart_idx + 8]
+            .iter()
+            .fold(0, |a, b| a + *b as u32);
         let mut ptr = Pointer::from(&buf[idx..idx + 4]);
 
         while !(ptr.is_valid() && sstart == 0) && (offset + 0x24) <= buf.len() {
@@ -179,20 +177,60 @@ fn read_map_objects(
             idx = buf.len() - offset;
             sstart_idx = buf.len() - offset - 0x10;
 
-            sstart = u32::from_le_bytes([
-                buf[sstart_idx],
-                buf[sstart_idx + 1],
-                buf[sstart_idx + 2],
-                buf[sstart_idx + 3],
-            ]);
+            sstart = buf[sstart_idx..sstart_idx + 8]
+                .iter()
+                .fold(0, |a, b| a + *b as u32);
 
             ptr = Pointer::from(&buf[idx..idx + 4]);
+        }
+
+        if ptr.is_valid() {
+            let mut pptr = Pointer::from(&buf[idx - 4..idx]);
+            while pptr.is_valid() {
+                idx -= 4;
+
+                ptr = Pointer::from(&buf[idx..idx + 4]);
+                pptr = Pointer::from(&buf[idx - 4..idx]);
+            }
         }
 
         let init_stage_ptrs: Option<Pointer> = match ptr.is_valid() {
             true => Some(ptr),
             false => None,
         };
+
+        let jump_return: Option<Pointer> = match ptr.is_valid() {
+            true => {
+                let idx = ptr.to_index_overlay(stage.value as u32) as usize;
+
+                let jr_ra_instruction_index = buf[idx..]
+                    .windows(4)
+                    .position(|x| x == consts::JR_RA_INSTRUCTION);
+
+                match jr_ra_instruction_index {
+                    Some(jidx) => Some(Pointer {
+                        value: ptr.value + jidx as u32,
+                    }),
+                    None => None,
+                }
+            }
+            false => None,
+        };
+
+        // leaving this for when I work on post game maps?
+        // if ptr.is_valid() {
+        //     println!("{}", file_name);
+        //     let idx = ptr.to_index_overlay(stage.value as u32) as usize;
+
+        //     println!("{:x}", ptr.value);
+        //     println!(
+        //         "{:x} {:x} {:x} {:x}",
+        //         buf[idx],
+        //         buf[idx + 1],
+        //         buf[idx + 2],
+        //         buf[idx + 3]
+        //     );
+        // }
 
         let mut stage_id: Option<u16> = None;
         let mut background_file_index_index: Option<usize> = None;
@@ -269,18 +307,18 @@ fn read_map_objects(
             None => None,
         };
 
-        if file_name != "WSTAG780.PRO" {
-            if let Some(init_stage_idx) = init_stage_ptrs {
-                let idx = init_stage_idx.to_index_overlay(stage.value as u32) as usize;
+        if let Some(init_stage_idx) = init_stage_ptrs {
+            let idx = init_stage_idx.to_index_overlay(stage.value as u32) as usize;
+            let jidx = jump_return.unwrap().to_index_overlay(stage.value as u32) as usize;
 
-                if let Some(bg_set_offset) = buf[idx..].windows(2).position(|x| x == b"\x08\x00") {
-                    let bg_set_idx = idx + bg_set_offset;
+            if let Some(bg_set_offset) = buf[idx..jidx].windows(2).position(|x| x == b"\x08\x00") {
+                let bg_set_idx = idx + bg_set_offset;
 
-                    let li_instruction_offset = buf[idx..bg_set_idx]
-                        .windows(2)
-                        .position(|x| x == consts::LI_INSTRUCTION)
-                        .unwrap();
+                let res = buf[idx..bg_set_idx]
+                    .windows(2)
+                    .position(|x| x == consts::LI_INSTRUCTION);
 
+                if let Some(li_instruction_offset) = res {
                     let li_instruction = idx + li_instruction_offset;
 
                     let bg_file_index =
