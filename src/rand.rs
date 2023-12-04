@@ -226,42 +226,59 @@ fn read_map_objects(
         //     );
         // }
 
-        let mut environmentals: Vec<Environmental> = Vec::new();
-        let mut environmentals_index: Option<u32> = None;
+        let initsp_index = init_stage_pointers.to_index_overlay(stage.value as u32) as usize;
+        let initp_end_index = jump_return.to_index_overlay(stage.value as u32) as usize;
 
-        let map_color: Option<Object<MapColor>> = None;
+        let bg_set_offset_result = buf[initsp_index..initp_end_index]
+            .windows(2)
+            .position(|x| x == b"\x08\x00");
 
-        if let Some(environmental_set) = buf
-            .windows(4)
-            .position(|x| x == consts::ENVIRONMENTAL_INSTRUCTION)
-        {
-            let environmental_address = Pointer::from_instruction(&buf, environmental_set);
-
-            let idx = environmental_address.to_index_overlay(stage.value as u32);
-            environmentals_index = Some(idx);
-
-            let mut environmentals_reader = Cursor::new(&buf[idx as usize..]);
-
-            loop {
-                let environmental = Environmental::read(&mut environmentals_reader);
-                let unwrapped;
-
-                match environmental {
-                    Ok(env) => unwrapped = env,
-                    Err(_) => panic!("binread error"),
-                }
-
-                if unwrapped.conditions[0] == 0x0000ffff
-                    && unwrapped.conditions[1] == 0x0000ffff
-                    && unwrapped.next_stage_id == 0
-                {
-                    break;
-                }
-
-                environmentals.push(unwrapped);
-            }
+        if bg_set_offset_result.is_none() {
+            continue;
         }
 
+        let bg_set_offset = bg_set_offset_result.unwrap();
+        let bg_set_idx = initsp_index + bg_set_offset;
+
+        let sw = &buf[bg_set_idx + 2..bg_set_idx + 4];
+
+        let res = buf[initsp_index..bg_set_idx]
+            .windows(2)
+            .position(|x| x == consts::LI_INSTRUCTION);
+
+        if res.is_none() {
+            continue;
+        }
+
+        let li_instruction_offset = res.unwrap();
+
+        let li_instruction = initsp_index + li_instruction_offset;
+
+        let bg_file_index = u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
+
+        let background_file_index_index = li_instruction - 2;
+        let background_file_index = bg_file_index;
+
+        let stage_file_index = (bg_file_index + 2) as u32;
+
+        let stage_load_row = stage_load_data
+            .iter()
+            .find(|x| x.file_index == stage_file_index);
+
+        if stage_load_row.is_none() {
+            continue;
+        }
+
+        let stage_load_data = stage_load_row.unwrap();
+
+        let background_object = Object {
+            original: background_file_index,
+            modified: background_file_index,
+            slen: 0x2,
+            index: background_file_index_index as usize,
+        };
+
+        let map_color: Option<Object<MapColor>> = None;
         // TODO: figure out how this works (its not a pointer set)
         // if let Some(map_color_set) = buf
         //     .windows(4)
@@ -287,6 +304,49 @@ fn read_map_objects(
         //     }
         // }
 
+        let mut environmentals: Vec<Environmental> = Vec::new();
+        let mut environmentals_index: Option<u32> = None;
+
+        // we need to assemble full sw instruction
+        let environmental_instruction = [
+            consts::ENVIRONMENTAL_INSTRUCTION[0],
+            consts::ENVIRONMENTAL_INSTRUCTION[1],
+            sw[0],
+            sw[1],
+        ];
+
+        if let Some(environmental_set) = buf[initsp_index..initp_end_index]
+            .windows(4)
+            .position(|x| x == environmental_instruction)
+        {
+            let environmental_address =
+                Pointer::from_instruction(&buf, initsp_index + environmental_set);
+
+            let env_index = environmental_address.to_index_overlay(stage.value as u32);
+            environmentals_index = Some(env_index);
+
+            let mut environmentals_reader = Cursor::new(&buf[(env_index as usize)..]);
+
+            loop {
+                let environmental = Environmental::read(&mut environmentals_reader);
+                let unwrapped;
+
+                match environmental {
+                    Ok(env) => unwrapped = env,
+                    Err(_) => panic!("binread error"),
+                }
+
+                if unwrapped.conditions[0] == 0x0000ffff
+                    && unwrapped.conditions[1] == 0x0000ffff
+                    && unwrapped.next_stage_id == 0
+                {
+                    break;
+                }
+
+                environmentals.push(unwrapped);
+            }
+        }
+
         let environmental_object = match environmentals_index {
             Some(idx) => Some(ObjectArray {
                 original: environmentals.clone(),
@@ -295,56 +355,6 @@ fn read_map_objects(
                 slen: 0x18,
             }),
             None => None,
-        };
-
-        let idx = init_stage_pointers.to_index_overlay(stage.value as u32) as usize;
-        let jidx = jump_return.to_index_overlay(stage.value as u32) as usize;
-
-        let bg_set_offset_result = buf[idx..jidx].windows(2).position(|x| x == b"\x08\x00");
-
-        if bg_set_offset_result.is_none() {
-            continue;
-        }
-
-        let bg_set_offset = bg_set_offset_result.unwrap();
-
-        let bg_set_idx = idx + bg_set_offset;
-
-        let res = buf[idx..bg_set_idx]
-            .windows(2)
-            .position(|x| x == consts::LI_INSTRUCTION);
-
-        if res.is_none() {
-            println!("here");
-            continue;
-        }
-
-        let li_instruction_offset = res.unwrap();
-
-        let li_instruction = idx + li_instruction_offset;
-
-        let bg_file_index = u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
-
-        let background_file_index_index = li_instruction - 2;
-        let background_file_index = bg_file_index;
-
-        let stage_file_index = (bg_file_index + 2) as u32;
-
-        let stage_load_row = stage_load_data
-            .iter()
-            .find(|x| x.file_index == stage_file_index);
-
-        if stage_load_row.is_none() {
-            continue;
-        }
-
-        let stage_load_data = stage_load_row.unwrap();
-
-        let background_object = Object {
-            original: background_file_index,
-            modified: background_file_index,
-            slen: 0x2,
-            index: background_file_index_index as usize,
         };
 
         result.push(MapObject {
