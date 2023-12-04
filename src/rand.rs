@@ -75,7 +75,7 @@ pub struct MapObject {
     environmentals: Option<ObjectArray<Environmental>>,
     map_color: Option<Object<MapColor>>,
     background_file_index: Object<u16>,
-    _stage_id: u16,
+    _stage_id: Option<u16>,
 }
 
 pub struct Objects {
@@ -265,11 +265,10 @@ fn read_map_objects(
             .iter()
             .find(|x| x.file_index == stage_file_index);
 
-        if stage_load_row.is_none() {
-            continue;
-        }
-
-        let stage_load_data = stage_load_row.unwrap();
+        let stage_id = match stage_load_row {
+            Some(row) => Some(row.stage_id as u16),
+            None => None,
+        };
 
         let background_object = Object {
             original: background_file_index,
@@ -363,7 +362,7 @@ fn read_map_objects(
             environmentals: environmental_object,
             map_color,
             background_file_index: background_object,
-            _stage_id: stage_load_data.stage_id as u16,
+            _stage_id: stage_id,
         });
     }
 
