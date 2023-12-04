@@ -204,8 +204,6 @@ fn read_map_objects(
             .position(|x| x == consts::JR_RA_INSTRUCTION);
 
         if jr_ra_instruction_index.is_none() {
-            println!("{}", file_name);
-            println!("exited here");
             continue;
         }
 
