@@ -156,7 +156,6 @@ fn read_map_objects(
         }
 
         let file_name = file.file_name().into_string().unwrap();
-        // WSTAG9* files are post game and don't really work atm
         if !file_name.starts_with("WSTAG") || file_name.starts_with("WSTAG9") {
             continue;
         }
