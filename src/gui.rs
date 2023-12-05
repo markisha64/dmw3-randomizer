@@ -181,10 +181,19 @@ fn app(cx: Scope) -> Element {
                 },
             },
         },
-        encounters::encounters {},
-        scaling::scaling {},
-        parties::parties {},
-        shops::shops {},
-        maps::maps {}
+        div {
+            class: "left",
+            div {
+                class: "column",
+                parties::parties {},
+                scaling::scaling {},
+            },
+            div {
+                class: "column",
+                shops::shops {},
+                encounters::encounters {},
+                maps::maps {},
+            },
+        }
     })
 }

@@ -54,7 +54,7 @@ pub struct Maps {
     pub enabled: bool,
     #[serde(default = "default_bool_false")]
     pub color: bool,
-    #[serde(default = "default_bool_true")]
+    #[serde(default = "default_bool_false")]
     pub backgrounds: bool,
 }
 

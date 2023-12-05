@@ -40,6 +40,10 @@
 	justify-content: flex-start;
 }
 
+.column {
+	display: flex;
+	flex-direction: column;
+}
 
 .progress {
 	background-color: rgba(255, 255, 255, 0.5);
