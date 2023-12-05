@@ -25,8 +25,9 @@ pub const LI_INSTRUCTION: &[u8; 2] = b"\x02\x24";
 pub const JR_RA_INSTRUCTION: &[u8; 4] = b"\x08\x00\xe0\x03";
 
 pub const ENVIRONMENTAL_INSTRUCTION: &[u8; 4] = b"\x14\x00\x22\xae";
-// TODO: actual instruction
-// pub const MAP_COLOR_INSTRUCTION: &[u8; 4] = b"\x38\x00\x28\xba";
+pub const STAGE_COLOR_INSTRUCTION_HALF: &[u8; 2] = b"\x38\x00";
+
+pub const ADDIU: u8 = 0x24;
 
 // min is 0, max is how much space there is for shops
 pub const MIN_SHOP_ITEMS: i64 = 0;

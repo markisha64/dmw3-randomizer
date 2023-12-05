@@ -277,31 +277,40 @@ fn read_map_objects(
             index: background_file_index_index as usize,
         };
 
-        let map_color: Option<Object<MapColor>> = None;
-        // TODO: figure out how this works (its not a pointer set)
-        // if let Some(map_color_set) = buf
-        //     .windows(4)
-        //     .position(|x| x == consts::MAP_COLOR_INSTRUCTION)
-        // {
-        //     let map_color_address = Pointer::from_instruction(&buf, map_color_set);
+        let mut map_color: Option<Object<MapColor>> = None;
 
-        //     let idx = map_color_address.to_index_overlay(stage.value as u32);
+        if let Some(map_color_offset) = buf[initsp_index..initp_end_index]
+            .windows(2)
+            .position(|x| x == consts::STAGE_COLOR_INSTRUCTION_HALF)
+        {
+            if let Some(map_color_addiu) = buf[initsp_index..initsp_index + map_color_offset]
+                .windows(4)
+                .rev()
+                .position(|x| x[3] == consts::ADDIU)
+            {
+                let aidx = initsp_index + map_color_offset - map_color_addiu - 4;
+                let addiu_first_half = i16::from_le_bytes([buf[aidx], buf[aidx + 1]]);
 
-        //     let mut map_color_reader = Cursor::new(&buf[idx as usize..idx as usize + 4]);
-        //     let res = MapColor::read(&mut map_color_reader);
+                let address = (0x800a0000 + addiu_first_half as i64) as u32;
 
-        //     match res {
-        //         Ok(color) => {
-        //             map_color = Some(Object {
-        //                 original: color.clone(),
-        //                 modified: color.clone(),
-        //                 index: idx as usize,
-        //                 slen: 0x4,
-        //             });
-        //         }
-        //         Err(_) => panic!("binread error"),
-        //     }
-        // }
+                let map_color_address = Pointer { value: address };
+
+                let idx = map_color_address.to_index_overlay(stage.value as u32) as usize;
+
+                let mut map_color_reader = Cursor::new(&buf[idx..idx + 4]);
+                let res = MapColor::read(&mut map_color_reader);
+
+                map_color = match res {
+                    Ok(color) => Some(Object {
+                        original: color.clone(),
+                        modified: color.clone(),
+                        index: idx,
+                        slen: 0x4,
+                    }),
+                    Err(_) => panic!("binread error"),
+                };
+            }
+        }
 
         let mut environmentals: Vec<Environmental> = Vec::new();
         let mut environmentals_index: Option<u32> = None;
