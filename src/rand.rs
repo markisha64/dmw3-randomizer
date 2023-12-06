@@ -10,6 +10,8 @@ use std::path::PathBuf;
 
 use crate::consts;
 use crate::json::Preset;
+use crate::mkpsxiso::xml_file;
+use crate::mkpsxiso::IsoProject;
 
 mod encounters;
 mod fixes;
@@ -81,6 +83,7 @@ pub struct MapObject {
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
+    pub iso_project: IsoProject,
     pub enemy_stats: ObjectArray<EnemyStats>,
     pub encounters: ObjectArray<EncounterData>,
     pub parties: ObjectArray<u8>,
@@ -380,6 +383,8 @@ fn read_map_objects(
 
 fn read_objects(path: &PathBuf) -> Objects {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
+    let iso_project = xml_file();
+
     let itr = fs::read_dir(format!("extract/{}/", rom_name)).unwrap();
 
     let executable_opt = itr
@@ -717,6 +722,7 @@ fn read_objects(path: &PathBuf) -> Objects {
 
     Objects {
         executable,
+        iso_project,
         // overlay_address_pointer: overlay,
         bufs: Bufs {
             encounter_buf,

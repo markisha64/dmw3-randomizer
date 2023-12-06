@@ -1,4 +1,60 @@
+use quick_xml;
+use quick_xml::de::from_str;
+use serde::Deserialize;
+use std::fs;
 use std::process::Command;
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+pub struct IsoProject {
+    track: Vec<Track>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+struct Track {
+    #[serde(rename = "@type")]
+    r#type: String,
+    directory_tree: DirectoryTree,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+enum DirEntry {
+    Dir(Dir),
+    File(File),
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+struct DirectoryTree {
+    #[serde(rename = "$value")]
+    field: Vec<DirEntry>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+struct Dir {
+    #[serde(rename = "$value")]
+    field: Vec<DirEntry>,
+    #[serde(rename = "@name")]
+    name: String,
+    #[serde(rename = "@source")]
+    source: String,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "snake_case")]
+struct File {
+    #[serde(rename = "@name")]
+    name: String,
+    #[serde(rename = "@source")]
+    source: String,
+    #[serde(rename = "@offs")]
+    offs: u32,
+    #[serde(rename = "@type")]
+    r#type: String,
+}
 
 fn exists(exec: &str) -> bool {
     let output_res = Command::new(exec).output();
@@ -42,6 +98,12 @@ pub fn extract(path: &std::path::PathBuf) -> bool {
         .unwrap()
         .status
         .success()
+}
+
+pub fn xml_file() -> IsoProject {
+    let xml = fs::read_to_string("extract/out.xml").unwrap();
+
+    from_str(&xml).unwrap()
 }
 
 pub fn build(file_name: &str) -> bool {
