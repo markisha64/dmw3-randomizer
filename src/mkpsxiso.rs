@@ -67,9 +67,9 @@ struct Dir {
     #[serde(rename = "$value")]
     field: Vec<DirEntry>,
     #[serde(rename = "@name")]
-    name: String,
+    _name: String,
     #[serde(rename = "@source")]
-    source: String,
+    _source: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -78,11 +78,11 @@ pub struct File {
     #[serde(rename = "@name")]
     pub name: String,
     #[serde(rename = "@source")]
-    source: String,
+    _source: String,
     #[serde(rename = "@offs")]
     pub offs: u32,
     #[serde(rename = "@type")]
-    r#type: String,
+    _type: String,
 }
 
 fn exists(exec: &str) -> bool {
