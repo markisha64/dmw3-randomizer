@@ -10,8 +10,8 @@ use std::path::PathBuf;
 
 use crate::consts;
 use crate::json::Preset;
+use crate::mkpsxiso;
 use crate::mkpsxiso::xml_file;
-use crate::mkpsxiso::IsoProject;
 
 mod encounters;
 mod fixes;
@@ -77,13 +77,16 @@ pub struct MapObject {
     environmentals: Option<ObjectArray<Environmental>>,
     map_color: Option<Object<MapColor>>,
     background_file_index: Object<u16>,
-    _stage_id: Option<u16>,
+    _stage_id: u16,
 }
 
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
-    pub iso_project: IsoProject,
+    // hard coded data
+    pub file_map: Vec<mkpsxiso::File>,
+    pub sector_offsets: Vec<u32>,
+
     pub enemy_stats: ObjectArray<EnemyStats>,
     pub encounters: ObjectArray<EncounterData>,
     pub parties: ObjectArray<u8>,
@@ -137,12 +140,22 @@ impl Executable {
             Executable::JAP => Pointer { value: 0x8009a598 },
         }
     }
+
+    fn to_sector_offsets_address(&self) -> Pointer {
+        match self {
+            Executable::PAL => Pointer { value: 0x80044f6c },
+            Executable::USA => Pointer { value: 0x80044b78 },
+            Executable::JAP => Pointer { value: 0x80044d98 },
+        }
+    }
 }
 
 fn read_map_objects(
     path: &PathBuf,
     stage_load_data: &Vec<StageLoadData>,
     stage: &Pointer,
+    file_map: &Vec<mkpsxiso::File>,
+    sector_offsets: &Vec<u32>,
 ) -> Vec<MapObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).unwrap();
@@ -255,6 +268,22 @@ fn read_map_objects(
 
         let li_instruction_offset = res.unwrap();
 
+        let sector_offset = file_map
+            .iter()
+            .find(|file| file.name == file_name)
+            .unwrap()
+            .offs;
+
+        let sector_offsets_index = sector_offsets
+            .iter()
+            .position(|off| *off == sector_offset)
+            .unwrap() as u32;
+
+        let stage_load_data_row = stage_load_data
+            .iter()
+            .find(|sldr| sldr.file_index == sector_offsets_index)
+            .unwrap();
+
         let li_instruction = initsp_index + li_instruction_offset;
 
         let bg_file_index = u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
@@ -262,16 +291,7 @@ fn read_map_objects(
         let background_file_index_index = li_instruction - 2;
         let background_file_index = bg_file_index;
 
-        let stage_file_index = (bg_file_index + 2) as u32;
-
-        let stage_load_row = stage_load_data
-            .iter()
-            .find(|x| x.file_index == stage_file_index);
-
-        let stage_id = match stage_load_row {
-            Some(row) => Some(row.stage_id as u16),
-            None => None,
-        };
+        let stage_id = stage_load_data_row.stage_id as u16;
 
         let background_object = Object {
             original: background_file_index,
@@ -429,6 +449,21 @@ fn read_objects(path: &PathBuf) -> Objects {
     let stage = Pointer::from(
         &main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
     );
+
+    let file_map = iso_project.flatten();
+
+    let mut sector_offsets: Vec<u32> = Vec::new();
+    sector_offsets.reserve(file_map.len());
+
+    let sector_offsets_index = executable.to_sector_offsets_address().to_index() as usize;
+
+    for i in 0..file_map.len() {
+        sector_offsets.push(u32::from_le_bytes(
+            main_buf[sector_offsets_index + i * 4..sector_offsets_index + i * 4 + 4]
+                .try_into()
+                .unwrap(),
+        ));
+    }
 
     let enemy_stats_index = stats_buf
         .windows(16)
@@ -718,11 +753,18 @@ fn read_objects(path: &PathBuf) -> Objects {
         slen: 0x2c0,
     };
 
-    let map_objects = read_map_objects(path, &stage_load_data_arr, &stage);
+    let map_objects = read_map_objects(
+        path,
+        &stage_load_data_arr,
+        &stage,
+        &file_map,
+        &sector_offsets,
+    );
 
     Objects {
         executable,
-        iso_project,
+        file_map,
+        sector_offsets,
         // overlay_address_pointer: overlay,
         bufs: Bufs {
             encounter_buf,

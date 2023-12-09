@@ -10,6 +10,35 @@ pub struct IsoProject {
     track: Vec<Track>,
 }
 
+impl IsoProject {
+    pub fn flatten(&self) -> Vec<File> {
+        let mut result: Vec<File> = Vec::new();
+        let data = self.track.iter().find(|t| t.r#type == "data").unwrap();
+
+        for entry in data.directory_tree.field.iter() {
+            match entry {
+                DirEntry::File(file) => {
+                    result.push(file.clone());
+                }
+                DirEntry::Dir(dir) => rflatten(dir, &mut result),
+            }
+        }
+
+        return result;
+    }
+}
+
+fn rflatten(dir: &Dir, result: &mut Vec<File>) {
+    for entry in dir.field.iter() {
+        match entry {
+            DirEntry::File(file) => {
+                result.push(file.clone());
+            }
+            DirEntry::Dir(dir) => rflatten(dir, result),
+        }
+    }
+}
+
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
 struct Track {
@@ -43,15 +72,15 @@ struct Dir {
     source: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
-struct File {
+pub struct File {
     #[serde(rename = "@name")]
-    name: String,
+    pub name: String,
     #[serde(rename = "@source")]
     source: String,
     #[serde(rename = "@offs")]
-    offs: u32,
+    pub offs: u32,
     #[serde(rename = "@type")]
     r#type: String,
 }
