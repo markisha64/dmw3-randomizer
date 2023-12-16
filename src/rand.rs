@@ -68,6 +68,7 @@ struct Bufs {
     main_buf: Vec<u8>,
     shops_buf: Vec<u8>,
     exp_buf: Vec<u8>,
+    pack_select_buf: Vec<u8>,
     _map_buf: Vec<u8>,
 }
 
@@ -87,9 +88,11 @@ pub struct Objects {
     pub file_map: Vec<mkpsxiso::File>,
     pub sector_offsets: Vec<u32>,
 
+    pub parties: ObjectArray<u8>,
+    pub pack_previews: ObjectArray<u32>,
+
     pub enemy_stats: ObjectArray<EnemyStats>,
     pub encounters: ObjectArray<EncounterData>,
-    pub parties: ObjectArray<u8>,
     pub rookie_data: ObjectArray<DigivolutionData>,
     pub digivolution_data: ObjectArray<DigivolutionData>,
     pub shops: ObjectArray<Shop>,
@@ -433,6 +436,8 @@ fn read_objects(path: &PathBuf) -> Objects {
     let shops_buf = fs::read(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
     let exp_buf = fs::read(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
     let map_buf = fs::read(format!("extract/{}/{}", rom_name, consts::MAP_FILE)).unwrap();
+    let pack_select_buf =
+        fs::read(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
 
     let overlay_address = Pointer {
         value: consts::OVERLAY_ADDRESS,
@@ -637,7 +642,20 @@ fn read_objects(path: &PathBuf) -> Objects {
 
     let parties_index = main_buf
         .windows(9)
-        .position(|window| -> bool { window == b"\x00\x06\x07\x02\x03\x06\x01\x05\x07" })
+        .position(|window| window == consts::PACKS)
+        .unwrap();
+
+    let default_packs: Vec<u32> = consts::PACKS.iter().map(|x| *x as u32).collect();
+    let mut default_pack_preview: Vec<u8> = Vec::new();
+    for mon in consts::PACKS {
+        // yes this is ugly, no I don't care
+        default_pack_preview.push(*mon);
+        default_pack_preview.extend(b"\x00\x00\x00");
+    }
+
+    let pack_select_preview_index = pack_select_buf
+        .windows(36)
+        .position(|window| window == default_pack_preview)
         .unwrap();
 
     let mut dv_cond_arr: Vec<DigivolutionConditions> = Vec::new();
@@ -698,10 +716,17 @@ fn read_objects(path: &PathBuf) -> Objects {
     };
 
     let parties_object: ObjectArray<u8> = ObjectArray {
-        original: main_buf[parties_index..parties_index + 9].to_vec(),
-        modified: main_buf[parties_index..parties_index + 9].to_vec(),
+        original: consts::PACKS.into(),
+        modified: consts::PACKS.into(),
         index: parties_index,
         slen: 0x1,
+    };
+
+    let party_previewes_object: ObjectArray<u32> = ObjectArray {
+        original: default_packs.clone(),
+        modified: default_packs.clone(),
+        index: pack_select_preview_index,
+        slen: 0x4,
     };
 
     let rookie_data_object: ObjectArray<DigivolutionData> = ObjectArray {
@@ -772,11 +797,15 @@ fn read_objects(path: &PathBuf) -> Objects {
             main_buf,
             shops_buf,
             exp_buf,
+            pack_select_buf,
             _map_buf: map_buf,
         },
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
+
         parties: parties_object,
+        pack_previews: party_previewes_object,
+
         rookie_data: rookie_data_object,
         digivolution_data: digivolution_data_object,
         shops: shops_object,
@@ -833,6 +862,9 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     objects.item_shop_data.write_buf(&mut objects.bufs.main_buf);
     objects.move_data.write_buf(&mut objects.bufs.main_buf);
     objects.dv_cond.write_buf(&mut objects.bufs.exp_buf);
+    objects
+        .pack_previews
+        .write_buf(&mut objects.bufs.pack_select_buf);
 
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 
@@ -849,6 +881,8 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     let mut new_shops =
         File::create(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
     let mut new_exp = File::create(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
+    let mut new_pack_select =
+        File::create(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
 
     match new_main_executable.write_all(&objects.bufs.main_buf) {
         Err(_) => return Err(()),
@@ -871,6 +905,11 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     }
 
     match new_exp.write_all(&objects.bufs.exp_buf) {
+        Err(_) => return Err(()),
+        _ => {}
+    }
+
+    match new_pack_select.write_all(&objects.bufs.pack_select_buf) {
         Err(_) => return Err(()),
         _ => {}
     }

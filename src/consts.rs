@@ -15,6 +15,9 @@ pub const ENCOUNTERS_FILE: &str = "AAA/PRO/FIELDSTG.PRO";
 pub const SHOPS_FILE: &str = "AAA/PRO/STITSHOP.PRO";
 pub const EXP_FILE: &str = "AAA/PRO/STFGTREP.PRO";
 pub const MAP_FILE: &str = "AAA/PRO/FIELDSTG.PRO";
+pub const PACK_SELECT_FILE: &str = "AAA/PRO/STPLNMET.PRO";
+
+pub const PACKS: &[u8] = b"\x00\x06\x07\x02\x03\x06\x01\x05\x07";
 
 pub const SHOPS_LEN: usize = 30;
 

@@ -80,6 +80,10 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 parties[i * 3 + j] = all_digimon[rindex + j];
             }
         }
+
+        for i in 0..9 {
+            objects.pack_previews.modified[i] = parties[i] as u32;
+        }
     }
 
     if preset.parties.stat_distribution {
