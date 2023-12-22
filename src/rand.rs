@@ -263,13 +263,14 @@ fn read_map_objects(
 
         let res = buf[initsp_index..bg_set_idx]
             .windows(2)
+            .rev()
             .position(|x| x == consts::LI_INSTRUCTION);
 
         if res.is_none() {
             continue;
         }
 
-        let li_instruction_offset = res.unwrap();
+        let li_instruction = bg_set_idx - res.unwrap() - 2;
 
         let sector_offset = file_map
             .iter()
@@ -286,8 +287,6 @@ fn read_map_objects(
             .iter()
             .find(|sldr| sldr.file_index == sector_offsets_index)
             .unwrap();
-
-        let li_instruction = initsp_index + li_instruction_offset;
 
         let bg_file_index = u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
 
