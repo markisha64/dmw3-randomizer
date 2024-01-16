@@ -49,7 +49,9 @@
 		},
 		"maps": {
 			"enabled": true,
-			"color": false
+			"color": false,
+			"item_boxes": true,
+			"item_boxes_items_only": "Buyable"
 		}
 	},
 	"scaling": {
