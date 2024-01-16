@@ -245,6 +245,25 @@ pub struct Environmental {
 }
 
 #[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct EntityData {
+    conditions: Pointer,
+    pub logic: Pointer,
+    pub sprite: u16,
+    sprite_buffer_index: u16,
+    x: u16,
+    y: u16,
+    direction: u16,
+    padding: u16,
+}
+
+#[derive(BinRead, Debug, Clone, BinWrite)]
+pub struct EntityLogic {
+    conditions: Pointer,
+    script: Pointer,
+    text_index: Pointer,
+}
+
+#[derive(BinRead, Debug, Clone, BinWrite)]
 pub struct MapColor {
     pub red: u8,
     pub green: u8,
@@ -280,6 +299,10 @@ impl Pointer {
 
     pub fn is_valid(&self) -> bool {
         return 0x80000000 <= self.value && self.value <= 0x80100000;
+    }
+
+    pub fn null(&self) -> bool {
+        return self.value == 0;
     }
 }
 

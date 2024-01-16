@@ -21,7 +21,7 @@ mod scaling;
 mod shops;
 pub mod structs;
 use structs::{
-    DigivolutionConditions, DigivolutionData, EncounterData, EnemyStats, Environmental,
+    DigivolutionConditions, DigivolutionData, EncounterData, EnemyStats, EntityData, Environmental,
     ItemShopData, MapColor, MoveData, Pointer, Shop, StageLoadData,
 };
 
@@ -78,6 +78,7 @@ pub struct MapObject {
     environmentals: Option<ObjectArray<Environmental>>,
     map_color: Option<Object<MapColor>>,
     background_file_index: Object<u16>,
+    entities: Option<ObjectArray<EntityData>>,
     _stage_id: u16,
 }
 
@@ -340,10 +341,20 @@ fn read_map_objects(
         let mut environmentals: Vec<Environmental> = Vec::new();
         let mut environmentals_index: Option<u32> = None;
 
+        let mut entities: Vec<EntityData> = Vec::new();
+        let mut entities_index: Option<u32> = None;
+
         // we need to assemble full sw instruction
         let environmental_instruction = [
             consts::ENVIRONMENTAL_INSTRUCTION[0],
             consts::ENVIRONMENTAL_INSTRUCTION[1],
+            sw[0],
+            sw[1],
+        ];
+
+        let entities_instruction = [
+            consts::ENTITIES_INSTRUCTION[0],
+            consts::ENTITIES_INSTRUCTION[1],
             sw[0],
             sw[1],
         ];
@@ -380,6 +391,47 @@ fn read_map_objects(
             }
         }
 
+        if let Some(entities_set) = buf[initsp_index..initp_end_index]
+            .windows(4)
+            .position(|x| x == entities_instruction)
+        {
+            let entities_address = Pointer::from_instruction(&buf, initsp_index + entities_set);
+
+            if entities_address.is_valid() {
+                let ent_index = entities_address.to_index_overlay(stage.value as u32) as usize;
+
+                let mut i = 0;
+                loop {
+                    let ptr = Pointer::from(&buf[ent_index + i * 4..ent_index + (i + 1) * 4]);
+
+                    if ptr.null() {
+                        break;
+                    }
+
+                    i += 1;
+                }
+
+                let real_pointer = Pointer::from(&buf[ent_index..ent_index + 4]);
+
+                let real_idx = real_pointer.to_index_overlay(stage.value as u32);
+                entities_index = Some(real_idx);
+
+                let mut entities_reader =
+                    Cursor::new(&buf[(real_idx as usize)..(real_idx as usize) + 0x14 * i]);
+
+                for _ in 0..i {
+                    let entity = EntityData::read(&mut entities_reader);
+
+                    match entity {
+                        Ok(ent) => {
+                            entities.push(ent);
+                        }
+                        Err(_) => panic!("binread error"),
+                    }
+                }
+            }
+        }
+
         let environmental_object = match environmentals_index {
             Some(idx) => Some(ObjectArray {
                 original: environmentals.clone(),
@@ -390,10 +442,23 @@ fn read_map_objects(
             None => None,
         };
 
+        let entities_object = match entities_index {
+            Some(idx) => Some(ObjectArray {
+                original: entities.clone(),
+                modified: entities.clone(),
+                index: idx as usize,
+                slen: 0x14,
+            }),
+            None => None,
+        };
+
+        // TODO: instead of always checking first 2 instructions before
+        // I need to find the first lui (which is considerably suckier)
         result.push(MapObject {
             file_name,
             buf,
             environmentals: environmental_object,
+            entities: entities_object,
             map_color,
             background_file_index: background_object,
             _stage_id: stage_id,
@@ -825,6 +890,10 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
 
         if let Some(environmentals) = &mut object.environmentals {
             environmentals.write_buf(buf);
+        }
+
+        if let Some(entities) = &mut object.entities {
+            entities.write_buf(buf);
         }
 
         if let Some(map_color) = &mut object.map_color {
