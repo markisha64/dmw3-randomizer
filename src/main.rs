@@ -5,6 +5,7 @@ mod consts;
 mod json;
 mod mkpsxiso;
 
+mod pack;
 mod rand;
 mod util;
 use rand::patch;
