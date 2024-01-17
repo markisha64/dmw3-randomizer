@@ -293,9 +293,11 @@ impl Pointer {
     //     index + 0x8000f800
     // }
 
-    // pub fn from_index_overlay(index: u32, overlay: u32) -> u32 {
-    //     index + overlay
-    // }
+    pub fn from_index_overlay(index: u32, overlay: u32) -> Pointer {
+        Pointer {
+            value: index + overlay,
+        }
+    }
 
     pub fn is_valid(&self) -> bool {
         return 0x80000000 <= self.value && self.value <= 0x80100000;
@@ -303,6 +305,12 @@ impl Pointer {
 
     pub fn null(&self) -> bool {
         return self.value == 0;
+    }
+}
+
+impl PartialEq for Pointer {
+    fn eq(&self, other: &Pointer) -> bool {
+        self.value == other.value
     }
 }
 

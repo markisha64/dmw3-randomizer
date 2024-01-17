@@ -1,15 +1,42 @@
-use binread::BinRead;
-use binwrite::BinWrite;
 use std::collections::BTreeSet;
-use std::io::Cursor;
 
 use crate::consts;
 use crate::{rand::Objects, util};
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use crate::json::Randomizer;
-use crate::rand::structs::EntityLogic;
+use crate::json::{Maps, Randomizer, ShopItems};
+
+use super::structs::Pointer;
+
+fn type_script_add_item(value: u32) -> bool {
+    (value >= 0x80) && (value - 0x80) < 0xf
+}
+
+fn shoppable(objects: &mut Objects, preset: &Maps) -> Vec<u32> {
+    let len = objects.item_shop_data.original.len();
+
+    let mut shoppable: BTreeSet<u32> = BTreeSet::new();
+
+    match preset.item_boxes_items_only {
+        ShopItems::Buyable => {
+            for i in 1..len {
+                if objects.item_shop_data.original[i].buy_price > 0 {
+                    shoppable.insert(i as u32);
+                }
+            }
+        }
+        ShopItems::Sellable => {
+            for i in 1..len {
+                if objects.item_shop_data.original[i].sell_price > 0 {
+                    shoppable.insert(i as u32);
+                }
+            }
+        }
+    }
+
+    Vec::from_iter(shoppable.into_iter())
+}
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let maps = &preset.maps;
@@ -20,6 +47,10 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
     if maps.backgrounds {
         backgrounds(preset, objects, rng);
+    }
+
+    if maps.item_boxes {
+        item_boxes(preset, objects, rng);
     }
 }
 
@@ -53,18 +84,49 @@ fn backgrounds(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256S
 }
 
 fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let pool = shoppable(objects, &preset.maps);
+
     for map in &mut objects.map_objects {
         if let Some(entities) = &mut map.entities {
             for entity in &mut entities.modified {
-                if (!consts::ITEM_BOX_SPRITES.contains(&entity.sprite) || entity.logic.null()) {
+                if !consts::ITEM_BOX_SPRITES.contains(&entity.sprite) || entity.logic.null() {
                     continue;
                 }
 
-                let logic_idx = entity.logic.to_index_overlay(objects.stage.value) as usize;
+                let logic = map
+                    .entity_logics
+                    .iter()
+                    .find(|x| {
+                        Pointer::from_index_overlay(x.index as u32, objects.stage.value)
+                            == entity.logic
+                    })
+                    .unwrap();
 
-                let mut logic_reader = Cursor::new(&map.buf[logic_idx..]);
+                if logic.original.script.null() {
+                    continue;
+                }
 
-                if let Ok(logic) = EntityLogic::read(&mut logic_reader) {}
+                let script = map
+                    .scripts
+                    .iter_mut()
+                    .find(|x| {
+                        Pointer::from_index_overlay(x.index as u32, objects.stage.value)
+                            == logic.original.script
+                    })
+                    .unwrap();
+
+                for i in 0..script.original.len() {
+                    let t = (script.original[i] & 0xfffe) >> 8;
+
+                    if !type_script_add_item(t) {
+                        continue;
+                    }
+
+                    let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
+
+                    script.modified[i] = nv | ((script.original[i] >> 8) << 8);
+                    break;
+                }
             }
         }
     }
