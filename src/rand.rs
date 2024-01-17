@@ -21,8 +21,8 @@ mod scaling;
 mod shops;
 pub mod structs;
 use structs::{
-    DigivolutionConditions, DigivolutionData, EncounterData, EnemyStats, EntityData, Environmental,
-    ItemShopData, MapColor, MoveData, Pointer, Shop, StageLoadData,
+    DigivolutionConditions, DigivolutionData, EncounterData, EnemyStats, EntityData, EntityLogic,
+    Environmental, ItemShopData, MapColor, MoveData, Pointer, Shop, StageLoadData,
 };
 
 pub struct Object<T> {
@@ -79,12 +79,16 @@ pub struct MapObject {
     map_color: Option<Object<MapColor>>,
     background_file_index: Object<u16>,
     entities: Option<ObjectArray<EntityData>>,
+    entity_logics: Vec<Object<EntityLogic>>,
+    scripts: Vec<ObjectArray<u32>>,
     _stage_id: u16,
 }
 
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
+    stage: Pointer,
+
     // hard coded data
     pub file_map: Vec<mkpsxiso::File>,
     pub sector_offsets: Vec<u32>,
@@ -344,6 +348,9 @@ fn read_map_objects(
         let mut entities: Vec<EntityData> = Vec::new();
         let mut entities_index: Option<u32> = None;
 
+        let mut entity_logics = Vec::new();
+        let mut scripts = Vec::new();
+
         // we need to assemble full sw instruction
         let environmental_instruction = [
             consts::ENVIRONMENTAL_INSTRUCTION[0],
@@ -420,14 +427,62 @@ fn read_map_objects(
                     Cursor::new(&buf[(real_idx as usize)..(real_idx as usize) + 0x14 * i]);
 
                 for _ in 0..i {
-                    let entity = EntityData::read(&mut entities_reader);
+                    let entity_result = EntityData::read(&mut entities_reader);
 
-                    match entity {
-                        Ok(ent) => {
-                            entities.push(ent);
-                        }
-                        Err(_) => panic!("binread error"),
+                    if entity_result.is_err() {
+                        panic!("binread error");
                     }
+
+                    let entity = entity_result.unwrap();
+
+                    if !entity.logic.null() {
+                        let logic_idx = entity.logic.to_index_overlay(stage.value as u32);
+
+                        let mut logic_reader =
+                            Cursor::new(&buf[logic_idx as usize..logic_idx as usize + 0xa]);
+
+                        if let Ok(logic) = EntityLogic::read(&mut logic_reader) {
+                            entity_logics.push(Object {
+                                original: logic.clone(),
+                                modified: logic.clone(),
+                                slen: 0xa,
+                                index: logic_idx as usize,
+                            });
+
+                            let mut full_script = Vec::new();
+                            if !logic.script.null() {
+                                let script_idx = logic.script.to_index_overlay(stage.value as u32);
+
+                                let mut script_reader = Cursor::new(&buf[script_idx as usize..]);
+
+                                loop {
+                                    let script_result = u32::read(&mut script_reader);
+
+                                    match script_result {
+                                        Ok(script) => {
+                                            if script == 0x0000ffff {
+                                                break;
+                                            }
+
+                                            full_script.push(script);
+                                        }
+                                        Err(_) => panic!("binread error"),
+                                    }
+                                }
+
+                                if !full_script.is_empty() {
+                                    scripts.push(ObjectArray {
+                                        original: full_script.clone(),
+                                        modified: full_script.clone(),
+                                        slen: 0x4,
+                                        index: script_idx as usize,
+                                    })
+                                }
+                            }
+                        }
+                    }
+
+                    entities.push(entity);
                 }
             }
         }
@@ -456,9 +511,11 @@ fn read_map_objects(
         // I need to find the first lui (which is considerably suckier)
         result.push(MapObject {
             file_name,
-            buf,
+            buf: buf.clone(),
             environmentals: environmental_object,
             entities: entities_object,
+            entity_logics,
+            scripts,
             map_color,
             background_file_index: background_object,
             _stage_id: stage_id,
@@ -853,6 +910,7 @@ fn read_objects(path: &PathBuf) -> Objects {
     Objects {
         executable,
         file_map,
+        stage,
         sector_offsets,
         // overlay_address_pointer: overlay,
         bufs: Bufs {
@@ -894,6 +952,14 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
 
         if let Some(entities) = &mut object.entities {
             entities.write_buf(buf);
+        }
+
+        for logic in &mut object.entity_logics {
+            logic.write_buf(buf);
+        }
+
+        for script in &mut object.scripts {
+            script.write_buf(buf);
         }
 
         if let Some(map_color) = &mut object.map_color {
