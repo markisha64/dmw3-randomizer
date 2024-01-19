@@ -6,6 +6,15 @@ pub struct Packed {
     pub files: Vec<Vec<u8>>,
 }
 
+impl Packed {
+    fn file_size(&self) -> u32 {
+        let header_length = (self.files.len() * 4) as u32;
+        let files_length = self.files.iter().fold(0, |pv, cv| pv + cv.len()) as u32;
+
+        header_length + files_length
+    }
+}
+
 impl From<Vec<u8>> for Packed {
     fn from(file: Vec<u8>) -> Self {
         let mut reader = Cursor::new(&file);
