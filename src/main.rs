@@ -5,6 +5,7 @@ mod consts;
 mod json;
 mod mkpsxiso;
 
+mod lang;
 mod pack;
 mod rand;
 mod util;
