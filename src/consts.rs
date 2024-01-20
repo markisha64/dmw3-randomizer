@@ -25,10 +25,12 @@ pub const OVERLAY_ADDRESS: u32 = 0x800100c4;
 pub const STAGE_ADDRESS: u32 = 0x800100c8;
 
 pub const LI_INSTRUCTION: &[u8; 2] = b"\x02\x24";
+pub const TALK_FILE_ADDIU: &[u8; 2] = b"\x42\x24";
 pub const JR_RA_INSTRUCTION: &[u8; 4] = b"\x08\x00\xe0\x03";
 
 pub const ENVIRONMENTAL_INSTRUCTION: &[u8; 4] = b"\x14\x00\x22\xae";
 pub const ENTITIES_INSTRUCTION: &[u8; 4] = b"\x4c\x00\x22\xae";
+pub const TALK_FILE_INSTRUCTION: &[u8; 4] = b"\x44\x00\x22\xae";
 pub const STAGE_COLOR_INSTRUCTION_HALF: &[u8; 2] = b"\x38\x00";
 
 pub const ADDIU: u8 = 0x24;

@@ -1,5 +1,6 @@
 use binread::BinRead;
 use binwrite::BinWrite;
+use dioxus::html::geometry::Lines;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::fs;
@@ -81,6 +82,7 @@ pub struct MapObject {
     entities: Option<ObjectArray<EntityData>>,
     entity_logics: Vec<Object<EntityLogic>>,
     scripts: Vec<ObjectArray<u32>>,
+    talk_file: Option<u16>,
     _stage_id: u16,
 }
 
@@ -164,6 +166,7 @@ fn read_map_objects(
     stage: &Pointer,
     file_map: &Vec<mkpsxiso::File>,
     sector_offsets: &Vec<u32>,
+    executable: &Executable,
 ) -> Vec<MapObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).unwrap();
@@ -351,6 +354,8 @@ fn read_map_objects(
         let mut entity_logics = Vec::new();
         let mut scripts = Vec::new();
 
+        let mut talk_file = None;
+
         // we need to assemble full sw instruction
         let environmental_instruction = [
             consts::ENVIRONMENTAL_INSTRUCTION[0],
@@ -365,6 +370,36 @@ fn read_map_objects(
             sw[0],
             sw[1],
         ];
+
+        let talk_file_instruction = [
+            consts::TALK_FILE_INSTRUCTION[0],
+            consts::TALK_FILE_INSTRUCTION[1],
+            sw[0],
+            sw[1],
+        ];
+
+        if let Some(talk_file_set) = buf[initsp_index..initp_end_index]
+            .windows(4)
+            .position(|x| x == talk_file_instruction)
+        {
+            let instr = match executable {
+                Executable::PAL => consts::TALK_FILE_ADDIU,
+                _ => consts::LI_INSTRUCTION,
+            };
+
+            let res = buf[initsp_index..initsp_index + talk_file_set]
+                .windows(2)
+                .rev()
+                .position(|x| x == instr)
+                .unwrap();
+
+            let instruction = initsp_index + talk_file_set - res - 2;
+
+            talk_file = Some(u16::from_le_bytes([
+                buf[instruction - 2],
+                buf[instruction - 1],
+            ]));
+        }
 
         if let Some(environmental_set) = buf[initsp_index..initp_end_index]
             .windows(4)
@@ -518,6 +553,7 @@ fn read_map_objects(
             scripts,
             map_color,
             background_file_index: background_object,
+            talk_file,
             _stage_id: stage_id,
         });
     }
@@ -905,6 +941,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         &stage,
         &file_map,
         &sector_offsets,
+        &executable,
     );
 
     Objects {
