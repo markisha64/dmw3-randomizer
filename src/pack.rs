@@ -2,6 +2,7 @@ use binread::BinRead;
 use binwrite::BinWrite;
 use std::io::Cursor;
 
+#[derive(Clone)]
 pub struct Packed {
     pub files: Vec<Vec<u8>>,
 }
@@ -18,8 +19,13 @@ impl Packed {
 impl From<Vec<u8>> for Packed {
     fn from(file: Vec<u8>) -> Self {
         let mut reader = Cursor::new(&file);
+        let mut files: Vec<Vec<u8>> = Vec::new();
 
         let f0 = u32::read(&mut reader).unwrap();
+
+        if f0 == 0 {
+            return Packed { files };
+        }
 
         let mut offsets: Vec<u32> = Vec::new();
 
@@ -28,8 +34,6 @@ impl From<Vec<u8>> for Packed {
         for _ in 0..(f0 / 4) - 1 {
             offsets.push(u32::read(&mut reader).unwrap());
         }
-
-        let mut files: Vec<Vec<u8>> = Vec::new();
 
         for i in 0..offsets.len() - 1 {
             files.push(file[offsets[i] as usize - 1..offsets[i + 1] as usize - 1].into());

@@ -2,6 +2,7 @@ use binread::BinRead;
 use binwrite::BinWrite;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
+use std::collections::BTreeMap;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -10,8 +11,10 @@ use std::path::PathBuf;
 
 use crate::consts;
 use crate::json::Preset;
+use crate::lang;
 use crate::mkpsxiso;
 use crate::mkpsxiso::xml_file;
+use crate::pack::Packed;
 
 mod encounters;
 mod fixes;
@@ -30,6 +33,11 @@ pub struct Object<T> {
     pub modified: T,
     index: usize,
     slen: usize,
+}
+
+pub struct TextFile {
+    file: Packed,
+    file_name: String,
 }
 
 pub struct ObjectArray<T> {
@@ -108,6 +116,8 @@ pub struct Objects {
     pub dv_cond: ObjectArray<DigivolutionConditions>,
     pub stage_load_data: Vec<StageLoadData>,
     pub map_objects: Vec<MapObject>,
+
+    pub text_files: BTreeMap<String, TextFile>,
 }
 
 enum Executable {
@@ -851,6 +861,39 @@ fn read_objects(path: &PathBuf) -> Objects {
         }
     }
 
+    let files = [
+        "SITMNAM.BIN",
+        "STALK00.BIN",
+        "STALK01.BIN",
+        "STALK02.BIN",
+        "STALK03.BIN",
+        "STALK04.BIN",
+        "STALK05.BIN",
+        "STALK06.BIN",
+        "STALK07.BIN",
+        "STALK08.BIN",
+        "STALK09.BIN",
+    ];
+
+    let mut text_files: BTreeMap<String, TextFile> = BTreeMap::new();
+    for lang in lang::LANGUAGES {
+        for sname in files {
+            let fsname = lang.to_file_name(sname);
+
+            let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
+
+            let packed = Packed::from(file);
+
+            text_files.insert(
+                fsname.clone(),
+                TextFile {
+                    file: packed,
+                    file_name: fsname,
+                },
+            );
+        }
+    }
+
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let rookie_data_copy = rookie_data_arr.clone();
@@ -973,6 +1016,8 @@ fn read_objects(path: &PathBuf) -> Objects {
         dv_cond: dv_cond_object,
         stage_load_data: stage_load_data_arr,
         map_objects,
+
+        text_files,
     }
 }
 
@@ -1053,6 +1098,20 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     let mut new_exp = File::create(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
     let mut new_pack_select =
         File::create(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
+
+    for (file_name, text_file) in &mut objects.text_files {
+        for lang in lang::LANGUAGES {
+            let mut new_file =
+                File::create(format!("extract/{}/{}", rom_name, lang.to_path(file_name))).unwrap();
+
+            let bytes: Vec<u8> = text_file.file.clone().into();
+
+            match new_file.write_all(&bytes) {
+                Err(_) => return Err(()),
+                _ => {}
+            }
+        }
+    }
 
     match new_main_executable.write_all(&objects.bufs.main_buf) {
         Err(_) => return Err(()),
