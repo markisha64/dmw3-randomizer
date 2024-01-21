@@ -37,7 +37,7 @@ pub struct Object<T> {
 
 pub struct TextFile {
     file: Packed,
-    file_name: String,
+    _file_name: String,
 }
 
 pub struct ObjectArray<T> {
@@ -868,7 +868,7 @@ fn read_objects(path: &PathBuf) -> Objects {
     }
 
     let files = [
-        "SITMNAM.BIN",
+        consts::ITEM_NAMES,
         "STALK00.BIN",
         "STALK01.BIN",
         "STALK02.BIN",
@@ -894,7 +894,7 @@ fn read_objects(path: &PathBuf) -> Objects {
                 fsname.clone(),
                 TextFile {
                     file: packed,
-                    file_name: fsname,
+                    _file_name: fsname,
                 },
             );
         }

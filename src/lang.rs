@@ -1,3 +1,4 @@
+#[derive(Copy, Clone)]
 pub enum Language {
     Japanese = 0,
     US = 1,
@@ -31,6 +32,20 @@ impl Language {
             Language::German => "GER",
             Language::Spanish => "SPN",
         }
+    }
+
+    pub fn to_received_item(&self, item: Vec<u8>) -> Vec<u8> {
+        let mut result = Vec::new();
+
+        match self {
+            _ => {
+                result.extend(b"");
+                result.extend(item);
+                result.extend(b"");
+            }
+        }
+
+        result
     }
 
     pub fn to_file_name(&self, file_name: &str) -> String {
