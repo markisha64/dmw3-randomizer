@@ -133,71 +133,39 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
 
                     let talk_file_index = map.talk_file.unwrap();
 
-                    match objects.executable {
-                        Executable::PAL => {
-                            for lang in objects.executable.languages() {
-                                let sector_offset = objects.sector_offsets
-                                    [(talk_file_index + (*lang as u16)) as usize];
-
-                                let real_file = objects
-                                    .file_map
-                                    .iter()
-                                    .find(|x| x.offs == sector_offset)
-                                    .unwrap();
-
-                                let item_names = objects
-                                    .text_files
-                                    .get(lang.to_file_name(consts::ITEM_NAMES).as_str())
-                                    .unwrap();
-
-                                let item_name = item_names.file.files[nv as usize].clone();
-
-                                let talk_file =
-                                    objects.text_files.get_mut(&real_file.name).unwrap();
-
-                                // check if were going over file sector length
-                                let csize = talk_file.file.file_size();
-                                if csize + 4 + item_name.len()
-                                    > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
-                                {
-                                    break;
-                                }
-
-                                talk_file.file.files.push(lang.to_received_item(item_name));
-                                logic.modified.text_index = talk_file.file.files.len() as u16 - 1;
+                    for lang in objects.executable.languages() {
+                        let sector_offset = match objects.executable {
+                            Executable::PAL => {
+                                objects.sector_offsets[(talk_file_index + (*lang as u16)) as usize]
                             }
+                            _ => objects.sector_offsets[talk_file_index as usize],
+                        };
+
+                        let real_file = objects
+                            .file_map
+                            .iter()
+                            .find(|x| x.offs == sector_offset)
+                            .unwrap();
+
+                        let item_names = objects
+                            .text_files
+                            .get(lang.to_file_name(consts::ITEM_NAMES).as_str())
+                            .unwrap();
+
+                        let item_name = item_names.file.files[nv as usize].clone();
+
+                        let talk_file = objects.text_files.get_mut(&real_file.name).unwrap();
+
+                        // check if were going over file sector length
+                        let csize = talk_file.file.file_size();
+                        if csize + 4 + item_name.len()
+                            > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
+                        {
+                            break;
                         }
-                        _ => {
-                            let sector_offset = objects.sector_offsets[talk_file_index as usize];
 
-                            let real_file = objects
-                                .file_map
-                                .iter()
-                                .find(|x| x.offs == sector_offset)
-                                .unwrap();
-
-                            let lang = &objects.executable.languages()[0];
-
-                            let item_names = objects
-                                .text_files
-                                .get(lang.to_file_name(consts::ITEM_NAMES).as_str())
-                                .unwrap();
-
-                            let item_name = item_names.file.files[nv as usize].clone();
-
-                            let talk_file = objects.text_files.get_mut(&real_file.name).unwrap();
-
-                            // check if were going overboard
-                            let csize = talk_file.file.file_size();
-                            if csize + 4 + item_name.len()
-                                > (csize / 2048) + (csize % 2048 != 0) as usize
-                            {
-                                break;
-                            }
-
-                            logic.modified.text_index = talk_file.file.files.len() as u16;
-                            talk_file.file.files.push(lang.to_received_item(item_name));
-                        }
+                        talk_file.file.files.push(lang.to_received_item(item_name));
+                        logic.modified.text_index = talk_file.file.files.len() as u16 - 1;
                     }
 
                     break;
