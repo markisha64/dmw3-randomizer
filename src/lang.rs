@@ -1,6 +1,6 @@
 use std::iter;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Language {
     Japanese = 0,
     US = 1,
@@ -34,6 +34,22 @@ impl Language {
             Language::German => "GER",
             Language::Spanish => "SPN",
         }
+    }
+
+    pub fn to_received_item_generic(&self) -> Vec<u8> {
+        let mut result = Vec::new();
+
+        // I ain't making this for all languages, if someone want to go ahead
+        match self {
+            _ => {
+                result.extend(b"\x02\x07\x02\x09\x02\x07\x26\x2C\x28\x2F\xE7\x01\x01\x16\x01\x01\x2E\x36\x3B\x01\x01\x28\x35\x01\x01\x30\x3b\x2c\x34\xe7\x02\x02\x02");
+            }
+        }
+
+        let pad_length = (result.len() / 4 + 1) * 4 - result.len();
+        result.extend(iter::repeat(0).take(pad_length));
+
+        result
     }
 
     pub fn to_received_item(&self, item: Vec<u8>) -> Vec<u8> {

@@ -158,16 +158,30 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
 
                         let talk_file = objects.text_files.get_mut(&real_file.name).unwrap();
 
+                        if let Some(idx) = talk_file.mapped_items.get(&(*lang, nv)) {
+                            logic.modified.text_index = *idx;
+
+                            continue;
+                        }
+
                         // check if were going over file sector length
                         let csize = talk_file.file.file_size();
                         if csize + 4 + received_item_text.len()
-                            > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
+                            <= ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
                         {
-                            break;
+                            let idx = talk_file.file.files.len() as u16;
+
+                            logic.modified.text_index = idx;
+                            talk_file.mapped_items.insert((*lang, nv), idx);
+
+                            talk_file.file.files.push(received_item_text);
+
+                            continue;
                         }
 
-                        talk_file.file.files.push(received_item_text);
-                        logic.modified.text_index = talk_file.file.files.len() as u16 - 1;
+                        if let Some(idx) = talk_file.generic_item {
+                            logic.modified.text_index = idx as u16;
+                        }
                     }
 
                     break;

@@ -3,6 +3,7 @@ use binwrite::BinWrite;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io::prelude::*;
@@ -38,6 +39,8 @@ pub struct Object<T> {
 pub struct TextFile {
     file: Packed,
     _file_name: String,
+    mapped_items: HashMap<(Language, u32), u16>,
+    generic_item: Option<u16>,
 }
 
 pub struct ObjectArray<T> {
@@ -281,21 +284,6 @@ fn read_map_objects(
         let jump_return = Pointer {
             value: init_stage_pointers.value + jr_ra_instruction_index.unwrap() as u32,
         };
-
-        // leaving this for when I work on post game maps?
-        // if ptr.is_valid() {
-        //     println!("{}", file_name);
-        //     let idx = ptr.to_index_overlay(stage.value as u32) as usize;
-
-        //     println!("{:x}", ptr.value);
-        //     println!(
-        //         "{:x} {:x} {:x} {:x}",
-        //         buf[idx],
-        //         buf[idx + 1],
-        //         buf[idx + 2],
-        //         buf[idx + 3]
-        //     );
-        // }
 
         let initsp_index = init_stage_pointers.to_index_overlay(stage.value as u32) as usize;
         let initp_end_index = jump_return.to_index_overlay(stage.value as u32) as usize;
@@ -902,13 +890,27 @@ fn read_objects(path: &PathBuf) -> Objects {
 
             let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
 
-            let packed = Packed::from(file);
+            let mut packed = Packed::from(file);
+
+            let mapped_items = HashMap::new();
+
+            let mut generic_item = None;
+
+            let generic = lang.to_received_item_generic();
+            let csize = packed.file_size();
+            // check if were going over file sector length
+            if csize + 4 + generic.len() <= ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048 {
+                generic_item = Some(packed.files.len() as u16);
+                packed.files.push(generic);
+            }
 
             text_files.insert(
                 fsname.clone(),
                 TextFile {
                     file: packed,
                     _file_name: fsname,
+                    mapped_items,
+                    generic_item,
                 },
             );
         }
