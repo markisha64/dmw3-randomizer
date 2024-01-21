@@ -1,3 +1,5 @@
+use std::iter;
+
 #[derive(Copy, Clone)]
 pub enum Language {
     Japanese = 0,
@@ -37,13 +39,21 @@ impl Language {
     pub fn to_received_item(&self, item: Vec<u8>) -> Vec<u8> {
         let mut result = Vec::new();
 
+        let first_not_null = item.len() - item.iter().rev().position(|x| x != &0).unwrap();
+
+        let islice = &item[0..first_not_null];
+
+        // I ain't making this for all languages, if someone want to go ahead
         match self {
             _ => {
-                result.extend(b"");
-                result.extend(item);
-                result.extend(b"");
+                result.extend(b"\x02\x07\x02\x09\x02\x07\x26\x2C\x28\x2F\xE7\x01\x01\x16\x01\x01\x2E\x36\x3B\x01\x01\x28\x01\x01\x02\x01");
+                result.extend(islice);
+                result.extend(b"\xE7\x02\x02\x02");
             }
         }
+
+        let pad_length = (result.len() / 4 + 1) * 4 - result.len();
+        result.extend(iter::repeat(0).take(pad_length));
 
         result
     }

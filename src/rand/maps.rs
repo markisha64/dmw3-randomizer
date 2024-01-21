@@ -154,17 +154,19 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
 
                         let item_name = item_names.file.files[nv as usize].clone();
 
+                        let received_item_text = lang.to_received_item(item_name);
+
                         let talk_file = objects.text_files.get_mut(&real_file.name).unwrap();
 
                         // check if were going over file sector length
                         let csize = talk_file.file.file_size();
-                        if csize + 4 + item_name.len()
+                        if csize + 4 + received_item_text.len()
                             > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
                         {
                             break;
                         }
 
-                        talk_file.file.files.push(lang.to_received_item(item_name));
+                        talk_file.file.files.push(received_item_text);
                         logic.modified.text_index = talk_file.file.files.len() as u16 - 1;
                     }
 
