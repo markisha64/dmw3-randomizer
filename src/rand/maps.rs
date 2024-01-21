@@ -145,8 +145,6 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
                                     .find(|x| x.offs == sector_offset)
                                     .unwrap();
 
-                                let lang = &objects.executable.languages()[0];
-
                                 let item_names = objects
                                     .text_files
                                     .get(lang.to_file_name(consts::ITEM_NAMES).as_str())

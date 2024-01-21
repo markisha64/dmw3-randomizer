@@ -1105,10 +1105,28 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     let mut new_pack_select =
         File::create(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
 
-    for (file_name, text_file) in &mut objects.text_files {
-        for lang in objects.executable.languages() {
+    let files = [
+        consts::ITEM_NAMES,
+        "STALK00.BIN",
+        "STALK01.BIN",
+        "STALK02.BIN",
+        "STALK03.BIN",
+        "STALK04.BIN",
+        "STALK05.BIN",
+        "STALK06.BIN",
+        "STALK07.BIN",
+        "STALK08.BIN",
+        "STALK09.BIN",
+    ];
+
+    for lang in objects.executable.languages() {
+        for sname in files {
+            let fsname = lang.to_file_name(sname);
+
+            let text_file = objects.text_files.get_mut(&fsname).unwrap();
+
             let mut new_file =
-                File::create(format!("extract/{}/{}", rom_name, lang.to_path(file_name))).unwrap();
+                File::create(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
 
             let bytes: Vec<u8> = text_file.file.clone().into();
 

@@ -28,13 +28,15 @@ impl From<Vec<u8>> for Packed {
         }
 
         let mut offsets: Vec<u32> = Vec::new();
-        for _ in 0..length - 1 {
+        for _ in 0..length {
             offsets.push(u32::read(&mut reader).unwrap());
         }
+
         for i in 0..offsets.len() - 1 {
-            files.push(file[offsets[i] as usize - 1..offsets[i + 1] as usize - 1].into());
+            files.push(file[offsets[i] as usize..offsets[i + 1] as usize].into());
         }
-        files.push(file[*offsets.last().unwrap() as usize - 1..].into());
+
+        files.push(file[*offsets.last().unwrap() as usize..].into());
         Packed { files }
     }
 }
@@ -42,7 +44,7 @@ impl From<Vec<u8>> for Packed {
 impl Into<Vec<u8>> for Packed {
     fn into(self) -> Vec<u8> {
         let mut result = Vec::new();
-        let mut i: u32 = (self.files.len() * 4) as u32 + 1;
+        let mut i: u32 = (self.files.len() * 4) as u32 + 4;
 
         (self.files.len() as u32).write(&mut result).unwrap();
 
