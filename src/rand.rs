@@ -158,6 +158,35 @@ impl Executable {
         }
     }
 
+    fn text_files(&self) -> &[&str] {
+        match self {
+            Executable::USA => &[
+                consts::ITEM_NAMES,
+                "STALK00.BIN",
+                "STALK01.BIN",
+                "STALK02.BIN",
+                "STALK03.BIN",
+                "STALK04.BIN",
+                "STALK05.BIN",
+                "STALK06.BIN",
+                "STALK07.BIN",
+            ],
+            _ => &[
+                consts::ITEM_NAMES,
+                "STALK00.BIN",
+                "STALK01.BIN",
+                "STALK02.BIN",
+                "STALK03.BIN",
+                "STALK04.BIN",
+                "STALK05.BIN",
+                "STALK06.BIN",
+                "STALK07.BIN",
+                "STALK08.BIN",
+                "STALK09.BIN",
+            ],
+        }
+    }
+
     fn to_stage_load_data_address(&self) -> Pointer {
         match self {
             Executable::PAL => Pointer { value: 0x8009a884 },
@@ -866,24 +895,9 @@ fn read_objects(path: &PathBuf) -> Objects {
             Err(_) => panic!("Binread error"),
         }
     }
-
-    let files = [
-        consts::ITEM_NAMES,
-        "STALK00.BIN",
-        "STALK01.BIN",
-        "STALK02.BIN",
-        "STALK03.BIN",
-        "STALK04.BIN",
-        "STALK05.BIN",
-        "STALK06.BIN",
-        "STALK07.BIN",
-        "STALK08.BIN",
-        "STALK09.BIN",
-    ];
-
     let mut text_files: BTreeMap<String, TextFile> = BTreeMap::new();
     for lang in executable.languages() {
-        for sname in files {
+        for sname in executable.text_files() {
             let fsname = lang.to_file_name(sname);
 
             let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
@@ -1105,22 +1119,8 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     let mut new_pack_select =
         File::create(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
 
-    let files = [
-        consts::ITEM_NAMES,
-        "STALK00.BIN",
-        "STALK01.BIN",
-        "STALK02.BIN",
-        "STALK03.BIN",
-        "STALK04.BIN",
-        "STALK05.BIN",
-        "STALK06.BIN",
-        "STALK07.BIN",
-        "STALK08.BIN",
-        "STALK09.BIN",
-    ];
-
     for lang in objects.executable.languages() {
-        for sname in files {
+        for sname in objects.executable.text_files() {
             let fsname = lang.to_file_name(sname);
 
             let text_file = objects.text_files.get_mut(&fsname).unwrap();
