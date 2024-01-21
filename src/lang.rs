@@ -8,16 +8,6 @@ pub enum Language {
     Spanish = 6,
 }
 
-pub const LANGUAGES: &[Language] = &[
-    Language::Japanese,
-    Language::US,
-    Language::English,
-    Language::French,
-    Language::Italian,
-    Language::German,
-    Language::Spanish,
-];
-
 impl Language {
     fn to_prefix(&self) -> &str {
         match self {

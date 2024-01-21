@@ -11,7 +11,7 @@ use std::path::PathBuf;
 
 use crate::consts;
 use crate::json::Preset;
-use crate::lang;
+use crate::lang::Language;
 use crate::mkpsxiso;
 use crate::mkpsxiso::xml_file;
 use crate::pack::Packed;
@@ -144,13 +144,19 @@ impl Executable {
         }
     }
 
-    // fn environmentals_address(&self) -> Pointer {
-    //     match self {
-    //         Executable::PAL => Pointer { value: 0x80099d94 },
-    //         Executable::USA => Pointer { value: 0x800990c8 },
-    //         Executable::JAP => Pointer { value: 0x80099aa8 },
-    //     }
-    // }
+    fn languages(&self) -> &[Language] {
+        match self {
+            Executable::PAL => &[
+                Language::English,
+                Language::French,
+                Language::Italian,
+                Language::German,
+                Language::Spanish,
+            ],
+            Executable::USA => &[Language::US],
+            Executable::JAP => &[Language::Japanese],
+        }
+    }
 
     fn to_stage_load_data_address(&self) -> Pointer {
         match self {
@@ -876,7 +882,7 @@ fn read_objects(path: &PathBuf) -> Objects {
     ];
 
     let mut text_files: BTreeMap<String, TextFile> = BTreeMap::new();
-    for lang in lang::LANGUAGES {
+    for lang in executable.languages() {
         for sname in files {
             let fsname = lang.to_file_name(sname);
 
@@ -1100,7 +1106,7 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
         File::create(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
 
     for (file_name, text_file) in &mut objects.text_files {
-        for lang in lang::LANGUAGES {
+        for lang in objects.executable.languages() {
             let mut new_file =
                 File::create(format!("extract/{}/{}", rom_name, lang.to_path(file_name))).unwrap();
 
