@@ -1,12 +1,11 @@
 use std::collections::BTreeSet;
 
-use crate::consts;
 use crate::{rand::Objects, util};
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
+use crate::consts;
 use crate::json::{Maps, Randomizer, ShopItems};
-use crate::rand::Executable;
 
 use super::structs::Pointer;
 
@@ -133,56 +132,60 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
 
                     let talk_file_index = map.talk_file.unwrap();
 
-                    for lang in objects.executable.languages() {
-                        let sector_offset = match objects.executable {
-                            Executable::PAL => {
-                                objects.sector_offsets[(talk_file_index + (*lang as u16)) as usize]
-                            }
-                            _ => objects.sector_offsets[talk_file_index as usize],
-                        };
+                    let real_file = objects
+                        .file_map
+                        .iter()
+                        .find(|x| x.offs == objects.sector_offsets[talk_file_index as usize])
+                        .unwrap();
 
-                        let real_file = objects
-                            .file_map
-                            .iter()
-                            .find(|x| x.offs == sector_offset)
-                            .unwrap();
+                    let sname = &real_file.name[1..];
 
-                        let item_names = objects
-                            .text_files
-                            .get(lang.to_file_name(consts::ITEM_NAMES).as_str())
-                            .unwrap();
+                    let group = objects.text_files.get_mut(sname).unwrap();
 
-                        let item_name = item_names.file.files[nv as usize].clone();
+                    for (_lang, text_file) in &mut group.files {
+                        text_file.file.files[talk_file_index as usize] = vec![0, 0, 0, 0];
+                    }
+
+                    if let Some(idx) = group.mapped_items.get(&nv) {
+                        logic.modified.text_index = *idx;
+
+                        break;
+                    }
+
+                    let doesnt_fit = group.files.iter().find(|(lang, text_file)| {
+                        let item_name =
+                            objects.items.files.get(lang).unwrap().file.files[nv as usize].clone();
+
+                        let csize = text_file.file.file_size();
 
                         let received_item_text = lang.to_received_item(item_name);
 
-                        let talk_file = objects.text_files.get_mut(&real_file.name).unwrap();
+                        csize + 4 + received_item_text.len()
+                            > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
+                    });
 
-                        if let Some(idx) = talk_file.mapped_items.get(&(*lang, nv)) {
-                            logic.modified.text_index = *idx;
-
-                            continue;
-                        }
-
-                        // check if were going over file sector length
-                        let csize = talk_file.file.file_size();
-                        if csize + 4 + received_item_text.len()
-                            <= ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
-                        {
-                            let idx = talk_file.file.files.len() as u16;
-
+                    if doesnt_fit.is_some() {
+                        if let Some(idx) = group.generic_item {
                             logic.modified.text_index = idx;
-                            talk_file.mapped_items.insert((*lang, nv), idx);
-
-                            talk_file.file.files.push(received_item_text);
-
-                            continue;
                         }
 
-                        if let Some(idx) = talk_file.generic_item {
-                            logic.modified.text_index = idx as u16;
-                        }
+                        break;
                     }
+
+                    let mut idx = 0;
+                    for (lang, talk_file) in &mut group.files {
+                        let item_name =
+                            objects.items.files.get(lang).unwrap().file.files[nv as usize].clone();
+
+                        let received_item_text = lang.to_received_item(item_name);
+                        idx = talk_file.file.files.len() as u16;
+
+                        logic.modified.text_index = idx;
+
+                        talk_file.file.files.push(received_item_text);
+                    }
+
+                    group.mapped_items.insert(nv, idx);
 
                     break;
                 }

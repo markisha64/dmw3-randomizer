@@ -39,7 +39,11 @@ pub struct Object<T> {
 pub struct TextFile {
     file: Packed,
     _file_name: String,
-    mapped_items: HashMap<(Language, u32), u16>,
+}
+
+pub struct TextFileGroup {
+    files: HashMap<Language, TextFile>,
+    mapped_items: HashMap<u32, u16>,
     generic_item: Option<u16>,
 }
 
@@ -120,7 +124,8 @@ pub struct Objects {
     pub stage_load_data: Vec<StageLoadData>,
     pub map_objects: Vec<MapObject>,
 
-    pub text_files: BTreeMap<String, TextFile>,
+    pub text_files: BTreeMap<String, TextFileGroup>,
+    pub items: TextFileGroup,
 }
 
 enum Executable {
@@ -883,37 +888,81 @@ fn read_objects(path: &PathBuf) -> Objects {
             Err(_) => panic!("Binread error"),
         }
     }
-    let mut text_files: BTreeMap<String, TextFile> = BTreeMap::new();
+
+    let mut item_files: HashMap<Language, TextFile> = HashMap::new();
+
     for lang in executable.languages() {
-        for sname in executable.text_files() {
+        let fsname = lang.to_file_name(consts::ITEM_NAMES);
+
+        let file = fs::read(format!(
+            "extract/{}/{}",
+            rom_name,
+            lang.to_path(consts::ITEM_NAMES)
+        ))
+        .unwrap();
+
+        let packed = Packed::from(file);
+
+        item_files.insert(
+            *lang,
+            TextFile {
+                file: packed,
+                _file_name: fsname,
+            },
+        );
+    }
+
+    let items = TextFileGroup {
+        files: item_files,
+        mapped_items: HashMap::new(),
+        generic_item: None,
+    };
+
+    let mut text_files: BTreeMap<String, TextFileGroup> = BTreeMap::new();
+    for sname in executable.text_files() {
+        let mut files: HashMap<Language, TextFile> = HashMap::new();
+
+        let mut generic_item = None;
+        for lang in executable.languages() {
             let fsname = lang.to_file_name(sname);
 
             let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
 
-            let mut packed = Packed::from(file);
+            let packed = Packed::from(file);
 
-            let mapped_items = HashMap::new();
-
-            let mut generic_item = None;
-
-            let generic = lang.to_received_item_generic();
-            let csize = packed.file_size();
-            // check if were going over file sector length
-            if csize + 4 + generic.len() <= ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048 {
-                generic_item = Some(packed.files.len() as u16);
-                packed.files.push(generic);
-            }
-
-            text_files.insert(
-                fsname.clone(),
+            files.insert(
+                *lang,
                 TextFile {
                     file: packed,
                     _file_name: fsname,
-                    mapped_items,
-                    generic_item,
                 },
             );
         }
+
+        let doesnt_fit = files.iter().find(|(lang, talk_file)| {
+            let csize = talk_file.file.file_size();
+
+            let generic_text = &lang.to_received_item_generic();
+
+            csize + 4 + generic_text.len() > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
+        });
+
+        if doesnt_fit.is_none() {
+            for (lang, talk_file) in &mut files {
+                let generic_text = lang.to_received_item_generic();
+                generic_item = Some(talk_file.file.files.len() as u16);
+
+                talk_file.file.files.push(generic_text);
+            }
+        }
+
+        let group = TextFileGroup {
+            files,
+            mapped_items: HashMap::new(),
+            generic_item,
+        };
+
+        text_files.insert(String::from(*sname), group);
     }
 
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
@@ -1040,6 +1089,7 @@ fn read_objects(path: &PathBuf) -> Objects {
         map_objects,
 
         text_files,
+        items,
     }
 }
 
@@ -1121,11 +1171,15 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     let mut new_pack_select =
         File::create(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
 
-    for lang in objects.executable.languages() {
-        for sname in objects.executable.text_files() {
-            let fsname = lang.to_file_name(sname);
-
-            let text_file = objects.text_files.get_mut(&fsname).unwrap();
+    for sname in objects.executable.text_files().iter() {
+        for lang in objects.executable.languages() {
+            let text_file = objects
+                .text_files
+                .get(*sname)
+                .unwrap()
+                .files
+                .get(lang)
+                .unwrap();
 
             let mut new_file =
                 File::create(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
