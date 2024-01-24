@@ -349,16 +349,18 @@ fn read_map_objects(
 
         let mut map_color: Option<Object<MapColor>> = None;
 
-        if let Some(map_color_offset) = buf[initsp_index..initp_end_index]
-            .windows(2)
-            .position(|x| x == consts::STAGE_COLOR_INSTRUCTION_HALF)
-        {
-            if let Some(map_color_addiu) = buf[initsp_index..initsp_index + map_color_offset]
+        if let Some(map_color_offset) = buf[initsp_index..initp_end_index].chunks(4).position(|x| {
+            x[0] == consts::STAGE_COLOR_INSTRUCTION_HALF[0]
+                && x[1] == consts::STAGE_COLOR_INSTRUCTION_HALF[1]
+                && x[2] != consts::LI_INSTRUCTION[0]
+                && x[3] != consts::LI_INSTRUCTION[1]
+        }) {
+            if let Some(map_color_addiu) = buf[initsp_index..initsp_index + map_color_offset * 4]
                 .windows(4)
                 .rev()
                 .position(|x| x[3] == consts::ADDIU)
             {
-                let aidx = initsp_index + map_color_offset - map_color_addiu - 4;
+                let aidx = initsp_index + map_color_offset * 4 - map_color_addiu - 4;
                 let addiu_first_half = i16::from_le_bytes([buf[aidx], buf[aidx + 1]]);
 
                 let address = (0x800a0000 + addiu_first_half as i64) as u32;
