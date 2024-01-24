@@ -124,7 +124,7 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
 
                     let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
 
-                    script.modified[i] = nv | ((script.original[i] >> 8) << 8);
+                    script.modified[i] = nv | ((script.original[i] >> 9) << 9);
 
                     if map.talk_file.is_none() {
                         break;
