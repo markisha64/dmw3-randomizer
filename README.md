@@ -16,6 +16,9 @@ Support is added for all 3 versions, if you notice any problems, fill out an iss
 - Randomized learned moves
 - Randomized digivolutions
 - Randomized starting stats and affinities
+- Randomized map coloration
+- Randomized map backgrounds
+- Randomized item box items
 
 ## Binary Download
 
