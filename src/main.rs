@@ -27,7 +27,7 @@ fn main() {
 
             let file_name = match args.output {
                 Some(name) => name,
-                None => String::from("{preset.randomizer.seed}"),
+                None => String::from(format!("{}", preset.randomizer.seed)),
             };
 
             if !mkpsxiso::extract(&path) {
