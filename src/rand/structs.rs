@@ -280,13 +280,28 @@ impl Pointer {
         self.value - index
     }
 
-    pub fn from_instruction(buf: &[u8], index: usize) -> Pointer {
-        let bp = u16::from_le_bytes([buf[index - 8], buf[index - 7]]);
-        let lp = i16::from_le_bytes([buf[index - 4], buf[index - 3]]);
+    pub fn from_instruction(buf: &[u8]) -> Pointer {
+        let lui_index = buf
+            .chunks(4)
+            .rev()
+            .position(|x| x[2] == consts::LUI_INSTRUCTION[0] && x[3] == consts::LUI_INSTRUCTION[1])
+            .unwrap();
 
-        return Pointer {
+        let addiu_index = buf
+            .chunks(4)
+            .rev()
+            .position(|x| x[3] == consts::ADDIU)
+            .unwrap();
+
+        let lui_slice = &buf[buf.len() - (lui_index + 1) * 4..];
+        let addiu_slice = &buf[buf.len() - (addiu_index + 1) * 4..];
+
+        let bp = u16::from_le_bytes([lui_slice[0], lui_slice[1]]);
+        let lp = i16::from_le_bytes([addiu_slice[0], addiu_slice[1]]);
+
+        Pointer {
             value: (((bp as u32) << 16) as i32 + lp as i32) as u32,
-        };
+        }
     }
 
     // pub fn from_index(index: u32) -> u32 {

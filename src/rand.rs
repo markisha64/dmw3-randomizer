@@ -441,11 +441,11 @@ fn read_map_objects(
         }
 
         if let Some(environmental_set) = buf[initsp_index..initp_end_index]
-            .windows(4)
+            .chunks(4)
             .position(|x| x == environmental_instruction)
         {
             let environmental_address =
-                Pointer::from_instruction(&buf, initsp_index + environmental_set);
+                Pointer::from_instruction(&buf[initsp_index..initsp_index + environmental_set * 4]);
 
             let env_index = environmental_address.to_index_overlay(stage.value as u32);
             environmentals_index = Some(env_index);
@@ -473,10 +473,11 @@ fn read_map_objects(
         }
 
         if let Some(entities_set) = buf[initsp_index..initp_end_index]
-            .windows(4)
+            .chunks(4)
             .position(|x| x == entities_instruction)
         {
-            let entities_address = Pointer::from_instruction(&buf, initsp_index + entities_set);
+            let entities_address =
+                Pointer::from_instruction(&buf[initsp_index..initsp_index + entities_set * 4]);
 
             if entities_address.is_valid() {
                 let ent_index = entities_address.to_index_overlay(stage.value as u32) as usize;
