@@ -15,6 +15,9 @@ pub struct Arguments {
     /// output file name
     #[clap(short, long)]
     pub output: Option<String>,
+    #[clap(short, long)]
+    #[arg(default_value_t = true)]
+    pub dump: bool,
 }
 
 impl Default for Arguments {
@@ -24,6 +27,7 @@ impl Default for Arguments {
             preset: None,
             seed: Some(Utc::now().timestamp() as u64),
             output: None,
+            dump: false,
         }
     }
 }

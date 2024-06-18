@@ -5,6 +5,7 @@ mod consts;
 mod json;
 mod mkpsxiso;
 
+mod dump;
 mod lang;
 mod pack;
 mod rand;
@@ -15,6 +16,14 @@ mod gui;
 
 fn main() {
     let args = cli::Arguments::parse();
+
+    if let Some(path) = &args.path {
+        if args.dump {
+            dump::dump(&path);
+
+            return ();
+        }
+    }
 
     match &args.path {
         Some(path) => {

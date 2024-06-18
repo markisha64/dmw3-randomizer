@@ -601,7 +601,7 @@ fn read_map_objects(
     return result;
 }
 
-fn read_objects(path: &PathBuf) -> Objects {
+pub fn read_objects(path: &PathBuf) -> Objects {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let iso_project = xml_file();
 
