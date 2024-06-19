@@ -1,8 +1,8 @@
 use dioxus::prelude::*;
 
-use crate::consts;
 use crate::gui::{number_field, GlobalState};
 use crate::json::{Preset, ShopItems};
+use dmw3_consts;
 
 use crate::gui::checkbox;
 
@@ -97,8 +97,8 @@ pub fn shops(cx: Scope) -> Element {
                             r#type: "number",
                             r#value: "{limit}",
                             disabled: "{!limit_enabled || !enabled}",
-                            min: consts::MIN_SHOP_ITEMS,
-                            max: consts::MAX_SHOP_ITEMS,
+                            min: dmw3_consts::MIN_SHOP_ITEMS,
+                            max: dmw3_consts::MAX_SHOP_ITEMS,
                             onchange: move |x| {
                                 let limit = match x.data.value.parse::<u8>() {
                                     Ok(vl) => {
@@ -148,7 +148,7 @@ pub fn shops(cx: Scope) -> Element {
                     onchange: move |x: Event<FormData>| {
                         let sell_price = match x.data.value.parse::<i64>(){
                             Ok(price) => {
-                                if consts::MIN_SELL_PRICE <= price && price <= max_sell_price {
+                                if dmw3_consts::MIN_SELL_PRICE <= price && price <= max_sell_price {
                                     price
                                 } else {
                                     min_sell_price
@@ -160,7 +160,7 @@ pub fn shops(cx: Scope) -> Element {
                         preset_state.write().randomizer.shops.min_sell_price = sell_price;
                     },
                     value: min_sell_price,
-                    min: consts::MIN_SELL_PRICE,
+                    min: dmw3_consts::MIN_SELL_PRICE,
                     max: max_sell_price
                 },
                 number_field::number_field {
@@ -170,7 +170,7 @@ pub fn shops(cx: Scope) -> Element {
                     onchange: move |x: Event<FormData>| {
                         let sell_price = match x.data.value.parse::<i64>(){
                             Ok(price) => {
-                                if min_sell_price <= price && price <= consts::MAX_SELL_PRICE {
+                                if min_sell_price <= price && price <= dmw3_consts::MAX_SELL_PRICE {
                                     price
                                 } else {
                                     max_sell_price
@@ -183,7 +183,7 @@ pub fn shops(cx: Scope) -> Element {
                     },
                     value: max_sell_price,
                     min: min_sell_price,
-                    max: consts::MAX_SELL_PRICE
+                    max: dmw3_consts::MAX_SELL_PRICE
                 },
             }
         }

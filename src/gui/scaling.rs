@@ -1,8 +1,8 @@
 use crate::gui::{number_field, number_field_float, slider};
 use crate::{gui::checkbox, json::Preset};
 
-use crate::consts;
 use dioxus::prelude::*;
+use dmw3_consts;
 
 pub fn scaling(cx: Scope) -> Element {
     let preset_state = use_shared_state::<Preset>(cx).unwrap();
@@ -51,7 +51,7 @@ pub fn scaling(cx: Scope) -> Element {
                     oninput: move |x: Event<FormData>| {
                         let new_offset: i64 = match x.data.value.parse::<i64>() {
                             Ok(offset) => {
-                                if consts::MIN_STAT_RANGE <= offset && offset <= consts::MAX_STAT_RANGE {
+                                if dmw3_consts::MIN_STAT_RANGE <= offset && offset <= dmw3_consts::MAX_STAT_RANGE {
                                     offset
                                 } else {
                                     scaling_offset
@@ -62,8 +62,8 @@ pub fn scaling(cx: Scope) -> Element {
 
                         preset_state.write().scaling.scaling_offset = new_offset;
                     },
-                    min: consts::MIN_STAT_RANGE,
-                    max: consts::MAX_STAT_RANGE
+                    min: dmw3_consts::MIN_STAT_RANGE,
+                    max: dmw3_consts::MAX_STAT_RANGE
                 },
             },
             div {

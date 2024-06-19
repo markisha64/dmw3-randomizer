@@ -4,10 +4,10 @@ use crate::{rand::Objects, util};
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use crate::consts;
 use crate::json::{Maps, Randomizer, ShopItems};
+use dmw3_consts;
 
-use super::structs::Pointer;
+use super::dmw3_structs::Pointer;
 
 fn type_script_add_item(value: u32) -> bool {
     (value >= 0x80) && (value - 0x80) < 0xf
@@ -89,7 +89,7 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
     for map in &mut objects.map_objects {
         if let Some(entities) = &mut map.entities {
             for entity in &mut entities.modified {
-                if !consts::ITEM_BOX_SPRITES.contains(&entity.sprite) || entity.logic.null() {
+                if !dmw3_consts::ITEM_BOX_SPRITES.contains(&entity.sprite) || entity.logic.null() {
                     continue;
                 }
 

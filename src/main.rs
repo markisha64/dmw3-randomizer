@@ -1,7 +1,6 @@
 use clap::Parser;
 
 mod cli;
-mod consts;
 mod json;
 mod mkpsxiso;
 

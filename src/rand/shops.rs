@@ -1,4 +1,5 @@
-use crate::{consts, rand::Objects};
+use crate::rand::Objects;
+use dmw3_consts;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -36,7 +37,7 @@ fn randomize_sell_price(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro
     for i in 1..len {
         let item = &mut objects.item_shop_data.modified[i];
 
-        if item.sell_price != 0 && !(i as u16 == consts::TNT_BALL_ID && preset.keep_tnt) {
+        if item.sell_price != 0 && !(i as u16 == dmw3_consts::TNT_BALL_ID && preset.keep_tnt) {
             item.sell_price = min_price as u16 + (rng.next_u64() % range as u64) as u16;
         }
     }

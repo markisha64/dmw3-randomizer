@@ -2,24 +2,24 @@ use std::collections::{BTreeMap, BTreeSet, HashSet};
 
 use rand_xoshiro::Xoshiro256StarStar;
 
-use crate::consts;
 use crate::json::{Encounters, Randomizer, TNTStrategy};
-use crate::rand::{structs::EncounterData, Objects};
+use crate::rand::{dmw3_structs::EncounterData, Objects};
 use crate::util::{self, uniform_random_vector};
+use dmw3_consts;
 
 fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
     return (!preset.cardmon
-        && (consts::CARDMON_MIN <= encounter.digimon_id as u16
-            && encounter.digimon_id as u16 <= consts::CARDMON_MAX))
-        || (!preset.bosses && consts::BOSSES.contains(&(encounter.digimon_id as u16)))
+        && (dmw3_consts::CARDMON_MIN <= encounter.digimon_id as u16
+            && encounter.digimon_id as u16 <= dmw3_consts::CARDMON_MAX))
+        || (!preset.bosses && dmw3_consts::BOSSES.contains(&(encounter.digimon_id as u16)))
         || (preset.strategy == TNTStrategy::Keep
-            && encounter.digimon_id as u16 == consts::TRICERAMON_ID
+            && encounter.digimon_id as u16 == dmw3_consts::TRICERAMON_ID
             && encounter.multiplier == 16)
         || (preset.keep_zanbamon
-            && encounter.digimon_id as u16 == consts::ZANBAMON_ID
+            && encounter.digimon_id as u16 == dmw3_consts::ZANBAMON_ID
             && encounter.multiplier == 16)
         || (preset.keep_galacticmon
-            && consts::GALACTICMON_IDS.contains(&(encounter.digimon_id as u16)));
+            && dmw3_consts::GALACTICMON_IDS.contains(&(encounter.digimon_id as u16)));
 }
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
@@ -82,7 +82,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     if preset.encounters.strategy == TNTStrategy::Swap {
         let tric = modified_enemy_stats
             .iter()
-            .find(|&x| x.digimon_id == consts::TRICERAMON_ID)
+            .find(|&x| x.digimon_id == dmw3_consts::TRICERAMON_ID)
             .unwrap();
 
         let mut titem = tric.droppable_item;
@@ -91,7 +91,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         let tric_index = encounters
             .iter()
             .position(|&x| {
-                x.digimon_id as u16 == consts::TRICERAMON_ID && x.lv == 6 && x.multiplier == 16
+                x.digimon_id as u16 == dmw3_consts::TRICERAMON_ID && x.lv == 6 && x.multiplier == 16
             })
             .unwrap();
 
@@ -105,7 +105,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
         let tricm = modified_enemy_stats
             .iter_mut()
-            .find(|&&mut x| x.digimon_id == consts::TRICERAMON_ID)
+            .find(|&&mut x| x.digimon_id == dmw3_consts::TRICERAMON_ID)
             .unwrap();
 
         std::mem::swap(&mut titem, &mut tricm.droppable_item);

@@ -1,12 +1,12 @@
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use crate::consts;
 use crate::json::Randomizer;
 use crate::rand::Objects;
+use dmw3_consts;
 use std::collections::BTreeSet;
 
-use super::structs::DigivolutionData;
+use super::dmw3_structs::DigivolutionData;
 use crate::util;
 
 #[derive(Clone, Copy)]
@@ -72,7 +72,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     if preset.parties.parties {
         let parties = &mut objects.parties.modified;
         let mut all_digimon: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7];
-        let rindex = (rng.next_u64() % (consts::ROOKIE_COUNT - 2) as u64) as usize;
+        let rindex = (rng.next_u64() % (dmw3_consts::ROOKIE_COUNT - 2) as u64) as usize;
         for i in 0..3 {
             util::shuffle(&mut all_digimon, preset.shuffles, rng);
 
@@ -92,7 +92,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         let min_sum = preset.parties.min_starting_stat * 5;
         let before_addition = (preset.parties.total_starting_stats - min_sum) as u64;
 
-        let affinity_range = consts::MAX_STAT_AFFINITY - consts::MIN_STAT_AFFINITY;
+        let affinity_range = dmw3_consts::MAX_STAT_AFFINITY - dmw3_consts::MIN_STAT_AFFINITY;
         let total_affinity = (affinity_range * stats.len() as u8) as u64;
 
         for rookie_data in &mut objects.rookie_data.modified {
@@ -111,7 +111,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 stats[i].set_affinity(
                     rookie_data,
                     ((before_normalization[i] * total_affinity) / (sum * 2)) as u8
-                        + consts::MIN_STAT_AFFINITY,
+                        + dmw3_consts::MIN_STAT_AFFINITY,
                 );
             }
         }
@@ -131,7 +131,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         let min_sum = preset.parties.min_starting_res * 5;
         let before_addition = (preset.parties.total_starting_res - min_sum) as u64;
 
-        let affinity_range = consts::MAX_STAT_AFFINITY - consts::MIN_STAT_AFFINITY;
+        let affinity_range = dmw3_consts::MAX_STAT_AFFINITY - dmw3_consts::MIN_STAT_AFFINITY;
         let total_affinity = (affinity_range * resistances.len() as u8) as u64;
 
         for rookie_data in &mut objects.rookie_data.modified {
@@ -150,7 +150,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 resistances[i].set_affinity(
                     rookie_data,
                     ((before_normalization[i] * total_affinity) / (sum * 2)) as u8
-                        + consts::MIN_STAT_AFFINITY,
+                        + dmw3_consts::MIN_STAT_AFFINITY,
                 );
             }
         }
@@ -290,24 +290,24 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Rando
     util::shuffle(&mut learnable_rookie_arr, preset.shuffles, rng);
     util::shuffle(&mut learnable_arr, preset.shuffles, rng);
 
-    for i in 0..consts::ROOKIE_COUNT {
+    for i in 0..dmw3_consts::ROOKIE_COUNT {
         objects.rookie_data.modified[i].ori_tech = learnable_rookie_arr[i];
     }
 
-    for i in 0..consts::DIGIVOLUTION_COUNT {
+    for i in 0..dmw3_consts::DIGIVOLUTION_COUNT {
         objects.digivolution_data.modified[i].ori_tech = learnable_arr[i];
     }
 }
 
 fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    for dindex in 0..consts::ROOKIE_COUNT {
+    for dindex in 0..dmw3_consts::ROOKIE_COUNT {
         let conds = &mut objects.dv_cond.modified[dindex];
 
         // swap ids
         for _ in 0..preset.shuffles {
-            for i in 0..(consts::DIGIVOLUTION_COUNT - 2) {
+            for i in 0..(dmw3_consts::DIGIVOLUTION_COUNT - 2) {
                 let uniform: usize = rng.next_u64() as usize;
-                let j = i + uniform % (consts::DIGIVOLUTION_COUNT - 1 - i);
+                let j = i + uniform % (dmw3_consts::DIGIVOLUTION_COUNT - 1 - i);
 
                 let ind = conds.conditions[j].index;
 
@@ -345,7 +345,7 @@ fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshi
 }
 
 fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    for dindex in 0..consts::ROOKIE_COUNT {
+    for dindex in 0..dmw3_consts::ROOKIE_COUNT {
         let conds = &mut objects.dv_cond.modified[dindex];
 
         // swap ids
@@ -379,11 +379,11 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
             }
         };
 
-        dv_limited(Vec::from(consts::CHAMPIONS));
-        dv_limited(Vec::from(consts::ULTIMATES));
-        dv_limited(Vec::from(consts::MEGAS));
-        dv_limited(Vec::from(consts::MEGAPLUS));
-        dv_limited(Vec::from(consts::ULTRAS));
+        dv_limited(Vec::from(dmw3_consts::CHAMPIONS));
+        dv_limited(Vec::from(dmw3_consts::ULTIMATES));
+        dv_limited(Vec::from(dmw3_consts::MEGAS));
+        dv_limited(Vec::from(dmw3_consts::MEGAPLUS));
+        dv_limited(Vec::from(dmw3_consts::ULTRAS));
 
         // we can clone because we're not touching index anymore
         let cloned = conds.conditions.clone();
@@ -414,7 +414,7 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
 }
 
 fn blasts(objects: &mut Objects) {
-    for r in 0..consts::ROOKIE_COUNT {
+    for r in 0..dmw3_consts::ROOKIE_COUNT {
         let rookie = &mut objects.rookie_data.modified[r];
         for i in 0..5 {
             if rookie.blast_indices[i] == 0 {

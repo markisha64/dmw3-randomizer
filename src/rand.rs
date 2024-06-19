@@ -10,12 +10,13 @@ use std::io::prelude::*;
 use std::io::Cursor;
 use std::path::PathBuf;
 
-use crate::consts;
 use crate::json::Preset;
 use crate::lang::Language;
 use crate::mkpsxiso;
 use crate::mkpsxiso::xml_file;
 use crate::pack::Packed;
+use dmw3_consts;
+pub use dmw3_structs;
 
 mod encounters;
 mod fixes;
@@ -23,8 +24,7 @@ mod maps;
 mod parties;
 mod scaling;
 mod shops;
-pub mod structs;
-use structs::{
+use dmw3_structs::{
     DigivolutionConditions, DigivolutionData, EncounterData, EnemyStats, EntityData, EntityLogic,
     Environmental, ItemShopData, MapColor, MoveData, Pointer, Shop, StageLoadData,
 };
@@ -169,7 +169,7 @@ impl Executable {
     fn text_files(&self) -> &[&str] {
         match self {
             Executable::USA => &[
-                consts::ITEM_NAMES,
+                dmw3_consts::ITEM_NAMES,
                 "STALK00.BIN",
                 "STALK01.BIN",
                 "STALK02.BIN",
@@ -180,7 +180,7 @@ impl Executable {
                 "STALK07.BIN",
             ],
             _ => &[
-                consts::ITEM_NAMES,
+                dmw3_consts::ITEM_NAMES,
                 "STALK00.BIN",
                 "STALK01.BIN",
                 "STALK02.BIN",
@@ -280,7 +280,7 @@ fn read_map_objects(
 
         let jr_ra_instruction_index = buf[idx..]
             .windows(4)
-            .position(|x| x == consts::JR_RA_INSTRUCTION);
+            .position(|x| x == dmw3_consts::JR_RA_INSTRUCTION);
 
         if jr_ra_instruction_index.is_none() {
             continue;
@@ -309,7 +309,7 @@ fn read_map_objects(
         let res = buf[initsp_index..bg_set_idx]
             .windows(2)
             .rev()
-            .position(|x| x == consts::LI_INSTRUCTION);
+            .position(|x| x == dmw3_consts::LI_INSTRUCTION);
 
         if res.is_none() {
             continue;
@@ -350,15 +350,15 @@ fn read_map_objects(
         let mut map_color: Option<Object<MapColor>> = None;
 
         if let Some(map_color_offset) = buf[initsp_index..initp_end_index].chunks(4).position(|x| {
-            x[0] == consts::STAGE_COLOR_INSTRUCTION_HALF[0]
-                && x[1] == consts::STAGE_COLOR_INSTRUCTION_HALF[1]
-                && x[2] != consts::LI_INSTRUCTION[0]
-                && x[3] != consts::LI_INSTRUCTION[1]
+            x[0] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[0]
+                && x[1] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[1]
+                && x[2] != dmw3_consts::LI_INSTRUCTION[0]
+                && x[3] != dmw3_consts::LI_INSTRUCTION[1]
         }) {
             if let Some(map_color_addiu) = buf[initsp_index..initsp_index + map_color_offset * 4]
                 .windows(4)
                 .rev()
-                .position(|x| x[3] == consts::ADDIU)
+                .position(|x| x[3] == dmw3_consts::ADDIU)
             {
                 let aidx = initsp_index + map_color_offset * 4 - map_color_addiu - 4;
                 let addiu_first_half = i16::from_le_bytes([buf[aidx], buf[aidx + 1]]);
@@ -397,22 +397,22 @@ fn read_map_objects(
 
         // we need to assemble full sw instruction
         let environmental_instruction = [
-            consts::ENVIRONMENTAL_INSTRUCTION[0],
-            consts::ENVIRONMENTAL_INSTRUCTION[1],
+            dmw3_consts::ENVIRONMENTAL_INSTRUCTION[0],
+            dmw3_consts::ENVIRONMENTAL_INSTRUCTION[1],
             sw[0],
             sw[1],
         ];
 
         let entities_instruction = [
-            consts::ENTITIES_INSTRUCTION[0],
-            consts::ENTITIES_INSTRUCTION[1],
+            dmw3_consts::ENTITIES_INSTRUCTION[0],
+            dmw3_consts::ENTITIES_INSTRUCTION[1],
             sw[0],
             sw[1],
         ];
 
         let talk_file_instruction = [
-            consts::TALK_FILE_INSTRUCTION[0],
-            consts::TALK_FILE_INSTRUCTION[1],
+            dmw3_consts::TALK_FILE_INSTRUCTION[0],
+            dmw3_consts::TALK_FILE_INSTRUCTION[1],
             sw[0],
             sw[1],
         ];
@@ -422,8 +422,8 @@ fn read_map_objects(
             .position(|x| x == talk_file_instruction)
         {
             let instr = match executable {
-                Executable::PAL => consts::TALK_FILE_ADDIU,
-                _ => consts::LI_INSTRUCTION,
+                Executable::PAL => dmw3_consts::TALK_FILE_ADDIU,
+                _ => dmw3_consts::LI_INSTRUCTION,
             };
 
             let res = buf[initsp_index..initsp_index + talk_file_set]
@@ -626,18 +626,26 @@ pub fn read_objects(path: &PathBuf) -> Objects {
         None => panic!("can't find extracted executable"),
     };
 
-    let stats_buf = fs::read(format!("extract/{}/{}", rom_name, consts::STATS_FILE)).unwrap();
-    let encounter_buf =
-        fs::read(format!("extract/{}/{}", rom_name, consts::ENCOUNTERS_FILE)).unwrap();
+    let stats_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)).unwrap();
+    let encounter_buf = fs::read(format!(
+        "extract/{}/{}",
+        rom_name,
+        dmw3_consts::ENCOUNTERS_FILE
+    ))
+    .unwrap();
     let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str())).unwrap();
-    let shops_buf = fs::read(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
-    let exp_buf = fs::read(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
-    let map_buf = fs::read(format!("extract/{}/{}", rom_name, consts::MAP_FILE)).unwrap();
-    let pack_select_buf =
-        fs::read(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
+    let shops_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).unwrap();
+    let exp_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).unwrap();
+    let map_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE)).unwrap();
+    let pack_select_buf = fs::read(format!(
+        "extract/{}/{}",
+        rom_name,
+        dmw3_consts::PACK_SELECT_FILE
+    ))
+    .unwrap();
 
     let overlay_address = Pointer {
-        value: consts::OVERLAY_ADDRESS,
+        value: dmw3_consts::OVERLAY_ADDRESS,
     };
 
     let overlay = Pointer::from(
@@ -645,7 +653,7 @@ pub fn read_objects(path: &PathBuf) -> Objects {
     );
 
     let stage_address = Pointer {
-        value: consts::STAGE_ADDRESS,
+        value: dmw3_consts::STAGE_ADDRESS,
     };
 
     let stage = Pointer::from(
@@ -676,7 +684,7 @@ pub fn read_objects(path: &PathBuf) -> Objects {
 
     let mut enemy_stats_reader = Cursor::new(&stats_buf[enemy_stats_index..]);
 
-    let mut enemy_stats_arr: Vec<structs::EnemyStats> = Vec::new();
+    let mut enemy_stats_arr: Vec<dmw3_structs::EnemyStats> = Vec::new();
 
     loop {
         let stats = EnemyStats::read(&mut enemy_stats_reader);
@@ -732,9 +740,9 @@ pub fn read_objects(path: &PathBuf) -> Objects {
     let mut shops_reader = Cursor::new(&shops_buf[shops_index..]);
 
     let mut shops_arr: Vec<Shop> = Vec::new();
-    shops_arr.reserve(consts::SHOPS_LEN);
+    shops_arr.reserve(dmw3_consts::SHOPS_LEN);
 
-    for _ in 0..consts::SHOPS_LEN {
+    for _ in 0..dmw3_consts::SHOPS_LEN {
         let shop = Shop::read(&mut shops_reader);
 
         match shop {
@@ -792,9 +800,9 @@ pub fn read_objects(path: &PathBuf) -> Objects {
     let mut digivolution_data_reader = Cursor::new(&main_buf[digivolution_data_index..]);
 
     let mut rookie_data_arr: Vec<DigivolutionData> = Vec::new();
-    rookie_data_arr.reserve(consts::ROOKIE_COUNT);
+    rookie_data_arr.reserve(dmw3_consts::ROOKIE_COUNT);
 
-    for _ in 0..consts::ROOKIE_COUNT {
+    for _ in 0..dmw3_consts::ROOKIE_COUNT {
         let rookie_data = DigivolutionData::read(&mut digivolution_data_reader);
 
         match rookie_data {
@@ -804,9 +812,9 @@ pub fn read_objects(path: &PathBuf) -> Objects {
     }
 
     let mut digivolution_data_arr: Vec<DigivolutionData> = Vec::new();
-    digivolution_data_arr.reserve(consts::DIGIVOLUTION_COUNT);
+    digivolution_data_arr.reserve(dmw3_consts::DIGIVOLUTION_COUNT);
 
-    for _ in 0..consts::DIGIVOLUTION_COUNT {
+    for _ in 0..dmw3_consts::DIGIVOLUTION_COUNT {
         let digivolution_data = DigivolutionData::read(&mut digivolution_data_reader);
 
         match digivolution_data {
@@ -839,12 +847,12 @@ pub fn read_objects(path: &PathBuf) -> Objects {
 
     let parties_index = main_buf
         .windows(9)
-        .position(|window| window == consts::PACKS)
+        .position(|window| window == dmw3_consts::PACKS)
         .unwrap();
 
-    let default_packs: Vec<u32> = consts::PACKS.iter().map(|x| *x as u32).collect();
+    let default_packs: Vec<u32> = dmw3_consts::PACKS.iter().map(|x| *x as u32).collect();
     let mut default_pack_preview: Vec<u8> = Vec::new();
-    for mon in consts::PACKS {
+    for mon in dmw3_consts::PACKS {
         // yes this is ugly, no I don't care
         default_pack_preview.push(*mon);
         default_pack_preview.extend(b"\x00\x00\x00");
@@ -856,7 +864,7 @@ pub fn read_objects(path: &PathBuf) -> Objects {
         .unwrap();
 
     let mut dv_cond_arr: Vec<DigivolutionConditions> = Vec::new();
-    dv_cond_arr.reserve(consts::ROOKIE_COUNT);
+    dv_cond_arr.reserve(dmw3_consts::ROOKIE_COUNT);
 
     let dv_cond_index = exp_buf
         .windows(8)
@@ -865,7 +873,7 @@ pub fn read_objects(path: &PathBuf) -> Objects {
 
     let mut dv_cond_reader = Cursor::new(&exp_buf[dv_cond_index..]);
 
-    for _ in 0..consts::ROOKIE_COUNT {
+    for _ in 0..dmw3_consts::ROOKIE_COUNT {
         let dv_cond = DigivolutionConditions::read(&mut dv_cond_reader);
 
         match dv_cond {
@@ -879,11 +887,11 @@ pub fn read_objects(path: &PathBuf) -> Objects {
         .to_index_overlay(overlay.value as u32) as usize;
 
     let mut stage_load_data_arr: Vec<StageLoadData> = Vec::new();
-    stage_load_data_arr.reserve(consts::STAGE_LOAD_DATA_LENGTH);
+    stage_load_data_arr.reserve(dmw3_consts::STAGE_LOAD_DATA_LENGTH);
 
     let mut stage_load_data_reader = Cursor::new(&map_buf[stage_load_data_index..]);
 
-    for _ in 0..consts::STAGE_LOAD_DATA_LENGTH {
+    for _ in 0..dmw3_consts::STAGE_LOAD_DATA_LENGTH {
         let res = StageLoadData::read(&mut stage_load_data_reader);
 
         match res {
@@ -895,12 +903,12 @@ pub fn read_objects(path: &PathBuf) -> Objects {
     let mut item_files: HashMap<Language, TextFile> = HashMap::new();
 
     for lang in executable.languages() {
-        let fsname = lang.to_file_name(consts::ITEM_NAMES);
+        let fsname = lang.to_file_name(dmw3_consts::ITEM_NAMES);
 
         let file = fs::read(format!(
             "extract/{}/{}",
             rom_name,
-            lang.to_path(consts::ITEM_NAMES)
+            lang.to_path(dmw3_consts::ITEM_NAMES)
         ))
         .unwrap();
 
@@ -989,8 +997,8 @@ pub fn read_objects(path: &PathBuf) -> Objects {
     };
 
     let parties_object: ObjectArray<u8> = ObjectArray {
-        original: consts::PACKS.into(),
-        modified: consts::PACKS.into(),
+        original: dmw3_consts::PACKS.into(),
+        modified: dmw3_consts::PACKS.into(),
         index: parties_index,
         slen: 0x1,
     };
@@ -1165,14 +1173,23 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     ))
     .unwrap();
     let mut new_stats =
-        File::create(format!("extract/{}/{}", rom_name, consts::STATS_FILE)).unwrap();
-    let mut new_encounters =
-        File::create(format!("extract/{}/{}", rom_name, consts::ENCOUNTERS_FILE)).unwrap();
+        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)).unwrap();
+    let mut new_encounters = File::create(format!(
+        "extract/{}/{}",
+        rom_name,
+        dmw3_consts::ENCOUNTERS_FILE
+    ))
+    .unwrap();
     let mut new_shops =
-        File::create(format!("extract/{}/{}", rom_name, consts::SHOPS_FILE)).unwrap();
-    let mut new_exp = File::create(format!("extract/{}/{}", rom_name, consts::EXP_FILE)).unwrap();
-    let mut new_pack_select =
-        File::create(format!("extract/{}/{}", rom_name, consts::PACK_SELECT_FILE)).unwrap();
+        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).unwrap();
+    let mut new_exp =
+        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).unwrap();
+    let mut new_pack_select = File::create(format!(
+        "extract/{}/{}",
+        rom_name,
+        dmw3_consts::PACK_SELECT_FILE
+    ))
+    .unwrap();
 
     for sname in objects.executable.text_files().iter() {
         for lang in objects.executable.languages() {

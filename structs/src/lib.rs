@@ -1,6 +1,6 @@
-use crate::consts;
 use binread::BinRead;
 use binwrite::BinWrite;
+use dmw3_consts;
 use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
@@ -221,7 +221,7 @@ pub struct DigivolutionCondition {
 
 #[derive(BinRead, Debug, Clone, BinWrite, Serialize, Deserialize)]
 pub struct DigivolutionConditions {
-    #[br(count = consts::DIGIVOLUTION_COUNT)]
+    #[br(count = dmw3_consts::DIGIVOLUTION_COUNT)]
     pub conditions: Vec<DigivolutionCondition>,
 }
 
@@ -285,13 +285,15 @@ impl Pointer {
         let lui_index = buf
             .chunks(4)
             .rev()
-            .position(|x| x[2] == consts::LUI_INSTRUCTION[0] && x[3] == consts::LUI_INSTRUCTION[1])
+            .position(|x| {
+                x[2] == dmw3_consts::LUI_INSTRUCTION[0] && x[3] == dmw3_consts::LUI_INSTRUCTION[1]
+            })
             .unwrap();
 
         let addiu_index = buf
             .chunks(4)
             .rev()
-            .position(|x| x[3] == consts::ADDIU)
+            .position(|x| x[3] == dmw3_consts::ADDIU)
             .unwrap();
 
         let lui_slice = &buf[buf.len() - (lui_index + 1) * 4..];

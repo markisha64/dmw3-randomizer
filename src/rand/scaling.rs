@@ -3,8 +3,8 @@ use crate::json::Scaling;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use crate::consts;
-use crate::rand::{structs::EncounterData, Objects};
+use crate::rand::{dmw3_structs::EncounterData, Objects};
+use dmw3_consts;
 
 pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let len = objects.encounters.original.len();
@@ -70,7 +70,7 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
 
             let mut target_power = 40 + min_lv.lv * 10;
 
-            if move_data.hit_effect == consts::MULTI_HIT && move_data.freq > 1 {
+            if move_data.hit_effect == dmw3_consts::MULTI_HIT && move_data.freq > 1 {
                 target_power = (move_data.power * 6) / (move_data.freq as u16 * 5);
             }
 
@@ -145,7 +145,7 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
         .encounters
         .original
         .iter()
-        .position(|x| x.digimon_id as u16 == consts::GALACTICMON_1ST_PHASE)
+        .position(|x| x.digimon_id as u16 == dmw3_consts::GALACTICMON_1ST_PHASE)
         .unwrap();
 
     let phase_3 = phase_1 + 2;

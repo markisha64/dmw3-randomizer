@@ -19,6 +19,8 @@ rand_xoshiro = "0.6.0"
 serde = { version = "1.0.185", features = ["derive"] }
 serde_json = "1.0.105"
 tokio = "1.32.0"
+dmw3_structs = { path = "structs" }
+dmw3_consts = { path = "consts" }
 
 [package.metadata.bundle]
 name = "DMW3 Randomizer"
