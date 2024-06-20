@@ -14,6 +14,7 @@ pub fn dump(path: &std::path::PathBuf) {
     let item_shop_string = serde_json::to_string_pretty(&objects.item_shop_data.original).unwrap();
     let digivolution_condition_string =
         serde_json::to_string_pretty(&objects.dv_cond.original).unwrap();
+    let move_data_string = serde_json::to_string_pretty(&objects.move_data.original).unwrap();
 
     fs::create_dir_all(format!("dump/{rom_name}")).unwrap();
 
@@ -38,4 +39,6 @@ pub fn dump(path: &std::path::PathBuf) {
         digivolution_condition_string,
     )
     .unwrap();
+
+    fs::write(format!("dump/{rom_name}/move_data.json"), move_data_string).unwrap();
 }
