@@ -11,6 +11,7 @@ pub fn dump(path: &std::path::PathBuf) {
     let encounter_string = serde_json::to_string_pretty(&objects.encounters.original).unwrap();
     let digivolution_string =
         serde_json::to_string_pretty(&objects.digivolution_data.original).unwrap();
+    let rookie_string = serde_json::to_string_pretty(&objects.rookie_data.original).unwrap();
     let item_shop_string = serde_json::to_string_pretty(&objects.item_shop_data.original).unwrap();
     let digivolution_condition_string =
         serde_json::to_string_pretty(&objects.dv_cond.original).unwrap();
@@ -31,6 +32,8 @@ pub fn dump(path: &std::path::PathBuf) {
         digivolution_string,
     )
     .unwrap();
+
+    fs::write(format!("dump/{rom_name}/rookies.json"), rookie_string).unwrap();
 
     fs::write(format!("dump/{rom_name}/item_shops.json"), item_shop_string).unwrap();
 
