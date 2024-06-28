@@ -18,6 +18,10 @@ fn main() {
 
     if let Some(path) = &args.path {
         if args.dump {
+            if !mkpsxiso::extract(&path) {
+                panic!("Error extracting");
+            }
+
             dump::dump(&path);
 
             return ();

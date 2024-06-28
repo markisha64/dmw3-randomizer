@@ -16,7 +16,7 @@ pub struct Arguments {
     #[clap(short, long)]
     pub output: Option<String>,
     #[clap(short, long)]
-    #[arg(default_value_t = true)]
+    #[arg(default_value_t = false)]
     pub dump: bool,
 }
 
