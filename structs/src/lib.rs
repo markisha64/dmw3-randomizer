@@ -212,11 +212,11 @@ pub struct ItemShopData {
 pub struct DigivolutionCondition {
     pub index: u32,      // +1
     pub dv_index_1: u16, // +1
-    rq_level_1: u16,
+    pub rq_level_1: u16,
     pub dv_index_2: u16, // +1
-    rq_level_2: u16,
-    rq_type: u16,
-    rq: u16,
+    pub rq_level_2: u16,
+    pub rq_type: u16,
+    pub rq: u16,
 }
 
 #[derive(BinRead, Debug, Clone, BinWrite, Serialize, Deserialize)]
