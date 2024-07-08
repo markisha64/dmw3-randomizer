@@ -137,10 +137,10 @@ pub struct DigivolutionData {
     ko_rate: u8,
 
     #[br(count = 5)]
-    tech_learn_level: Vec<u8>,
+    pub tech_learn_level: Vec<u8>,
 
     #[br(count = 5)]
-    tech_load_level: Vec<u8>,
+    pub tech_load_level: Vec<u8>,
 
     unk0: u8,
 
