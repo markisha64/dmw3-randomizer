@@ -139,10 +139,10 @@ pub struct DigivolutionData {
     #[br(count = 5)]
     pub tech_learn_level: Vec<u8>,
 
+    pub ori_tech_learn_level: u8,
+
     #[br(count = 5)]
     pub tech_load_level: Vec<u8>,
-
-    unk0: u8,
 
     dv: u8,
 
