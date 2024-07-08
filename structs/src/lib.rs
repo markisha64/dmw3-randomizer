@@ -167,7 +167,9 @@ pub struct DigivolutionData {
     #[br(count = 5)]
     pub blast_indices: Vec<u8>,
 
-    #[br(count = 3)]
+    pub dv_index: u8,
+
+    #[br(count = 2)]
     unk_arr_1: Vec<u8>,
 }
 
