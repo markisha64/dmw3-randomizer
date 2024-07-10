@@ -144,9 +144,9 @@ pub struct DigivolutionData {
     #[br(count = 5)]
     pub tech_load_level: Vec<u8>,
 
-    dv: u8,
+    dv_exp_modifier: u8,
 
-    unk1: u8,
+    pub dna_dv_idx: u8,
 
     pub exp_modifier: u8,
 
