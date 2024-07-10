@@ -117,7 +117,7 @@ pub struct DigivolutionData {
 
     pub drk_res: u16,
 
-    attack: u16,
+    pub attack: u16,
 
     #[br(count = 5)]
     pub tech: Vec<u16>,
