@@ -124,7 +124,7 @@ pub struct DigivolutionData {
 
     pub ori_tech: u16,
 
-    dv_tech: u16,
+    pub dna_dv_tech: u16,
 
     psn_rate: u8,
 
