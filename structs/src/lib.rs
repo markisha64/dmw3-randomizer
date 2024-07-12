@@ -1,10 +1,9 @@
 use binread::BinRead;
 use binwrite::BinWrite;
 use dmw3_consts;
-use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
-#[derive(BinRead, Debug, Clone, Copy, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct EnemyStats {
     pub digimon_id: u16,
 
@@ -67,7 +66,7 @@ pub struct EnemyStats {
     counter_moveset: Moveset,
 }
 
-#[derive(BinRead, Debug, Clone, Copy, BinWrite, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite, PartialEq, Eq, Hash)]
 pub struct EncounterData {
     pub digimon_id: u32,
 
@@ -80,14 +79,14 @@ pub struct EncounterData {
     pub multiplier: u16,
 }
 
-#[derive(BinRead, Debug, Clone, Copy, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 struct Moveset {
     action: u8,
     comparator: u8,
     value: u16,
 }
 
-#[derive(BinRead, Debug, Clone, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, BinWrite)]
 pub struct DigivolutionData {
     pub digimon_id: u16,
 
@@ -173,18 +172,18 @@ pub struct DigivolutionData {
     unk_arr_1: Vec<u8>,
 }
 
-#[derive(BinRead, Debug, Clone, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, BinWrite)]
 pub struct Shop {
     pub item_count: u32,
     pub items: Pointer,
 }
 
-#[derive(BinRead, Debug, Clone, Copy, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct Pointer {
     pub value: u32,
 }
 
-#[derive(BinRead, Debug, Clone, Copy, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct MoveData {
     pub mp: u16,
     pub power: u16,
@@ -202,7 +201,7 @@ pub struct MoveData {
     pub freq: u8,
 }
 
-#[derive(BinRead, Debug, Clone, Copy, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct ItemShopData {
     unk_ptr: Pointer,
     pub buy_price: u16,
@@ -210,7 +209,7 @@ pub struct ItemShopData {
     unk: u32,
 }
 
-#[derive(BinRead, Debug, Clone, Copy, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, Copy, BinWrite)]
 pub struct DigivolutionCondition {
     pub index: u32,      // +1
     pub dv_index_1: u16, // +1
@@ -221,7 +220,7 @@ pub struct DigivolutionCondition {
     pub rq: u16,
 }
 
-#[derive(BinRead, Debug, Clone, BinWrite, Serialize, Deserialize)]
+#[derive(BinRead, Debug, Clone, BinWrite)]
 pub struct DigivolutionConditions {
     #[br(count = dmw3_consts::DIGIVOLUTION_COUNT)]
     pub conditions: Vec<DigivolutionCondition>,

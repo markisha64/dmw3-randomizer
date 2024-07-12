@@ -152,19 +152,24 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
                         break;
                     }
 
-                    let doesnt_fit = group.files.iter().find(|(lang, text_file)| {
-                        let item_name =
-                            objects.items.files.get(lang).unwrap().file.files[nv as usize].clone();
+                    let doesnt_fit = group
+                        .files
+                        .iter()
+                        .find(|(lang, text_file)| {
+                            let item_name = objects.items.files.get(lang).unwrap().file.files
+                                [nv as usize]
+                                .clone();
 
-                        let csize = text_file.file.file_size();
+                            let csize = text_file.file.file_size();
 
-                        let received_item_text = lang.to_received_item(item_name);
+                            let received_item_text = lang.to_received_item(item_name);
 
-                        csize + 4 + received_item_text.len()
-                            > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
-                    });
+                            csize + 4 + received_item_text.len()
+                                > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
+                        })
+                        .is_some();
 
-                    if doesnt_fit.is_some() {
+                    if doesnt_fit {
                         if let Some(idx) = group.generic_item {
                             logic.modified.text_index = idx;
                         }
