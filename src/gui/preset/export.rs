@@ -6,10 +6,11 @@ use dioxus::prelude::*;
 
 use serde_json;
 
-pub fn export(cx: Scope) -> Element {
-    let state = use_shared_state::<Preset>(cx).unwrap();
+#[component]
+pub fn export() -> Element {
+    let state = use_context::<Signal<Preset>>();
 
-    render! {
+    rsx! {
         div {
             class: "tooltip",
             span {

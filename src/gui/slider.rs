@@ -1,57 +1,52 @@
 use dioxus::prelude::*;
 
-#[derive(Props)]
-pub struct SliderProps<'a> {
-    label: &'a str,
-    id: &'a str,
-    #[props(default = false)]
-    disabled: bool,
-    oninput: EventHandler<'a, FormEvent>,
-    tooltip: Option<&'a str>,
+#[component]
+pub fn slider(
+    label: &'static str,
+    id: &'static str,
+    #[props(default = false)] disabled: bool,
+    oninput: EventHandler<FormEvent>,
+    tooltip: Option<&'static str>,
     value: i64,
     min: i64,
     max: i64,
-}
-
-pub fn slider<'a>(cx: Scope<'a, SliderProps<'a>>) -> Element {
-    let class = match cx.props.tooltip {
+) -> Element {
+    let class = match tooltip {
         Some(_) => "tooltip",
         None => "",
     };
 
-    render! {
+    rsx! {
         div {
             class: class,
             label {
-                r#for: cx.props.id,
-                cx.props.label
+                r#for: id,
+                "{label}"
             },
-            if let Some(tooltip) = cx.props.tooltip {
-                rsx! {
-                    span {
-                        class: "tooltiptext",
-                        tooltip
-                    }
+            if let Some(tooltip) = tooltip {
+                span {
+                    class: "tooltiptext",
+                    "{tooltip}"
                 }
             },
             input {
-                id: cx.props.id,
+                id: id,
                 r#type: "range",
                 class: "slider",
-                disabled: cx.props.disabled,
-                value: cx.props.value,
-                min: cx.props.min,
-                max: cx.props.max,
-                oninput: move |evt| cx.props.oninput.call(evt)
+                disabled: disabled,
+                value: value,
+                min: min,
+                max: max,
+                oninput: move |evt| oninput.call(evt)
             },
             input {
                 r#type: "number",
-                value: cx.props.value,
+                value: value,
                 class: "short_number",
-                min: cx.props.min,
-                max: cx.props.max,
-                disabled: cx.props.disabled,
-                oninput: move |evt| cx.props.oninput.call(evt)
+                min: min,
+                max: max,
+                disabled: disabled,
+                oninput: move |evt| oninput.call(evt)
             }
         }
     }

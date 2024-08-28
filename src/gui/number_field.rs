@@ -1,50 +1,44 @@
 use dioxus::prelude::*;
 
-#[derive(Props)]
-pub struct NumberField<'a> {
-    label: &'a str,
-    id: &'a str,
-    #[props(default = false)]
-    disabled: bool,
-    #[props(default = 1)]
-    step: i64,
-    onchange: EventHandler<'a, FormEvent>,
-    tooltip: Option<&'a str>,
+#[component]
+pub fn number_field(
+    label: &'static str,
+    id: &'static str,
+    #[props(default = false)] disabled: bool,
+    #[props(default = 1)] step: i64,
+    onchange: EventHandler<FormEvent>,
+    tooltip: Option<&'static str>,
     value: i64,
     min: i64,
     max: i64,
-}
-
-pub fn number_field<'a>(cx: Scope<'a, NumberField<'a>>) -> Element {
-    let class = match cx.props.tooltip {
+) -> Element {
+    let class = match tooltip {
         Some(_) => "tooltip",
         None => "",
     };
 
-    render! {
+    rsx! {
         div {
             class: class,
             label {
-                r#for: cx.props.id,
-                cx.props.label
+                r#for: id,
+                "{label}"
             },
-            if let Some(tooltip) = cx.props.tooltip {
-                rsx! {
-                    span {
-                        class: "tooltiptext",
-                        tooltip
-                    }
+            if let Some(tooltip) = tooltip {
+                span {
+                    class: "tooltiptext",
+                    "{tooltip}"
                 }
             },
             input {
                 r#type: "number",
-                value: cx.props.value,
+                value: value,
                 class: "short_number",
-                min: cx.props.min,
-                max: cx.props.max,
-                step: cx.props.step,
-                disabled: cx.props.disabled,
-                onchange: move |evt| cx.props.onchange.call(evt)
+                min: min,
+                max: max,
+                step: step,
+                disabled: disabled,
+                onchange: move |evt| onchange.call(evt)
             }
         }
     }

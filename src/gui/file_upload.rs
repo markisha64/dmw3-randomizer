@@ -1,47 +1,41 @@
 use dioxus::prelude::*;
 
-#[derive(Props)]
-pub struct FileProps<'a> {
-    label: &'a str,
-    id: &'a str,
-    #[props(default = false)]
-    disabled: bool,
-    #[props(default = false)]
-    multiple: bool,
-    accept: &'a str,
-    onchange: EventHandler<'a, FormEvent>,
-    tooltip: Option<&'a str>,
-}
-
-pub fn file_upload<'a>(cx: Scope<'a, FileProps<'a>>) -> Element {
-    let class = match cx.props.tooltip {
+#[component]
+pub fn file_upload(
+    label: ReadOnlySignal<String>,
+    id: &'static str,
+    #[props(default = false)] disabled: bool,
+    #[props(default = false)] multiple: bool,
+    accept: &'static str,
+    onchange: EventHandler<FormEvent>,
+    tooltip: Option<&'static str>,
+) -> Element {
+    let class = match tooltip {
         Some(_) => "center tooltip",
         None => "center",
     };
 
-    render! {
+    rsx! {
         div {
             class: class,
             label {
                 class: "file-upload",
-                r#for: cx.props.id,
-                cx.props.label
+                r#for: id,
+                "{label}"
             },
-            if let Some(tooltip) = cx.props.tooltip {
-                rsx! {
-                    span {
-                        class: "tooltiptext",
-                        tooltip
-                    }
+            if let Some(tt) = tooltip {
+                span {
+                    class: "tooltiptext",
+                    "{tt}"
                 }
             }
             input {
-                id: cx.props.id,
+                id: id,
                 r#type: "file",
-                multiple: cx.props.multiple,
-                accept: cx.props.accept,
-                disabled: cx.props.disabled,
-                onchange: move |evt| cx.props.onchange.call(evt)
+                multiple: multiple,
+                accept: accept,
+                disabled: disabled,
+                onchange: move |evt| onchange.call(evt)
             }
         }
     }

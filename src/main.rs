@@ -55,7 +55,7 @@ fn main() {
             println!("randomized into {file_name}");
         }
         None => {
-            gui::launch();
+            gui::launch_app();
         }
     }
 }

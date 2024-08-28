@@ -6,8 +6,8 @@ use crate::json::Preset;
 
 use crate::gui::checkbox;
 
-pub fn encounters(cx: Scope) -> Element {
-    let state = use_shared_state::<Preset>(cx).unwrap();
+pub fn encounters() -> Element {
+    let mut state = use_context::<Signal<Preset>>();
     let read_state = state.read();
 
     let enabled = read_state.randomizer.encounters.enabled;
@@ -18,7 +18,7 @@ pub fn encounters(cx: Scope) -> Element {
     let keep_zanbamon = read_state.randomizer.encounters.keep_zanbamon;
     let keep_galacticmon = read_state.randomizer.encounters.keep_galacticmon;
 
-    render! {
+    rsx! {
         div {
             class: "segment",
             div {
@@ -29,7 +29,7 @@ pub fn encounters(cx: Scope) -> Element {
                     checked: enabled,
                     tooltip: "Shuffle encounters (scales stats)",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.enabled = x.data.value == "true";
+                        state.write().randomizer.encounters.enabled = x.data.value() == "true";
                     }
                 }
             },
@@ -42,7 +42,7 @@ pub fn encounters(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Shuffle cardmon",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.cardmon = x.data.value == "true";
+                        state.write().randomizer.encounters.cardmon = x.data.value() == "true";
                     }
                 },
                 checkbox::checkbox {
@@ -52,7 +52,7 @@ pub fn encounters(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Shuffle bosses",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.bosses = x.data.value == "true";
+                        state.write().randomizer.encounters.bosses = x.data.value() == "true";
                     }
                 },
             },
@@ -79,7 +79,7 @@ pub fn encounters(cx: Scope) -> Element {
                         id: "encounters.tnt",
                         disabled: !enabled,
                         onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.encounters.strategy = TNTStrategy::from(x.data.value.parse::<u8>().unwrap());
+                            state.write().randomizer.encounters.strategy = TNTStrategy::from(x.data.value().parse::<u8>().unwrap());
                         },
                         option {
                             value: "2",
@@ -106,7 +106,7 @@ pub fn encounters(cx: Scope) -> Element {
                 disabled: !enabled,
                 tooltip: "Zanbamon scripted fight can only be won by cheesing it if Zanbamon isn't there",
                 onchange: move |x: Event<FormData>| {
-                    state.write().randomizer.encounters.keep_zanbamon = x.data.value == "true";
+                    state.write().randomizer.encounters.keep_zanbamon = x.data.value() == "true";
                 }
             },
             checkbox::checkbox {
@@ -116,7 +116,7 @@ pub fn encounters(cx: Scope) -> Element {
                 disabled: !enabled,
                 tooltip: "Galacticmon fight is kinda buggy when it's not Galacticmon",
                 onchange: move |x: Event<FormData>| {
-                    state.write().randomizer.encounters.keep_galacticmon = x.data.value == "true";
+                    state.write().randomizer.encounters.keep_galacticmon = x.data.value() == "true";
                 }
             },
         }

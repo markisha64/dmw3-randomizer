@@ -4,8 +4,9 @@ use crate::{gui::checkbox, json::Preset};
 use dioxus::prelude::*;
 use dmw3_consts;
 
-pub fn scaling(cx: Scope) -> Element {
-    let preset_state = use_shared_state::<Preset>(cx).unwrap();
+#[component]
+pub fn scaling() -> Element {
+    let mut preset_state = use_context::<Signal<Preset>>();
     let read_state = preset_state.read();
 
     let enabled = read_state.scaling.enabled;
@@ -19,7 +20,7 @@ pub fn scaling(cx: Scope) -> Element {
     let res_modifier = read_state.scaling.res_modifier;
     let hp_modifier = read_state.scaling.hp_modifier;
 
-    render! {
+    rsx! {
         div {
             class: "segment",
             div {
@@ -38,7 +39,7 @@ pub fn scaling(cx: Scope) -> Element {
                         id: "scaling.enabled",
                         checked: enabled,
                         onchange: move |x: Event<FormData>| {
-                            preset_state.write().scaling.enabled = x.data.value == "true";
+                            preset_state.write().scaling.enabled = x.data.value() == "true";
                         }
                     },
                 },
@@ -49,7 +50,7 @@ pub fn scaling(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Stat range (undistributed)",
                     oninput: move |x: Event<FormData>| {
-                        let new_offset: i64 = match x.data.value.parse::<i64>() {
+                        let new_offset: i64 = match x.data.value().parse::<i64>() {
                             Ok(offset) => {
                                 if dmw3_consts::MIN_STAT_RANGE <= offset && offset <= dmw3_consts::MAX_STAT_RANGE {
                                     offset
@@ -74,7 +75,7 @@ pub fn scaling(cx: Scope) -> Element {
                     tooltip: "More natural scaling, scales tech",
                     checked: natural_scaling,
                     onchange: move |x: Event<FormData>| {
-                        preset_state.write().scaling.natural_scaling = x.data.value == "true";
+                        preset_state.write().scaling.natural_scaling = x.data.value() == "true";
                     }
                 }
             },
@@ -88,7 +89,7 @@ pub fn scaling(cx: Scope) -> Element {
                     value: base_stats as i64,
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
-                        let stats = match x.data.value.parse::<i32>() {
+                        let stats = match x.data.value().parse::<i32>() {
                             Ok(s) => {
                                 if 1 <= s && s <= 2000 {
                                     s
@@ -110,7 +111,7 @@ pub fn scaling(cx: Scope) -> Element {
                     value: stat_modifier as i64,
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
-                        let modifier = match x.data.value.parse::<i32>() {
+                        let modifier = match x.data.value().parse::<i32>() {
                             Ok(s) => {
                                 if 1 <= s && s <= 200 {
                                     s
@@ -135,7 +136,7 @@ pub fn scaling(cx: Scope) -> Element {
                     value: base_res as i64,
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
-                        let res = match x.data.value.parse::<i32>() {
+                        let res = match x.data.value().parse::<i32>() {
                             Ok(s) => {
                                 if 1 <= s && s <= 2000 {
                                     s
@@ -157,7 +158,7 @@ pub fn scaling(cx: Scope) -> Element {
                     value: res_modifier as i64,
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
-                        let modifier = match x.data.value.parse::<i32>() {
+                        let modifier = match x.data.value().parse::<i32>() {
                             Ok(s) => {
                                 if 1 <= s && s <= 200 {
                                     s
@@ -181,7 +182,7 @@ pub fn scaling(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Multiply enemy HP by",
                     onchange: move  |x: Event<FormData>| {
-                        let modifier = match x.data.value.parse::<f64>() {
+                        let modifier = match x.data.value().parse::<f64>() {
                             Ok(s) => {
                                 if 0.01 <= s && s <= 4.0 {
                                     s

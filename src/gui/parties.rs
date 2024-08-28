@@ -4,8 +4,9 @@ use crate::json::Preset;
 
 use crate::gui::{checkbox, number_field};
 
-pub fn parties(cx: Scope) -> Element {
-    let state = use_shared_state::<Preset>(cx).unwrap();
+#[component]
+pub fn parties() -> Element {
+    let mut state = use_context::<Signal<Preset>>();
     let read_state = state.read();
 
     let enabled = read_state.randomizer.parties.enabled;
@@ -42,7 +43,7 @@ pub fn parties(cx: Scope) -> Element {
     let min_start_mp = read_state.randomizer.parties.min_starting_mp;
     let max_start_mp = read_state.randomizer.parties.max_starting_mp;
 
-    render! {
+    rsx! {
         div {
             class: "segment",
             div {
@@ -52,7 +53,7 @@ pub fn parties(cx: Scope) -> Element {
                     id: "party.enabled",
                     checked: enabled,
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.enabled = x.data.value == "true";
+                        state.write().randomizer.parties.enabled = x.data.value() == "true";
                     }
                 },
                 checkbox::checkbox {
@@ -62,7 +63,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize parties (preview currently unavailable)",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.parties = x.data.value == "true";
+                        state.write().randomizer.parties.parties = x.data.value() == "true";
                     }
                 },
             },
@@ -75,7 +76,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize player digimon stat distribution",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.stat_distribution = x.data.value == "true";
+                        state.write().randomizer.parties.stat_distribution = x.data.value() == "true";
                     }
                 },
                 number_field::number_field {
@@ -87,7 +88,7 @@ pub fn parties(cx: Scope) -> Element {
                     max: (total_start_stat / 5) as i64,
                     tooltip: "Mininum points per stat",
                     onchange: move |x: Event<FormData>| {
-                        let new_stat = match x.data.value.parse::<u16>() {
+                        let new_stat = match x.data.value().parse::<u16>() {
                             Ok(s) => {
                                 if s * 5 > total_start_stat {
                                     min_stat
@@ -110,7 +111,7 @@ pub fn parties(cx: Scope) -> Element {
                     max: 4995,
                     tooltip: "Total starting stats",
                     onchange: move |x: Event<FormData>| {
-                        let new_stat = match x.data.value.parse::<u16>() {
+                        let new_stat = match x.data.value().parse::<u16>() {
                             Ok(s) => {
                                 if s >= min_stat * 5 {
                                     s
@@ -134,7 +135,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize player digimon res distribution",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.res_distribution = x.data.value == "true";
+                        state.write().randomizer.parties.res_distribution = x.data.value() == "true";
                     }
                 },
                 number_field::number_field {
@@ -146,7 +147,7 @@ pub fn parties(cx: Scope) -> Element {
                     max: (total_start_res / 7) as i64,
                     tooltip: "Mininum points per res",
                     onchange: move |x: Event<FormData>| {
-                        let new_res = match x.data.value.parse::<u16>() {
+                        let new_res = match x.data.value().parse::<u16>() {
                             Ok(s) => {
                                 if s * 7 > total_start_res {
                                     min_res
@@ -169,7 +170,7 @@ pub fn parties(cx: Scope) -> Element {
                     max: 6993,
                     tooltip: "Total starting res",
                     onchange: move |x: Event<FormData>| {
-                        let new_res = match x.data.value.parse::<u16>() {
+                        let new_res = match x.data.value().parse::<u16>() {
                             Ok(s) => {
                                 if s >= min_res * 7 {
                                     s
@@ -193,7 +194,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize learned tech",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.learned_tech = x.data.value == "true";
+                        state.write().randomizer.parties.learned_tech = x.data.value() == "true";
                     }
                 },
                 checkbox::checkbox {
@@ -203,7 +204,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize signature moves",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.signatures = x.data.value == "true";
+                        state.write().randomizer.parties.signatures = x.data.value() == "true";
                     }
                 }
             },
@@ -216,7 +217,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize digivolutions",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.digivolutions = x.data.value == "true";
+                        state.write().randomizer.parties.digivolutions = x.data.value() == "true";
                     }
                 },
                 checkbox::checkbox {
@@ -226,7 +227,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !enabled || !digivolutions,
                     tooltip: "Replace digimon of a stage with a digimon of the same stage",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.keep_stages = x.data.value == "true";
+                        state.write().randomizer.parties.keep_stages = x.data.value() == "true";
                     }
                 }
             },
@@ -246,7 +247,7 @@ pub fn parties(cx: Scope) -> Element {
                             id: "parties.exp_modifier",
                             disabled: !enabled,
                             onchange: move |x: Event<FormData>| {
-                                state.write().randomizer.parties.exp_modifier = x.data.value == "true";
+                                state.write().randomizer.parties.exp_modifier = x.data.value() == "true";
                             }
                         },
                         number_field::number_field {
@@ -257,7 +258,7 @@ pub fn parties(cx: Scope) -> Element {
                             min: 1,
                             max: max_exp_mod as i64,
                             onchange: move |x: Event<FormData>| {
-                                let new_exp_mod = match x.data.value.parse::<u8>() {
+                                let new_exp_mod = match x.data.value().parse::<u8>() {
                                     Ok(s) => {
                                         if s >= 1 {
                                             s
@@ -279,7 +280,7 @@ pub fn parties(cx: Scope) -> Element {
                             min: min_exp_mod as i64,
                             max: 255,
                             onchange: move |x: Event<FormData>| {
-                                let new_exp_mod = match x.data.value.parse::<u8>() {
+                                let new_exp_mod = match x.data.value().parse::<u8>() {
                                     Ok(s) => {
                                         if s >= 1 {
                                             s
@@ -305,7 +306,7 @@ pub fn parties(cx: Scope) -> Element {
                     id: "parties.starting_hp_mp",
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.starting_hp_mp = x.data.value == "true";
+                        state.write().randomizer.parties.starting_hp_mp = x.data.value() == "true";
                     }
                 },
                 checkbox::checkbox {
@@ -315,7 +316,7 @@ pub fn parties(cx: Scope) -> Element {
                     disabled: !starting_hp_mp || !enabled,
                     id: "parties.balance_hp_mp",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.balance_hp_mp = x.data.value == "true";
+                        state.write().randomizer.parties.balance_hp_mp = x.data.value() == "true";
                     }
                 },
             },
@@ -330,7 +331,7 @@ pub fn parties(cx: Scope) -> Element {
                     min: 1,
                     max: max_start_hp as i64,
                     onchange: move |x: Event<FormData>| {
-                        let new_hp_mod = match x.data.value.parse::<u8>() {
+                        let new_hp_mod = match x.data.value().parse::<u8>() {
                             Ok(s) => {
                                 if s >= 1 {
                                     s
@@ -352,7 +353,7 @@ pub fn parties(cx: Scope) -> Element {
                     min: min_start_hp as i64,
                     max: 255,
                     onchange: move |x: Event<FormData>| {
-                        let new_hp_mod = match x.data.value.parse::<u8>() {
+                        let new_hp_mod = match x.data.value().parse::<u8>() {
                             Ok(s) => {
                                 if s >= 1 {
                                     s
@@ -378,7 +379,7 @@ pub fn parties(cx: Scope) -> Element {
                     min: 1,
                     max: max_start_mp as i64,
                     onchange: move |x: Event<FormData>| {
-                        let new_mp_mod = match x.data.value.parse::<u8>() {
+                        let new_mp_mod = match x.data.value().parse::<u8>() {
                             Ok(s) => {
                                 if s >= 1 {
                                     s
@@ -400,7 +401,7 @@ pub fn parties(cx: Scope) -> Element {
                     min: min_start_mp as i64,
                     max: 255,
                     onchange: move |x: Event<FormData>| {
-                        let new_mp_mod = match x.data.value.parse::<u8>() {
+                        let new_mp_mod = match x.data.value().parse::<u8>() {
                             Ok(s) => {
                                 if s >= 1 {
                                     s
@@ -426,7 +427,7 @@ pub fn parties(cx: Scope) -> Element {
                     min: 1,
                     max: max_hp_mod as i64,
                     onchange: move |x: Event<FormData>| {
-                        let new_hp_mod = match x.data.value.parse::<u8>() {
+                        let new_hp_mod = match x.data.value().parse::<u8>() {
                             Ok(s) => {
                                 if s >= 1 {
                                     s
@@ -448,7 +449,7 @@ pub fn parties(cx: Scope) -> Element {
                     min: min_hp_mod as i64,
                     max: 255,
                     onchange: move |x: Event<FormData>| {
-                        let new_hp_mod = match x.data.value.parse::<u8>() {
+                        let new_hp_mod = match x.data.value().parse::<u8>() {
                             Ok(s) => {
                                 if s >= 1 {
                                     s
@@ -474,7 +475,7 @@ pub fn parties(cx: Scope) -> Element {
                     min: 1,
                     max: max_mp_mod as i64,
                     onchange: move |x: Event<FormData>| {
-                        let new_mp_mod = match x.data.value.parse::<u8>() {
+                        let new_mp_mod = match x.data.value().parse::<u8>() {
                             Ok(s) => {
                                 if s >= 1 {
                                     s
@@ -496,7 +497,7 @@ pub fn parties(cx: Scope) -> Element {
                     min: min_mp_mod as i64,
                     max: 255,
                     onchange: move |x: Event<FormData>| {
-                        let new_mp_mod = match x.data.value.parse::<u8>() {
+                        let new_mp_mod = match x.data.value().parse::<u8>() {
                             Ok(s) => {
                                 if s >= 1 {
                                     s

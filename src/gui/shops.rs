@@ -6,9 +6,10 @@ use dmw3_consts;
 
 use crate::gui::checkbox;
 
-pub fn shops(cx: Scope) -> Element {
-    let preset_state = use_shared_state::<Preset>(cx).unwrap();
-    let global_state = use_shared_state::<GlobalState>(cx).unwrap();
+#[component]
+pub fn shops() -> Element {
+    let mut preset_state = use_context::<Signal<Preset>>();
+    let mut global_state = use_context::<Signal<GlobalState>>();
 
     let read_preset_state = preset_state.read();
     let read_global_state = global_state.read();
@@ -28,7 +29,7 @@ pub fn shops(cx: Scope) -> Element {
     let max_sell_price = read_preset_state.randomizer.shops.max_sell_price;
     let keep_tnt = read_preset_state.randomizer.shops.keep_tnt;
 
-    render! {
+    rsx! {
         div {
             class: "segment",
             div {
@@ -39,7 +40,7 @@ pub fn shops(cx: Scope) -> Element {
                     checked: enabled,
                     tooltip: "Randomize shop items (currently only buyable items)",
                     onchange: move |x: Event<FormData>| {
-                        preset_state.write().randomizer.shops.enabled = x.data.value == "true";
+                        preset_state.write().randomizer.shops.enabled = x.data.value() == "true";
                     }
                 },
                 div {
@@ -59,7 +60,7 @@ pub fn shops(cx: Scope) -> Element {
                         id: "shops.items_only",
                         disabled: !enabled,
                         onchange: move |x: Event<FormData>| {
-                            preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value.parse::<u8>().unwrap());
+                            preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap());
                         },
                         option {
                             value: "0",
@@ -89,7 +90,7 @@ pub fn shops(cx: Scope) -> Element {
                             checked: limit_enabled,
                             disabled: !enabled,
                             onchange: move |x: Event<FormData>| {
-                                global_state.write().shop_limit_enabled = x.data.value == "true";
+                                global_state.write().shop_limit_enabled = x.data.value() == "true";
                             },
                         },
                         input {
@@ -100,7 +101,7 @@ pub fn shops(cx: Scope) -> Element {
                             min: dmw3_consts::MIN_SHOP_ITEMS,
                             max: dmw3_consts::MAX_SHOP_ITEMS,
                             onchange: move |x| {
-                                let limit = match x.data.value.parse::<u8>() {
+                                let limit = match x.data.value().parse::<u8>() {
                                     Ok(vl) => {
                                         if vl <= 37 {
                                             vl
@@ -125,7 +126,7 @@ pub fn shops(cx: Scope) -> Element {
                     disabled: !enabled,
                     checked: sell_price,
                     onchange: move |x: Event<FormData>| {
-                        preset_state.write().randomizer.shops.sell_price = x.data.value == "true";
+                        preset_state.write().randomizer.shops.sell_price = x.data.value() == "true";
                     },
                 },
                 checkbox::checkbox {
@@ -135,7 +136,7 @@ pub fn shops(cx: Scope) -> Element {
                     checked: keep_tnt,
                     tooltip: "Lock TNT Ball price",
                     onchange: move |x: Event<FormData>| {
-                        preset_state.write().randomizer.shops.keep_tnt = x.data.value == "true";
+                        preset_state.write().randomizer.shops.keep_tnt = x.data.value() == "true";
                     },
                 },
             },
@@ -146,7 +147,7 @@ pub fn shops(cx: Scope) -> Element {
                     label: "Min",
                     disabled: !enabled || !sell_price,
                     onchange: move |x: Event<FormData>| {
-                        let sell_price = match x.data.value.parse::<i64>(){
+                        let sell_price = match x.data.value().parse::<i64>(){
                             Ok(price) => {
                                 if dmw3_consts::MIN_SELL_PRICE <= price && price <= max_sell_price {
                                     price
@@ -168,7 +169,7 @@ pub fn shops(cx: Scope) -> Element {
                     label: "Max",
                     disabled: !enabled || !sell_price,
                     onchange: move |x: Event<FormData>| {
-                        let sell_price = match x.data.value.parse::<i64>(){
+                        let sell_price = match x.data.value().parse::<i64>(){
                             Ok(price) => {
                                 if min_sell_price <= price && price <= dmw3_consts::MAX_SELL_PRICE {
                                     price

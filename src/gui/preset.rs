@@ -3,8 +3,9 @@ use dioxus::prelude::*;
 mod export;
 mod import;
 
-pub fn preset(cx: Scope) -> Element {
-    render! {
+#[component]
+pub fn preset() -> Element {
+    rsx! {
         div {
             class: "segment",
             div {

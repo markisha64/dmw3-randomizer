@@ -3,8 +3,9 @@ use dioxus::prelude::*;
 use crate::gui::checkbox;
 use crate::json::{Preset, ShopItems};
 
-pub fn maps(cx: Scope) -> Element {
-    let state = use_shared_state::<Preset>(cx).unwrap();
+#[component]
+pub fn maps() -> Element {
+    let mut state = use_context::<Signal<Preset>>();
     let read_state = state.read();
 
     let enabled = read_state.randomizer.maps.enabled;
@@ -14,7 +15,7 @@ pub fn maps(cx: Scope) -> Element {
     let item_boxes = read_state.randomizer.maps.item_boxes;
     let selected = read_state.randomizer.maps.item_boxes_items_only.clone();
 
-    render! {
+    rsx! {
         div {
             class: "segment",
             div {
@@ -25,7 +26,7 @@ pub fn maps(cx: Scope) -> Element {
                     checked: enabled,
                     tooltip: "Maps",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.maps.enabled = x.data.value == "true";
+                        state.write().randomizer.maps.enabled = x.data.value() == "true";
                     }
                 }
             },
@@ -40,7 +41,7 @@ pub fn maps(cx: Scope) -> Element {
                         disabled: !enabled,
                         tooltip: "Randomize map colorations",
                         onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.maps.color = x.data.value == "true";
+                            state.write().randomizer.maps.color = x.data.value() == "true";
                         }
                     },
                 },
@@ -53,7 +54,7 @@ pub fn maps(cx: Scope) -> Element {
                         disabled: !enabled,
                         tooltip: "Randomize map colorations (can crash)",
                         onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.maps.backgrounds = x.data.value == "true";
+                            state.write().randomizer.maps.backgrounds = x.data.value() == "true";
                         }
                     },
                 }
@@ -67,7 +68,7 @@ pub fn maps(cx: Scope) -> Element {
                     disabled: !enabled,
                     tooltip: "Randomize item boxes",
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.maps.item_boxes = x.data.value == "true";
+                        state.write().randomizer.maps.item_boxes = x.data.value() == "true";
                     }
                 },
                 label {
@@ -78,7 +79,7 @@ pub fn maps(cx: Scope) -> Element {
                     id: "maps.item_boxes_items_only",
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.maps.item_boxes_items_only = ShopItems::from(x.data.value.parse::<u8>().unwrap());
+                        state.write().randomizer.maps.item_boxes_items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap());
                     },
                     option {
                         value: "0",

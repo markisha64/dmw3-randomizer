@@ -11,8 +11,7 @@ binread = "2.2.0"
 binwrite = "0.2.1"
 chrono = "0.4.26"
 clap = { version = "4.0", features = ["derive"] }
-dioxus = "0.4.0"
-dioxus-desktop = "0.4.0"
+dioxus = { version = "0.5.1", features = ["desktop"] }
 futures-util = "0.3.28"
 quick-xml = { version = "0.31.0", features = ["serialize", "overlapped-lists"] }
 rand_xoshiro = "0.6.0"

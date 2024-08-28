@@ -35,90 +35,72 @@ impl Default for Steps {
     }
 }
 
-pub fn randomize(cx: Scope) -> Element {
-    let state = use_state::<Steps>(cx, || Steps::default());
-    let args_state = use_shared_state::<Arguments>(cx).unwrap();
-    let preset_state = use_shared_state::<Preset>(cx).unwrap();
+#[component]
+pub fn randomize() -> Element {
+    let state = use_signal::<Steps>(|| Steps::default());
+    let mut args_state = use_context::<Signal<Arguments>>();
+    let mut preset_state = use_context::<Signal<Preset>>();
 
-    let percent = state.to_percent();
+    let percent = state.read().to_percent();
 
-    let set_percent = use_coroutine(cx, |mut rx: UnboundedReceiver<Steps>| {
-        to_owned![state];
-
-        async move {
-            while let Some(x) = rx.next().await {
-                state.modify(|_| x);
-            }
-        }
-    });
-
-    render! {
+    rsx! {
         label {
             r#for: "randomize",
             class: "randomize",
-            if state.randomizing()  {
-                rsx! {
+            if state.read().randomizing()  {
+                div {
+                    r#style: "height: 100%; width:{percent}%;",
                     div {
-                        r#style: "height: 100%; width:{percent}%;",
-                        div {
-                            class: "progress"
-                        }
+                        class: "progress"
                     }
                 }
             } else {
-                rsx! {
-                    "Randomize"
-                }
+                "Randomize"
             }
         },
         input {
             r#type: "button",
             id: "randomize",
             onclick: move |_| {
-                let current_state = (*state.get()).clone();
-
-                to_owned![args_state, preset_state, set_percent];
-
-                let args = args_state.read().clone();
-                let mut preset = preset_state.read().clone();
+                let current_state = state.read().clone();
 
                 if !current_state.randomizing() {
-                    state.modify(|_| Steps::Extracting);
+                    state.set(Steps::Extracting);
 
-                    cx.spawn(async move{
+                    spawn(async move{
                         let _ = tokio::spawn(async move {
-                            match &args.path {
+                            match &args_state.read().path {
                                 Some(path) => {
-                                    preset.randomizer.seed = match &args.seed {
+                                    preset_state.read().randomizer.seed = match &args_state.read().seed {
                                         Some(seed) => *seed,
-                                        None => preset.randomizer.seed,
+                                        None => preset_state.read().randomizer.seed,
                                     };
 
-                                    let file_name = match args.output {
+                                    let file_name = match args_state.read().output {
                                         Some(name) => name,
-                                        None => format!("{}", preset.randomizer.seed)
+                                        None => format!("{}", preset_state.read().randomizer.seed)
                                     };
 
                                     if !mkpsxiso::extract(&path) {
                                         panic!("Error extracting");
                                     }
 
-                                    set_percent.send(Steps::Randomizing);
+                                    state.set(Steps::Randomizing);
 
-                                    patch(path, &preset);
+                                    patch(path, &preset_state.read());
 
-                                    set_percent.send(Steps::Packaging);
+                                    state.set(Steps::Packaging);
 
                                     if !mkpsxiso::build(&file_name) {
                                         panic!("Error repacking")
                                     }
 
-                                    set_percent.send(Steps::Input);
+                                    state.set(Steps::Input);
                                 },
                                 None => {}
                             }
 
-                            set_percent.send(Steps::Input);
+                            state.set(Steps::Input);
                         }).await;
                     });
                 }
