@@ -4,8 +4,8 @@ use binwrite::BinWrite;
 
 use crate::rand::read_objects;
 
-pub fn dump(path: &std::path::PathBuf) {
-    let objects = read_objects(path);
+pub async fn dump(path: &std::path::PathBuf) {
+    let objects = read_objects(path).await;
 
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 

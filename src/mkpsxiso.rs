@@ -1,8 +1,8 @@
+use async_std::fs;
 use quick_xml;
 use quick_xml::de::from_str;
 use serde::Deserialize;
-use std::fs;
-use std::process::Command;
+use tokio::process::Command;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -85,8 +85,8 @@ pub struct File {
     _type: String,
 }
 
-fn exists(exec: &str) -> bool {
-    let output_res = Command::new(exec).output();
+async fn exists(exec: &str) -> bool {
+    let output_res = Command::new(exec).output().await;
 
     match output_res {
         Ok(output) => output.status.success(),
@@ -94,21 +94,21 @@ fn exists(exec: &str) -> bool {
     }
 }
 
-fn find_bin(name: &str) -> Result<String, ()> {
-    if exists(name) {
+async fn find_bin(name: &str) -> Result<String, ()> {
+    if exists(name).await {
         return Ok(String::from(name));
     }
 
     let built = format!("mkpsxiso/build/{name}");
-    if exists(&built) {
+    if exists(&built).await {
         return Ok(built);
     }
 
     Err(())
 }
 
-pub fn extract(path: &std::path::PathBuf) -> bool {
-    let bin_res = find_bin("dumpsxiso");
+pub async fn extract(path: &std::path::PathBuf) -> bool {
+    let bin_res = find_bin("dumpsxiso").await;
     if bin_res.is_err() {
         return false;
     }
@@ -124,19 +124,20 @@ pub fn extract(path: &std::path::PathBuf) -> bool {
         .arg("-pt")
         .arg(&path)
         .output()
+        .await
         .unwrap()
         .status
         .success()
 }
 
-pub fn xml_file() -> IsoProject {
-    let xml = fs::read_to_string("extract/out.xml").unwrap();
+pub async fn xml_file() -> IsoProject {
+    let xml = fs::read_to_string("extract/out.xml").await.unwrap();
 
     from_str(&xml).unwrap()
 }
 
-pub fn build(file_name: &str) -> bool {
-    let bin_res = find_bin("mkpsxiso");
+pub async fn build(file_name: &str) -> bool {
+    let bin_res = find_bin("mkpsxiso").await;
     if bin_res.is_err() {
         return false;
     }
@@ -152,6 +153,7 @@ pub fn build(file_name: &str) -> bool {
         .arg("extract/out.xml")
         .arg("-y")
         .output()
+        .await
         .unwrap()
         .status
         .success()

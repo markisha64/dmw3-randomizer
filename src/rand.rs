@@ -601,7 +601,7 @@ fn read_map_objects(
     return result;
 }
 
-pub fn read_objects(path: &PathBuf) -> Objects {
+pub async fn read_objects(path: &PathBuf) -> Objects {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let iso_project = xml_file();
 
@@ -660,7 +660,7 @@ pub fn read_objects(path: &PathBuf) -> Objects {
         &main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
     );
 
-    let file_map = iso_project.flatten();
+    let file_map = iso_project.await.flatten();
 
     let mut sector_offsets: Vec<u32> = Vec::new();
     sector_offsets.reserve(file_map.len());
@@ -1251,8 +1251,8 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     Ok(())
 }
 
-pub fn patch(path: &PathBuf, preset: &Preset) {
-    let mut objects = read_objects(path);
+pub async fn patch(path: &PathBuf, preset: &Preset) {
+    let mut objects = read_objects(path).await;
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(preset.randomizer.seed);
 
