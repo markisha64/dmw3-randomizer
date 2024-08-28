@@ -39,8 +39,8 @@ pub fn shops() -> Element {
                     id: "shops.enabled",
                     checked: enabled,
                     tooltip: "Randomize shop items (currently only buyable items)",
-                    onchange: move |x: Event<FormData>| {
-                        preset_state.write().randomizer.shops.enabled = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        preset_state.write().randomizer.shops.enabled = x;
                     }
                 },
                 div {
@@ -89,8 +89,8 @@ pub fn shops() -> Element {
                             id: "shops.checkbox",
                             checked: limit_enabled,
                             disabled: !enabled,
-                            onchange: move |x: Event<FormData>| {
-                                global_state.write().shop_limit_enabled = x.data.value() == "true";
+                            onchange: move |x: bool| {
+                                global_state.write().shop_limit_enabled = x;
                             },
                         },
                         input {
@@ -125,8 +125,8 @@ pub fn shops() -> Element {
                     label: "Sell price",
                     disabled: !enabled,
                     checked: sell_price,
-                    onchange: move |x: Event<FormData>| {
-                        preset_state.write().randomizer.shops.sell_price = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        preset_state.write().randomizer.shops.sell_price = x;
                     },
                 },
                 checkbox::checkbox {
@@ -135,8 +135,8 @@ pub fn shops() -> Element {
                     disabled: !enabled || !sell_price,
                     checked: keep_tnt,
                     tooltip: "Lock TNT Ball price",
-                    onchange: move |x: Event<FormData>| {
-                        preset_state.write().randomizer.shops.keep_tnt = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        preset_state.write().randomizer.shops.keep_tnt = x;
                     },
                 },
             },

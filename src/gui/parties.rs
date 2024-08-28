@@ -52,8 +52,8 @@ pub fn parties() -> Element {
                     label: "Party",
                     id: "party.enabled",
                     checked: enabled,
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.enabled = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.enabled = x;
                     }
                 },
                 checkbox::checkbox {
@@ -62,8 +62,8 @@ pub fn parties() -> Element {
                     checked: random_parties,
                     disabled: !enabled,
                     tooltip: "Randomize parties (preview currently unavailable)",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.parties = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.parties = x;
                     }
                 },
             },
@@ -75,8 +75,8 @@ pub fn parties() -> Element {
                     checked: stat_distribution,
                     disabled: !enabled,
                     tooltip: "Randomize player digimon stat distribution",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.stat_distribution = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.stat_distribution = x;
                     }
                 },
                 number_field::number_field {
@@ -134,8 +134,8 @@ pub fn parties() -> Element {
                     checked: res_distribution,
                     disabled: !enabled,
                     tooltip: "Randomize player digimon res distribution",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.res_distribution = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.res_distribution = x;
                     }
                 },
                 number_field::number_field {
@@ -193,8 +193,8 @@ pub fn parties() -> Element {
                     id: "parties.learned_tech",
                     disabled: !enabled,
                     tooltip: "Randomize learned tech",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.learned_tech = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.learned_tech = x;
                     }
                 },
                 checkbox::checkbox {
@@ -203,8 +203,8 @@ pub fn parties() -> Element {
                     id: "parties.signatures",
                     disabled: !enabled,
                     tooltip: "Randomize signature moves",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.signatures = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.signatures = x;
                     }
                 }
             },
@@ -216,8 +216,8 @@ pub fn parties() -> Element {
                     id: "parties.digivolutions",
                     disabled: !enabled,
                     tooltip: "Randomize digivolutions",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.digivolutions = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.digivolutions = x;
                     }
                 },
                 checkbox::checkbox {
@@ -226,8 +226,8 @@ pub fn parties() -> Element {
                     id: "parties.keep_stages",
                     disabled: !enabled || !digivolutions,
                     tooltip: "Replace digimon of a stage with a digimon of the same stage",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.keep_stages = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.keep_stages = x;
                     }
                 }
             },
@@ -246,8 +246,8 @@ pub fn parties() -> Element {
                             checked: exp_modifier,
                             id: "parties.exp_modifier",
                             disabled: !enabled,
-                            onchange: move |x: Event<FormData>| {
-                                state.write().randomizer.parties.exp_modifier = x.data.value() == "true";
+                  onchange: move |x: bool| {
+                                state.write().randomizer.parties.exp_modifier = x;
                             }
                         },
                         number_field::number_field {
@@ -305,8 +305,8 @@ pub fn parties() -> Element {
                     checked: starting_hp_mp,
                     id: "parties.starting_hp_mp",
                     disabled: !enabled,
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.starting_hp_mp = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.starting_hp_mp = x;
                     }
                 },
                 checkbox::checkbox {
@@ -315,8 +315,8 @@ pub fn parties() -> Element {
                     checked: balance_hp_mp,
                     disabled: !starting_hp_mp || !enabled,
                     id: "parties.balance_hp_mp",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.parties.balance_hp_mp = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.balance_hp_mp = x;
                     }
                 },
             },

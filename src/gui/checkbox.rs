@@ -6,7 +6,7 @@ pub fn checkbox(
     id: &'static str,
     #[props(default = false)] checked: bool,
     #[props(default = false)] disabled: bool,
-    onchange: EventHandler<FormEvent>,
+    onchange: EventHandler<bool>,
     tooltip: Option<&'static str>,
 ) -> Element {
     let class = match tooltip {
@@ -33,7 +33,7 @@ pub fn checkbox(
                 r#type: "checkbox",
                 r#checked: checked,
                 disabled: disabled,
-                onchange: move |evt| onchange.call(evt)
+                onchange: move |evt: Event<FormData>| onchange.call(evt.data.value() == "true")
             }
         }
     }

@@ -25,8 +25,8 @@ pub fn maps() -> Element {
                     id: "maps.enabled",
                     checked: enabled,
                     tooltip: "Maps",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.maps.enabled = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.enabled = x;
                     }
                 }
             },
@@ -40,8 +40,8 @@ pub fn maps() -> Element {
                         checked: color,
                         disabled: !enabled,
                         tooltip: "Randomize map colorations",
-                        onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.maps.color = x.data.value() == "true";
+                        onchange: move |x: bool| {
+                            state.write().randomizer.maps.color = x;
                         }
                     },
                 },
@@ -53,8 +53,8 @@ pub fn maps() -> Element {
                         checked: backgrounds,
                         disabled: !enabled,
                         tooltip: "Randomize map colorations (can crash)",
-                        onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.maps.backgrounds = x.data.value() == "true";
+                        onchange: move |x: bool| {
+                            state.write().randomizer.maps.backgrounds = x;
                         }
                     },
                 }
@@ -67,8 +67,8 @@ pub fn maps() -> Element {
                     checked: item_boxes,
                     disabled: !enabled,
                     tooltip: "Randomize item boxes",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.maps.item_boxes = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.item_boxes = x;
                     }
                 },
                 label {

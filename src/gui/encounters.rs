@@ -28,8 +28,8 @@ pub fn encounters() -> Element {
                     id: "encounters.enabled",
                     checked: enabled,
                     tooltip: "Shuffle encounters (scales stats)",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.enabled = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.encounters.enabled = x;
                     }
                 }
             },
@@ -41,8 +41,8 @@ pub fn encounters() -> Element {
                     checked: cardmon,
                     disabled: !enabled,
                     tooltip: "Shuffle cardmon",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.cardmon = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.encounters.cardmon = x;
                     }
                 },
                 checkbox::checkbox {
@@ -51,8 +51,8 @@ pub fn encounters() -> Element {
                     checked: bosses,
                     disabled: !enabled,
                     tooltip: "Shuffle bosses",
-                    onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.encounters.bosses = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        state.write().randomizer.encounters.bosses = x;
                     }
                 },
             },
@@ -105,8 +105,8 @@ pub fn encounters() -> Element {
                 checked: keep_zanbamon,
                 disabled: !enabled,
                 tooltip: "Zanbamon scripted fight can only be won by cheesing it if Zanbamon isn't there",
-                onchange: move |x: Event<FormData>| {
-                    state.write().randomizer.encounters.keep_zanbamon = x.data.value() == "true";
+                onchange: move |x: bool| {
+                    state.write().randomizer.encounters.keep_zanbamon = x;
                 }
             },
             checkbox::checkbox {
@@ -115,8 +115,8 @@ pub fn encounters() -> Element {
                 checked: keep_galacticmon,
                 disabled: !enabled,
                 tooltip: "Galacticmon fight is kinda buggy when it's not Galacticmon",
-                onchange: move |x: Event<FormData>| {
-                    state.write().randomizer.encounters.keep_galacticmon = x.data.value() == "true";
+                onchange: move |x: bool| {
+                    state.write().randomizer.encounters.keep_galacticmon = x;
                 }
             },
         }

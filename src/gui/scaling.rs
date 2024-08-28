@@ -38,8 +38,8 @@ pub fn scaling() -> Element {
                         label: "Scaling",
                         id: "scaling.enabled",
                         checked: enabled,
-                        onchange: move |x: Event<FormData>| {
-                            preset_state.write().scaling.enabled = x.data.value() == "true";
+                        onchange: move |x: bool| {
+                            preset_state.write().scaling.enabled = x;
                         }
                     },
                 },
@@ -74,8 +74,8 @@ pub fn scaling() -> Element {
                     id: "scaling.natural_scaling",
                     tooltip: "More natural scaling, scales tech",
                     checked: natural_scaling,
-                    onchange: move |x: Event<FormData>| {
-                        preset_state.write().scaling.natural_scaling = x.data.value() == "true";
+                    onchange: move |x: bool| {
+                        preset_state.write().scaling.natural_scaling = x;
                     }
                 }
             },
