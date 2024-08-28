@@ -27,3 +27,4 @@ dist/
 # submodules for editor sake
 mkpsxiso
 dump
+.DS_store
