@@ -53,8 +53,6 @@ fn app() -> Element {
         Xoshiro256StarStar::seed_from_u64(state.read().seed.unwrap())
     });
 
-    let mut rng = rng_state.clone();
-
     let read_state = state.read();
 
     let file_name = (*read_state).path.clone();
@@ -148,8 +146,7 @@ fn app() -> Element {
                             r#type: "button",
                             id: "new",
                             onclick: move |_| {
-                                state.write().seed = Some(rng.write().next_u64());
-                                rng_state = rng;
+                                state.write().seed = Some(rng_state.write().next_u64());
                             }
                         }
                     },
