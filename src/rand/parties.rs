@@ -3,7 +3,6 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::Randomizer;
 use crate::rand::Objects;
-use dmw3_consts;
 use std::collections::BTreeSet;
 
 use super::dmw3_structs::DigivolutionData;
@@ -210,9 +209,9 @@ fn hp_mp_unbalanced(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset:
         rookie.starting_mp = min_mp + mp_distribution as u8;
 
         rookie.hp_modifier =
-            min_hp_modifier + ((hp_distribution * hp_modifier_range as u64) / hp_range) as u8;
+            min_hp_modifier + ((hp_distribution * hp_modifier_range) / hp_range) as u8;
         rookie.mp_modifier =
-            min_mp_modifier + ((mp_distribution * mp_modifier_range as u64) / mp_range) as u8;
+            min_mp_modifier + ((mp_distribution * mp_modifier_range) / mp_range) as u8;
     }
 }
 
@@ -233,13 +232,13 @@ fn hp_mp_balanced(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &
 
         let total = hp_distribution + mp_distribution;
 
-        rookie.starting_hp = min_hp + ((hp_distribution * hp_range as u64) / total) as u8;
-        rookie.starting_mp = min_mp + ((mp_distribution * mp_range as u64) / total) as u8;
+        rookie.starting_hp = min_hp + ((hp_distribution * hp_range) / total) as u8;
+        rookie.starting_mp = min_mp + ((mp_distribution * mp_range) / total) as u8;
 
         rookie.hp_modifier =
-            min_hp_modifier + ((hp_distribution * hp_modifier_range as u64) / total) as u8;
+            min_hp_modifier + ((hp_distribution * hp_modifier_range) / total) as u8;
         rookie.mp_modifier =
-            min_mp_modifier + ((mp_distribution * mp_modifier_range as u64) / total) as u8;
+            min_mp_modifier + ((mp_distribution * mp_modifier_range) / total) as u8;
     }
 }
 
@@ -284,8 +283,8 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Rando
         learnable.insert(digivolution.ori_tech);
     }
 
-    let mut learnable_rookie_arr = Vec::from_iter(learnable_rookie.into_iter());
-    let mut learnable_arr = Vec::from_iter(learnable.into_iter());
+    let mut learnable_rookie_arr = Vec::from_iter(learnable_rookie);
+    let mut learnable_arr = Vec::from_iter(learnable);
 
     util::shuffle(&mut learnable_rookie_arr, preset.shuffles, rng);
     util::shuffle(&mut learnable_arr, preset.shuffles, rng);

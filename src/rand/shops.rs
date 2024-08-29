@@ -1,5 +1,4 @@
 use crate::rand::Objects;
-use dmw3_consts;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -74,13 +73,13 @@ fn randomize_limited(
     rng: &mut Xoshiro256StarStar,
     shoppable: BTreeSet<u16>,
 ) {
-    let mut ptr = objects.shops.modified.first().unwrap().items.clone();
+    let mut ptr = objects.shops.modified.first().unwrap().items;
     for i in 0..objects.shops.original.len() {
         let mut shoppable_arr = Vec::from_iter(shoppable.clone().into_iter());
         let shop = &mut objects.shops.modified[i];
         let limit_deref = *limit;
 
-        shop.items = ptr.clone();
+        shop.items = ptr;
         shop.item_count = limit_deref as u32;
 
         for j in 0..limit_deref as usize {
@@ -98,7 +97,7 @@ fn randomize_existing(
     rng: &mut Xoshiro256StarStar,
     shoppable: BTreeSet<u16>,
 ) {
-    let mut shoppable_arr = Vec::from_iter(shoppable.clone().into_iter());
+    let mut shoppable_arr = Vec::from_iter(shoppable.clone());
     for item in &mut objects.shop_items.modified {
         if *item == 0 {
             shoppable_arr = Vec::from_iter(shoppable.clone().into_iter());

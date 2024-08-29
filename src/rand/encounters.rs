@@ -5,10 +5,9 @@ use rand_xoshiro::Xoshiro256StarStar;
 use crate::json::{Encounters, Randomizer, TNTStrategy};
 use crate::rand::{dmw3_structs::EncounterData, Objects};
 use crate::util::{self, uniform_random_vector};
-use dmw3_consts;
 
 fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
-    return (!preset.cardmon
+    (!preset.cardmon
         && (dmw3_consts::CARDMON_MIN <= encounter.digimon_id as u16
             && encounter.digimon_id as u16 <= dmw3_consts::CARDMON_MAX))
         || (!preset.bosses && dmw3_consts::BOSSES.contains(&(encounter.digimon_id as u16)))
@@ -19,7 +18,7 @@ fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
             && encounter.digimon_id as u16 == dmw3_consts::ZANBAMON_ID
             && encounter.multiplier == 16)
         || (preset.keep_galacticmon
-            && dmw3_consts::GALACTICMON_IDS.contains(&(encounter.digimon_id as u16)));
+            && dmw3_consts::GALACTICMON_IDS.contains(&(encounter.digimon_id as u16)))
 }
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
@@ -31,18 +30,18 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     let possible_ids: BTreeSet<u32> = BTreeSet::from_iter(
         encounters
             .iter()
-            .filter(|x| !skip(*x, &preset.encounters))
+            .filter(|x| !skip(x, &preset.encounters))
             .map(|x| x.digimon_id),
     );
 
     let skipped_count = encounters
         .iter()
-        .filter(|x| skip(*x, &preset.encounters))
+        .filter(|x| skip(x, &preset.encounters))
         .count();
 
     let mut shuffled_encounters_digimon: BTreeMap<u32, Vec<EncounterData>> = BTreeMap::new();
 
-    let possible_arr = Vec::from_iter(possible_ids.into_iter());
+    let possible_arr = Vec::from_iter(possible_ids);
     let mut shuffled_ids =
         util::uniform_random_vector(&possible_arr, len - skipped_count, preset.shuffles, rng);
 

@@ -2,7 +2,6 @@ use dioxus::prelude::*;
 
 use crate::gui::{number_field, GlobalState};
 use crate::json::{Preset, ShopItems};
-use dmw3_consts;
 
 use crate::gui::checkbox;
 
@@ -19,10 +18,7 @@ pub fn shops() -> Element {
     let enabled = read_preset_state.randomizer.shops.enabled;
     let selected = read_preset_state.randomizer.shops.items_only.clone();
 
-    let limit = match read_preset_state.randomizer.shops.limit_shop_items {
-        Some(lm) => lm,
-        None => 64,
-    };
+    let limit = read_preset_state.randomizer.shops.limit_shop_items.unwrap_or(64);
 
     let sell_price = read_preset_state.randomizer.shops.sell_price;
     let min_sell_price = read_preset_state.randomizer.shops.min_sell_price;

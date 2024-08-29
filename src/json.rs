@@ -302,9 +302,11 @@ fn default_max_starting_mp() -> u8 {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum TNTStrategy {
     Shuffle,
     Keep,
+    #[default]
     Swap,
 }
 
@@ -318,16 +320,13 @@ impl From<u8> for TNTStrategy {
     }
 }
 
-impl Default for TNTStrategy {
-    fn default() -> Self {
-        TNTStrategy::Swap
-    }
-}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum ShopItems {
     Buyable,
+    #[default]
     Sellable,
 }
 
@@ -340,11 +339,6 @@ impl From<u8> for ShopItems {
     }
 }
 
-impl Default for ShopItems {
-    fn default() -> Self {
-        ShopItems::Sellable
-    }
-}
 
 pub fn load_preset(path: &Option<std::path::PathBuf>) -> Box<Preset> {
     match path {

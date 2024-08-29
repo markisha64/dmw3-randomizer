@@ -5,7 +5,6 @@ use crate::{
 
 use dioxus::prelude::*;
 
-use serde_json;
 use std::fs;
 
 #[component]
@@ -28,10 +27,7 @@ pub fn import() -> Element {
 
                             let json: Preset = serde_json::from_str(json_str.as_str()).unwrap();
 
-                            global_state.write().shop_limit_enabled = match json.randomizer.shops.limit_shop_items {
-                                Some(_) => true,
-                                None => false
-                            };
+                            global_state.write().shop_limit_enabled = json.randomizer.shops.limit_shop_items.is_some();
 
                             state.set(json);
                         },

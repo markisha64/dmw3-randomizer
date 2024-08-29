@@ -41,19 +41,19 @@ impl From<Vec<u8>> for Packed {
     }
 }
 
-impl Into<Vec<u8>> for Packed {
-    fn into(self) -> Vec<u8> {
+impl From<Packed> for Vec<u8> {
+    fn from(val: Packed) -> Self {
         let mut result = Vec::new();
-        let mut i: u32 = (self.files.len() * 4) as u32 + 4;
+        let mut i: u32 = (val.files.len() * 4) as u32 + 4;
 
-        (self.files.len() as u32).write(&mut result).unwrap();
+        (val.files.len() as u32).write(&mut result).unwrap();
 
-        for file in &self.files {
+        for file in &val.files {
             i.write(&mut result).unwrap();
             i += file.len() as u32;
         }
 
-        for file in self.files {
+        for file in val.files {
             result.extend(file);
         }
 

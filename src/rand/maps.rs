@@ -5,7 +5,6 @@ use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::{Maps, Randomizer, ShopItems};
-use dmw3_consts;
 
 use super::dmw3_structs::Pointer;
 
@@ -35,7 +34,7 @@ fn shoppable(objects: &mut Objects, preset: &Maps) -> Vec<u32> {
         }
     }
 
-    Vec::from_iter(shoppable.into_iter())
+    Vec::from_iter(shoppable)
 }
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
@@ -74,7 +73,7 @@ fn backgrounds(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256S
 
     let maps_with_bgs = objects.map_objects.len();
 
-    let possible_arr = Vec::from_iter(possible_indices.into_iter());
+    let possible_arr = Vec::from_iter(possible_indices);
     let mut shuffled_bgs =
         util::uniform_random_vector(&possible_arr, maps_with_bgs, preset.shuffles, rng);
 

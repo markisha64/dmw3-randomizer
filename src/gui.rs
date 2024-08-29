@@ -55,7 +55,7 @@ fn app() -> Element {
 
     let read_state = state.read();
 
-    let file_name = (*read_state).path.clone();
+    let file_name = read_state.path.clone();
 
     let file_name_cl: String = match &file_name {
         Some(file) => String::from(file.file_name().unwrap().to_str().unwrap()),
@@ -64,14 +64,11 @@ fn app() -> Element {
 
     let shuffles = preset_state.read().randomizer.shuffles;
 
-    let seed = match read_state.seed {
-        Some(s) => s,
-        None => 64,
-    };
+    let seed = read_state.seed.unwrap_or(64);
 
-    let output_file = match &(*read_state).output {
+    let output_file = match &read_state.output {
         Some(x) => x.clone(),
-        None => String::from(format!("{}", seed)),
+        None => format!("{}", seed),
     };
 
     rsx! {

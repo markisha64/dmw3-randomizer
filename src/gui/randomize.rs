@@ -3,7 +3,9 @@ use crate::{cli::Arguments, json::Preset, mkpsxiso, patch};
 use dioxus::prelude::*;
 
 #[derive(Clone, Copy, PartialEq)]
+#[derive(Default)]
 enum Steps {
+    #[default]
     Input,
     Extracting,
     Randomizing,
@@ -28,15 +30,10 @@ impl Steps {
     }
 }
 
-impl Default for Steps {
-    fn default() -> Self {
-        Steps::Input
-    }
-}
 
 #[component]
 pub fn randomize() -> Element {
-    let mut state = use_signal::<Steps>(|| Steps::default());
+    let mut state = use_signal::<Steps>(Steps::default);
     let args_state = use_context::<Signal<Arguments>>();
     let mut preset_state = use_context::<Signal<Preset>>();
 
@@ -61,7 +58,7 @@ pub fn randomize() -> Element {
             r#type: "button",
             id: "randomize",
             onclick: move |_| {
-                let current_state = state.read().clone();
+                let current_state = *state.read();
 
                 if !current_state.randomizing() {
                     state.set(Steps::Extracting);
@@ -79,7 +76,7 @@ pub fn randomize() -> Element {
                                     None => format!("{}", preset_state.read().randomizer.seed)
                                 };
 
-                                if !mkpsxiso::extract(&path).await {
+                                if !mkpsxiso::extract(path).await {
                                     panic!("Error extracting");
                                 }
 

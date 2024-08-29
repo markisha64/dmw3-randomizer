@@ -4,7 +4,6 @@ use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::rand::{dmw3_structs::EncounterData, Objects};
-use dmw3_consts;
 
 pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let len = objects.encounters.original.len();
@@ -41,7 +40,7 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
                 let rand = rng.next_u64();
                 let modulo = (offset as u64) * 2 + 1;
 
-                (-1 * offset as i32) + (rand % modulo) as i32
+                -(offset as i32) + (rand % modulo) as i32
             }
         };
 

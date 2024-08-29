@@ -2,7 +2,6 @@ use crate::gui::{number_field, number_field_float, slider};
 use crate::{gui::checkbox, json::Preset};
 
 use dioxus::prelude::*;
-use dmw3_consts;
 
 #[component]
 pub fn scaling() -> Element {
@@ -52,7 +51,7 @@ pub fn scaling() -> Element {
                     oninput: move |x: Event<FormData>| {
                         let new_offset: i64 = match x.data.value().parse::<i64>() {
                             Ok(offset) => {
-                                if dmw3_consts::MIN_STAT_RANGE <= offset && offset <= dmw3_consts::MAX_STAT_RANGE {
+                                if (dmw3_consts::MIN_STAT_RANGE..=dmw3_consts::MAX_STAT_RANGE).contains(&offset) {
                                     offset
                                 } else {
                                     scaling_offset

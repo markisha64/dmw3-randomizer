@@ -15,7 +15,6 @@ use crate::lang::Language;
 use crate::mkpsxiso;
 use crate::mkpsxiso::xml_file;
 use crate::pack::Packed;
-use dmw3_consts;
 pub use dmw3_structs;
 
 mod encounters;
@@ -276,7 +275,7 @@ fn read_map_objects(
             continue;
         }
 
-        let idx = init_stage_pointers.to_index_overlay(stage.value as u32) as usize;
+        let idx = init_stage_pointers.to_index_overlay(stage.value) as usize;
 
         let jr_ra_instruction_index = buf[idx..]
             .windows(4)
@@ -290,8 +289,8 @@ fn read_map_objects(
             value: init_stage_pointers.value + jr_ra_instruction_index.unwrap() as u32,
         };
 
-        let initsp_index = init_stage_pointers.to_index_overlay(stage.value as u32) as usize;
-        let initp_end_index = jump_return.to_index_overlay(stage.value as u32) as usize;
+        let initsp_index = init_stage_pointers.to_index_overlay(stage.value) as usize;
+        let initp_end_index = jump_return.to_index_overlay(stage.value) as usize;
 
         let bg_set_offset_result = buf[initsp_index..initp_end_index]
             .windows(2)
@@ -367,7 +366,7 @@ fn read_map_objects(
 
                 let map_color_address = Pointer { value: address };
 
-                let idx = map_color_address.to_index_overlay(stage.value as u32) as usize;
+                let idx = map_color_address.to_index_overlay(stage.value) as usize;
 
                 let mut map_color_reader = Cursor::new(&buf[idx..idx + 4]);
                 let res = MapColor::read(&mut map_color_reader);
@@ -447,19 +446,19 @@ fn read_map_objects(
             let environmental_address =
                 Pointer::from_instruction(&buf[initsp_index..initsp_index + environmental_set * 4]);
 
-            let env_index = environmental_address.to_index_overlay(stage.value as u32);
+            let env_index = environmental_address.to_index_overlay(stage.value);
             environmentals_index = Some(env_index);
 
             let mut environmentals_reader = Cursor::new(&buf[(env_index as usize)..]);
 
             loop {
                 let environmental = Environmental::read(&mut environmentals_reader);
-                let unwrapped;
+                
 
-                match environmental {
-                    Ok(env) => unwrapped = env,
+                let unwrapped = match environmental {
+                    Ok(env) => env,
                     Err(_) => panic!("binread error"),
-                }
+                };
 
                 if unwrapped.conditions[0] == 0x0000ffff
                     && unwrapped.conditions[1] == 0x0000ffff
@@ -480,7 +479,7 @@ fn read_map_objects(
                 Pointer::from_instruction(&buf[initsp_index..initsp_index + entities_set * 4]);
 
             if entities_address.is_valid() {
-                let ent_index = entities_address.to_index_overlay(stage.value as u32) as usize;
+                let ent_index = entities_address.to_index_overlay(stage.value) as usize;
 
                 let mut i = 0;
                 loop {
@@ -495,7 +494,7 @@ fn read_map_objects(
 
                 let real_pointer = Pointer::from(&buf[ent_index..ent_index + 4]);
 
-                let real_idx = real_pointer.to_index_overlay(stage.value as u32);
+                let real_idx = real_pointer.to_index_overlay(stage.value);
                 entities_index = Some(real_idx);
 
                 let mut entities_reader =
@@ -511,7 +510,7 @@ fn read_map_objects(
                     let entity = entity_result.unwrap();
 
                     if !entity.logic.null() {
-                        let logic_idx = entity.logic.to_index_overlay(stage.value as u32);
+                        let logic_idx = entity.logic.to_index_overlay(stage.value);
 
                         let mut logic_reader =
                             Cursor::new(&buf[logic_idx as usize..logic_idx as usize + 0xa]);
@@ -526,7 +525,7 @@ fn read_map_objects(
 
                             let mut full_script = Vec::new();
                             if !logic.script.null() {
-                                let script_idx = logic.script.to_index_overlay(stage.value as u32);
+                                let script_idx = logic.script.to_index_overlay(stage.value);
 
                                 let mut script_reader = Cursor::new(&buf[script_idx as usize..]);
 
@@ -562,25 +561,19 @@ fn read_map_objects(
             }
         }
 
-        let environmental_object = match environmentals_index {
-            Some(idx) => Some(ObjectArray {
+        let environmental_object = environmentals_index.map(|idx| ObjectArray {
                 original: environmentals.clone(),
                 modified: environmentals.clone(),
                 index: idx as usize,
                 slen: 0x18,
-            }),
-            None => None,
-        };
+            });
 
-        let entities_object = match entities_index {
-            Some(idx) => Some(ObjectArray {
+        let entities_object = entities_index.map(|idx| ObjectArray {
                 original: entities.clone(),
                 modified: entities.clone(),
                 index: idx as usize,
                 slen: 0x14,
-            }),
-            None => None,
-        };
+            });
 
         // TODO: instead of always checking first 2 instructions before
         // I need to find the first lui (which is considerably suckier)
@@ -598,7 +591,7 @@ fn read_map_objects(
         });
     }
 
-    return result;
+    result
 }
 
 pub async fn read_objects(path: &PathBuf) -> Objects {
@@ -613,10 +606,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
             Executable::from_str(dir_entry.file_name().into_string().unwrap().as_str())
         })
-        .find(|x| match x {
-            Some(_) => true,
-            None => false,
-        });
+        .find(|x| x.is_some());
 
     let executable = match executable_opt {
         Some(x) => match x {
@@ -688,12 +678,12 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
     loop {
         let stats = EnemyStats::read(&mut enemy_stats_reader);
-        let unwrapped: EnemyStats;
+        
 
-        match stats {
-            Ok(stat) => unwrapped = stat,
+        let unwrapped: EnemyStats = match stats {
+            Ok(stat) => stat,
             Err(_) => panic!("Binread error"),
-        }
+        };
 
         if unwrapped.digimon_id == 0 {
             break;
@@ -715,12 +705,12 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
     loop {
         let encounter = EncounterData::read(&mut encounter_data_reader);
-        let unwrapped;
+        
 
-        match encounter {
-            Ok(enc) => unwrapped = enc,
+        let unwrapped = match encounter {
+            Ok(enc) => enc,
             Err(_) => panic!("Binread error"),
-        }
+        };
 
         // this check works because after Encounter array
         // goes Team array which starts with a non null ptr
@@ -765,7 +755,6 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     let shop_items_arr: Vec<u16> = shops_buf[front_index..back_index]
         .to_vec()
         .chunks_exact(2)
-        .into_iter()
         .map(|a| u16::from_ne_bytes([a[0], a[1]]))
         .collect();
 

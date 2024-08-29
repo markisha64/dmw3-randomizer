@@ -1,5 +1,4 @@
 use async_std::fs;
-use quick_xml;
 use quick_xml::de::from_str;
 use serde::Deserialize;
 use tokio::process::Command;
@@ -24,7 +23,7 @@ impl IsoProject {
             }
         }
 
-        return result;
+        result
     }
 }
 
@@ -122,7 +121,7 @@ pub async fn extract(path: &std::path::PathBuf) -> bool {
         .arg("-s")
         .arg("extract/out.xml")
         .arg("-pt")
-        .arg(&path)
+        .arg(path)
         .output()
         .await
         .unwrap()
