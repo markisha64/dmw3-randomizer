@@ -2,6 +2,9 @@
 	"randomizer": {
 		"seed": 64,
 		"shuffles": 5,
+		"models": {
+			"enabled": true
+		},
 		"encounters": {
 			"enabled": true,
 			"cardmon": true,
@@ -24,19 +27,19 @@
 			"signatures": true,
 			"digivolutions": true,
 			"keep_stages": true,
-	    "exp_modifier": true,
-	    "min_exp_modifier": 6,
-	    "max_exp_modifier": 10,
-	    "min_hp_modifier": 60,
-	    "max_hp_modifier": 100,
-	    "min_mp_modifier": 30,
-	    "max_mp_modifier": 75,
-	    "starting_hp_mp": true,
-	    "balance_hp_mp": true,
-	    "min_starting_hp": 130,
-	    "max_starting_hp": 180,
-	    "min_starting_mp": 10,
-	    "max_starting_mp": 200
+			"exp_modifier": true,
+			"min_exp_modifier": 6,
+			"max_exp_modifier": 10,
+			"min_hp_modifier": 60,
+			"max_hp_modifier": 100,
+			"min_mp_modifier": 30,
+			"max_mp_modifier": 75,
+			"starting_hp_mp": true,
+			"balance_hp_mp": true,
+			"min_starting_hp": 130,
+			"max_starting_hp": 180,
+			"min_starting_mp": 10,
+			"max_starting_mp": 200
 		},
 		"shops": {
 			"enabled": true,

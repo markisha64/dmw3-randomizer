@@ -28,6 +28,15 @@ pub struct Randomizer {
     pub shops: Shops,
     #[serde(default = "default_map")]
     pub maps: Maps,
+    #[serde(default = "default_models")]
+    pub models: Models,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Models {
+    #[serde(default = "default_bool_true")]
+    pub enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -196,6 +205,10 @@ fn default_map() -> Maps {
     serde_json::from_str("{}").unwrap()
 }
 
+fn default_models() -> Models {
+    serde_json::from_str("{}").unwrap()
+}
+
 fn default_seed() -> u64 {
     Utc::now().timestamp() as u64
 }
@@ -320,7 +333,6 @@ impl From<u8> for TNTStrategy {
     }
 }
 
-
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 #[derive(Default)]
@@ -338,7 +350,6 @@ impl From<u8> for ShopItems {
         }
     }
 }
-
 
 pub fn load_preset(path: &Option<std::path::PathBuf>) -> Box<Preset> {
     match path {

@@ -1,7 +1,9 @@
 use binread::BinRead;
 use binwrite::BinWrite;
+use dmw3_model::Header;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
+use std::collections::btree_map::RangeMut;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fs;
@@ -20,6 +22,7 @@ pub use dmw3_structs;
 mod encounters;
 mod fixes;
 mod maps;
+mod models;
 mod parties;
 mod scaling;
 mod shops;
@@ -99,6 +102,12 @@ pub struct MapObject {
     _stage_id: u16,
 }
 
+pub struct ModelObject {
+    packed: Packed,
+    file_name: String,
+    header: Header,
+}
+
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
@@ -122,6 +131,7 @@ pub struct Objects {
     pub dv_cond: ObjectArray<DigivolutionConditions>,
     pub stage_load_data: Vec<StageLoadData>,
     pub map_objects: Vec<MapObject>,
+    pub model_objects: Vec<ModelObject>,
 
     pub text_files: BTreeMap<String, TextFileGroup>,
     pub items: TextFileGroup,
@@ -593,6 +603,63 @@ fn read_map_objects(
     result
 }
 
+fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
+    let rom_name = path.file_name().unwrap().to_str().unwrap();
+
+    let model_itr = fs::read_dir(format!("extract/{}/AAA/DAT/FIGHT/MODEL/", rom_name)).unwrap();
+
+    let mut r = Vec::new();
+
+    for modelr in model_itr {
+        let model = modelr.unwrap();
+
+        let model_buf = fs::read(model.path()).unwrap();
+
+        let packed = Packed::from(model_buf);
+
+        let header_buf = match packed.files.iter().enumerate().rev().find(|(_, obj)| {
+            if obj.len() < 8 {
+                return false;
+            }
+
+            let len = u32::from_le_bytes([obj[4], obj[5], obj[6], obj[7]]) as usize;
+
+            if (8 + len * 12) != obj.len() {
+                return false;
+            }
+
+            let header = match Header::read(&mut Cursor::new(obj)) {
+                Ok(s) => s,
+                Err(_) => return false,
+            };
+
+            match header
+                .parts
+                .iter()
+                .find(|x| x.parent_index >= header._part_count)
+            {
+                Some(_) => false,
+                None => true,
+            }
+        }) {
+            Some(h) => h,
+            _ => continue,
+        };
+
+        let file_name = String::from(model.path().file_name().unwrap().to_str().unwrap());
+
+        let header = Header::read(&mut Cursor::new(&packed.files[header_buf.0])).unwrap();
+
+        r.push(ModelObject {
+            packed,
+            file_name,
+            header,
+        })
+    }
+
+    r
+}
+
 pub async fn read_objects(path: &PathBuf) -> Objects {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let iso_project = xml_file();
@@ -1054,10 +1121,13 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         &executable,
     );
 
+    let model_objects = read_model_objects(path);
+
     Objects {
         executable,
         file_map,
         stage,
+        model_objects,
         sector_offsets,
         // overlay_address_pointer: overlay,
         bufs: Bufs {
@@ -1264,6 +1334,10 @@ pub async fn patch(path: &PathBuf, preset: &Preset) {
 
     if preset.randomizer.maps.enabled {
         maps::patch(&preset.randomizer, &mut objects, &mut rng);
+    }
+
+    if preset.randomizer.models.enabled {
+        models::patch(&preset.randomizer, &mut objects, &mut rng);
     }
 
     match write_objects(path, &mut objects) {

@@ -1321,7 +1321,16 @@ dependencies = [
 [[package]]
 name = "dmw3_consts"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#089ea4e123a7fe77bb823bda08016a5ae377a2d2"
+source = "git+https://github.com/markisha64/dmw3-util#8c4edcdd6428977287159b12c6038fcc91da436c"
+
+[[package]]
+name = "dmw3_model"
+version = "0.1.0"
+source = "git+https://github.com/markisha64/dmw3-util#8c4edcdd6428977287159b12c6038fcc91da436c"
+dependencies = [
+ "binread",
+ "binwrite",
+]
 
 [[package]]
 name = "dmw3_randomizer"
@@ -1334,6 +1343,7 @@ dependencies = [
  "clap",
  "dioxus",
  "dmw3_consts",
+ "dmw3_model",
  "dmw3_structs",
  "futures-util",
  "quick-xml",
@@ -1346,7 +1356,7 @@ dependencies = [
 [[package]]
 name = "dmw3_structs"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#089ea4e123a7fe77bb823bda08016a5ae377a2d2"
+source = "git+https://github.com/markisha64/dmw3-util#8c4edcdd6428977287159b12c6038fcc91da436c"
 dependencies = [
  "binread",
  "binwrite",
@@ -1448,9 +1458,9 @@ dependencies = [
 
 [[package]]
 name = "euclid"
-version = "0.22.10"
+version = "0.22.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0f0eb73b934648cd7a4a61f1b15391cd95dab0b4da6e2e66c2a072c144b4a20"
+checksum = "ad9cdb4b747e485a12abb0e6566612956c7a1bafa3bdb8d682c5b6d403589e48"
 dependencies = [
  "num-traits",
  "serde",
