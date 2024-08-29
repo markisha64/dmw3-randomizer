@@ -6,7 +6,7 @@ use crate::rand::Objects;
 use std::collections::BTreeSet;
 
 use super::dmw3_structs::DigivolutionData;
-use crate::util;
+use crate::util::{self, uniform_random_vector};
 
 #[derive(Clone, Copy)]
 enum Stat {
@@ -70,15 +70,15 @@ impl Stat {
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     if preset.parties.parties {
         let parties = &mut objects.parties.modified;
-        let mut all_digimon: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7];
-        let rindex = (rng.next_u64() % (dmw3_consts::ROOKIE_COUNT - 2) as u64) as usize;
-        for i in 0..3 {
-            util::shuffle(&mut all_digimon, preset.shuffles, rng);
+        let all_digimon: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7];
 
-            for j in 0..3 {
-                parties[i * 3 + j] = all_digimon[rindex + j];
-            }
+        let uniform = uniform_random_vector(&all_digimon, 8, preset.shuffles, rng);
+
+        for i in 0..8 {
+            parties[i] = uniform[i];
         }
+
+        parties[8] = uniform[(rng.next_u64() % 6) as usize];
 
         for i in 0..9 {
             objects.pack_previews.modified[i] = parties[i] as u32;
