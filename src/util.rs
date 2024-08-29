@@ -26,14 +26,14 @@ pub fn uniform_random_vector<T: Clone>(
 }
 
 // Fisher-Yates shuffles
-pub fn shuffle<T> (array: &mut Vec<T>, shuffles: u8, rng: &mut Xoshiro256StarStar) {
+pub fn shuffle<T>(array: &mut Vec<T>, shuffles: u8, rng: &mut Xoshiro256StarStar) {
     let len = array.len();
 
     if len > 1 {
         for _ in 0..shuffles {
-            for i in 0..(len - 2) {
+            for i in 0..(len - 1) {
                 let uniform: usize = rng.next_u64() as usize;
-                let j = i + uniform % (len - i - 1);
+                let j = i + uniform % (len - i);
 
                 array.swap(i, j);
             }

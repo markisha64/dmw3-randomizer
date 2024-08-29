@@ -453,7 +453,6 @@ fn read_map_objects(
 
             loop {
                 let environmental = Environmental::read(&mut environmentals_reader);
-                
 
                 let unwrapped = match environmental {
                     Ok(env) => env,
@@ -562,18 +561,18 @@ fn read_map_objects(
         }
 
         let environmental_object = environmentals_index.map(|idx| ObjectArray {
-                original: environmentals.clone(),
-                modified: environmentals.clone(),
-                index: idx as usize,
-                slen: 0x18,
-            });
+            original: environmentals.clone(),
+            modified: environmentals.clone(),
+            index: idx as usize,
+            slen: 0x18,
+        });
 
         let entities_object = entities_index.map(|idx| ObjectArray {
-                original: entities.clone(),
-                modified: entities.clone(),
-                index: idx as usize,
-                slen: 0x14,
-            });
+            original: entities.clone(),
+            modified: entities.clone(),
+            index: idx as usize,
+            slen: 0x14,
+        });
 
         // TODO: instead of always checking first 2 instructions before
         // I need to find the first lui (which is considerably suckier)
@@ -678,7 +677,6 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
     loop {
         let stats = EnemyStats::read(&mut enemy_stats_reader);
-        
 
         let unwrapped: EnemyStats = match stats {
             Ok(stat) => stat,
@@ -705,7 +703,6 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
     loop {
         let encounter = EncounterData::read(&mut encounter_data_reader);
-        
 
         let unwrapped = match encounter {
             Ok(enc) => enc,

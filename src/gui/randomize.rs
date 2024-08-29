@@ -2,8 +2,7 @@ use crate::{cli::Arguments, json::Preset, mkpsxiso, patch};
 
 use dioxus::prelude::*;
 
-#[derive(Clone, Copy, PartialEq)]
-#[derive(Default)]
+#[derive(Clone, Copy, PartialEq, Default)]
 enum Steps {
     #[default]
     Input,
@@ -29,7 +28,6 @@ impl Steps {
         }
     }
 }
-
 
 #[component]
 pub fn randomize() -> Element {
