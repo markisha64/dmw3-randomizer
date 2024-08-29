@@ -6,7 +6,7 @@ pub fn number_field(
     id: &'static str,
     #[props(default = false)] disabled: bool,
     #[props(default = 1)] step: i64,
-    onchange: EventHandler<FormEvent>,
+    onchange: EventHandler<i64>,
     tooltip: Option<&'static str>,
     value: i64,
     min: i64,
@@ -38,7 +38,14 @@ pub fn number_field(
                 max: max,
                 step: step,
                 disabled: disabled,
-                onchange: move |evt| onchange.call(evt)
+                onchange: move |evt: Event<FormData>| {
+                    let value = match evt.data.value().parse::<i64>() {
+                        Ok(v) => v,
+                        _ => value
+                    };
+
+                    onchange.call(value.clamp(min, max));
+                }
             }
         }
     }

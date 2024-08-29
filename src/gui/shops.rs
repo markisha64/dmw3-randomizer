@@ -146,19 +146,8 @@ pub fn shops() -> Element {
                     id: "shops.min_sell_price",
                     label: "Min",
                     disabled: !enabled || !sell_price,
-                    onchange: move |x: Event<FormData>| {
-                        let sell_price = match x.data.value().parse::<i64>(){
-                            Ok(price) => {
-                                if dmw3_consts::MIN_SELL_PRICE <= price && price <= max_sell_price {
-                                    price
-                                } else {
-                                    min_sell_price
-                                }
-                            },
-                            _ => min_sell_price
-                        };
-
-                        preset_state.write().randomizer.shops.min_sell_price = sell_price;
+                    onchange: move |x: i64| {
+                        preset_state.write().randomizer.shops.min_sell_price = x;
                     },
                     value: min_sell_price,
                     min: dmw3_consts::MIN_SELL_PRICE,
@@ -168,19 +157,8 @@ pub fn shops() -> Element {
                     id: "shops.max_sell_price",
                     label: "Max",
                     disabled: !enabled || !sell_price,
-                    onchange: move |x: Event<FormData>| {
-                        let sell_price = match x.data.value().parse::<i64>(){
-                            Ok(price) => {
-                                if min_sell_price <= price && price <= dmw3_consts::MAX_SELL_PRICE {
-                                    price
-                                } else {
-                                    max_sell_price
-                                }
-                            },
-                            _ => max_sell_price
-                        };
-
-                        preset_state.write().randomizer.shops.max_sell_price = sell_price;
+                    onchange: move |x: i64| {
+                        preset_state.write().randomizer.shops.max_sell_price = x;
                     },
                     value: max_sell_price,
                     min: min_sell_price,

@@ -103,19 +103,8 @@ fn app() -> Element {
                         label: "Shuffles",
                         min: 1,
                         max: 255,
-                        onchange: move |x: Event<FormData>| {
-                            let shuffles = match x.data.value().parse::<u8>() {
-                                Ok(sf) => {
-                                    if 1 <= sf {
-                                        sf
-                                    } else {
-                                       shuffles
-                                    }
-                                },
-                                _ => shuffles
-                            };
-
-                            preset_state.write().randomizer.shuffles = shuffles;
+                        onchange: move |x: i64| {
+                            preset_state.write().randomizer.shuffles = x as u8;
                         }
                     },
                     div {

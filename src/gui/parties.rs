@@ -87,19 +87,8 @@ pub fn parties() -> Element {
                     min: 1,
                     max: (total_start_stat / 5) as i64,
                     tooltip: "Mininum points per stat",
-                    onchange: move |x: Event<FormData>| {
-                        let new_stat = match x.data.value().parse::<u16>() {
-                            Ok(s) => {
-                                if s * 5 > total_start_stat {
-                                    min_stat
-                                } else {
-                                    s
-                                }
-                            },
-                            _ => min_stat
-                        };
-
-                        state.write().randomizer.parties.min_starting_stat = new_stat
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.min_starting_stat = x as u16
                     }
                 },
                 number_field::number_field {
@@ -110,19 +99,8 @@ pub fn parties() -> Element {
                     min: (min_stat * 5) as i64,
                     max: 4995,
                     tooltip: "Total starting stats",
-                    onchange: move |x: Event<FormData>| {
-                        let new_stat = match x.data.value().parse::<u16>() {
-                            Ok(s) => {
-                                if s >= min_stat * 5 {
-                                    s
-                                } else {
-                                    total_start_stat
-                                }
-                            },
-                            _ => total_start_stat
-                        };
-
-                        state.write().randomizer.parties.total_starting_stats = new_stat
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.total_starting_stats = x as u16
                     }
                 }
             },
@@ -146,19 +124,8 @@ pub fn parties() -> Element {
                     min: 1,
                     max: (total_start_res / 7) as i64,
                     tooltip: "Mininum points per res",
-                    onchange: move |x: Event<FormData>| {
-                        let new_res = match x.data.value().parse::<u16>() {
-                            Ok(s) => {
-                                if s * 7 > total_start_res {
-                                    min_res
-                                } else {
-                                    s
-                                }
-                            },
-                            _ => min_res
-                        };
-
-                        state.write().randomizer.parties.min_starting_res = new_res
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.min_starting_res = x as u16
                     }
                 },
                 number_field::number_field {
@@ -169,19 +136,8 @@ pub fn parties() -> Element {
                     min: (min_res * 7) as i64,
                     max: 6993,
                     tooltip: "Total starting res",
-                    onchange: move |x: Event<FormData>| {
-                        let new_res = match x.data.value().parse::<u16>() {
-                            Ok(s) => {
-                                if s >= min_res * 7 {
-                                    s
-                                } else {
-                                    total_start_res
-                                }
-                            },
-                            _ => total_start_res
-                        };
-
-                        state.write().randomizer.parties.total_starting_res = new_res
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.total_starting_res = x as u16
                     }
                 }
             },
@@ -257,19 +213,8 @@ pub fn parties() -> Element {
                             disabled: !exp_modifier|| !enabled,
                             min: 1,
                             max: max_exp_mod as i64,
-                            onchange: move |x: Event<FormData>| {
-                                let new_exp_mod = match x.data.value().parse::<u8>() {
-                                    Ok(s) => {
-                                        if s >= 1 {
-                                            s
-                                        } else {
-                                            min_exp_mod
-                                        }
-                                    },
-                                    _ => min_exp_mod
-                                };
-
-                                state.write().randomizer.parties.min_exp_modifier = new_exp_mod
+                            onchange: move |x: i64| {
+                                state.write().randomizer.parties.min_exp_modifier = x as u8
                             }
                         },
                         number_field::number_field {
@@ -279,19 +224,8 @@ pub fn parties() -> Element {
                             disabled: !exp_modifier|| !enabled,
                             min: min_exp_mod as i64,
                             max: 255,
-                            onchange: move |x: Event<FormData>| {
-                                let new_exp_mod = match x.data.value().parse::<u8>() {
-                                    Ok(s) => {
-                                        if s >= 1 {
-                                            s
-                                        } else {
-                                            max_exp_mod
-                                        }
-                                    },
-                                    _ => max_exp_mod
-                                };
-
-                                state.write().randomizer.parties.max_exp_modifier = new_exp_mod
+                            onchange: move |x: i64| {
+                                state.write().randomizer.parties.max_exp_modifier = x as u8
                             }
                         }
                     }
@@ -330,19 +264,8 @@ pub fn parties() -> Element {
                     disabled: !starting_hp_mp|| !enabled,
                     min: 1,
                     max: max_start_hp as i64,
-                    onchange: move |x: Event<FormData>| {
-                        let new_hp_mod = match x.data.value().parse::<u8>() {
-                            Ok(s) => {
-                                if s >= 1 {
-                                    s
-                                } else {
-                                    min_mp_mod
-                                }
-                            },
-                            _ => min_mp_mod
-                        };
-
-                        state.write().randomizer.parties.min_starting_hp = new_hp_mod
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.min_starting_hp = x as u8
                     }
                 },
                 number_field::number_field {
@@ -352,19 +275,8 @@ pub fn parties() -> Element {
                     disabled: !starting_hp_mp|| !enabled,
                     min: min_start_hp as i64,
                     max: 255,
-                    onchange: move |x: Event<FormData>| {
-                        let new_hp_mod = match x.data.value().parse::<u8>() {
-                            Ok(s) => {
-                                if s >= 1 {
-                                    s
-                                } else {
-                                    max_mp_mod
-                                }
-                            },
-                            _ => max_mp_mod
-                        };
-
-                        state.write().randomizer.parties.max_starting_hp = new_hp_mod
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.max_starting_hp = x as u8
                     }
                 }
             },
@@ -378,19 +290,8 @@ pub fn parties() -> Element {
                     disabled: !starting_hp_mp || !enabled,
                     min: 1,
                     max: max_start_mp as i64,
-                    onchange: move |x: Event<FormData>| {
-                        let new_mp_mod = match x.data.value().parse::<u8>() {
-                            Ok(s) => {
-                                if s >= 1 {
-                                    s
-                                } else {
-                                    min_mp_mod
-                                }
-                            },
-                            _ => min_mp_mod
-                        };
-
-                        state.write().randomizer.parties.min_starting_mp = new_mp_mod
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.min_starting_mp = x as u8
                     }
                 },
                 number_field::number_field {
@@ -400,19 +301,8 @@ pub fn parties() -> Element {
                     disabled: !starting_hp_mp || !enabled,
                     min: min_start_mp as i64,
                     max: 255,
-                    onchange: move |x: Event<FormData>| {
-                        let new_mp_mod = match x.data.value().parse::<u8>() {
-                            Ok(s) => {
-                                if s >= 1 {
-                                    s
-                                } else {
-                                    max_mp_mod
-                                }
-                            },
-                            _ => max_mp_mod
-                        };
-
-                        state.write().randomizer.parties.max_starting_mp = new_mp_mod
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.max_starting_mp = x as u8
                     }
                 }
             },
@@ -426,19 +316,8 @@ pub fn parties() -> Element {
                     disabled: !starting_hp_mp || !enabled,
                     min: 1,
                     max: max_hp_mod as i64,
-                    onchange: move |x: Event<FormData>| {
-                        let new_hp_mod = match x.data.value().parse::<u8>() {
-                            Ok(s) => {
-                                if s >= 1 {
-                                    s
-                                } else {
-                                    min_hp_mod
-                                }
-                            },
-                            _ => min_hp_mod
-                        };
-
-                        state.write().randomizer.parties.min_hp_modifier = new_hp_mod
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.min_hp_modifier = x as u8
                     }
                 },
                 number_field::number_field {
@@ -448,23 +327,11 @@ pub fn parties() -> Element {
                     disabled: !starting_hp_mp || !enabled,
                     min: min_hp_mod as i64,
                     max: 255,
-                    onchange: move |x: Event<FormData>| {
-                        let new_hp_mod = match x.data.value().parse::<u8>() {
-                            Ok(s) => {
-                                if s >= 1 {
-                                    s
-                                } else {
-                                    max_hp_mod
-                                }
-                            },
-                            _ => max_hp_mod
-                        };
-
-                        state.write().randomizer.parties.max_hp_modifier = new_hp_mod
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.max_hp_modifier = x as u8
                     }
                 }
-            },
-            div {
+            },            div {
                 class: "left",
                 div { style: "margin-right: 10px;", "MP Affinity Range" }
                 number_field::number_field {
@@ -474,19 +341,8 @@ pub fn parties() -> Element {
                     disabled: !starting_hp_mp || !enabled,
                     min: 1,
                     max: max_mp_mod as i64,
-                    onchange: move |x: Event<FormData>| {
-                        let new_mp_mod = match x.data.value().parse::<u8>() {
-                            Ok(s) => {
-                                if s >= 1 {
-                                    s
-                                } else {
-                                    min_mp_mod
-                                }
-                            },
-                            _ => min_mp_mod
-                        };
-
-                        state.write().randomizer.parties.min_mp_modifier = new_mp_mod
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.min_mp_modifier = x as u8
                     }
                 },
                 number_field::number_field {
@@ -496,19 +352,8 @@ pub fn parties() -> Element {
                     disabled: !starting_hp_mp || !enabled,
                     min: min_mp_mod as i64,
                     max: 255,
-                    onchange: move |x: Event<FormData>| {
-                        let new_mp_mod = match x.data.value().parse::<u8>() {
-                            Ok(s) => {
-                                if s >= 1 {
-                                    s
-                                } else {
-                                    max_mp_mod
-                                }
-                            },
-                            _ => max_mp_mod
-                        };
-
-                        state.write().randomizer.parties.max_mp_modifier = new_mp_mod
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.max_mp_modifier = x as u8
                     }
                 }
             },

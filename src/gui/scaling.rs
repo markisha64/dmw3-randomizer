@@ -88,19 +88,8 @@ pub fn scaling() -> Element {
                     max: 2000,
                     value: base_stats as i64,
                     disabled: !enabled,
-                    onchange: move |x: Event<FormData>| {
-                        let stats = match x.data.value().parse::<i32>() {
-                            Ok(s) => {
-                                if 1 <= s && s <= 2000 {
-                                    s
-                                } else {
-                                    base_stats
-                                }
-                            },
-                            _ => base_stats
-                        };
-
-                        preset_state.write().scaling.base_stats = stats;
+                    onchange: move |x: i64| {
+                        preset_state.write().scaling.base_stats = x as i32;
                     },
                 },
                 number_field::number_field {
@@ -110,19 +99,8 @@ pub fn scaling() -> Element {
                     max: 200,
                     value: stat_modifier as i64,
                     disabled: !enabled,
-                    onchange: move |x: Event<FormData>| {
-                        let modifier = match x.data.value().parse::<i32>() {
-                            Ok(s) => {
-                                if 1 <= s && s <= 200 {
-                                    s
-                                } else {
-                                    stat_modifier
-                                }
-                            },
-                            _ => stat_modifier
-                        };
-
-                        preset_state.write().scaling.stat_modifier = modifier;
+                    onchange: move |x: i64| {
+                        preset_state.write().scaling.stat_modifier = x as i32;
                     },
                 },
             },
@@ -135,19 +113,8 @@ pub fn scaling() -> Element {
                     max: 2000,
                     value: base_res as i64,
                     disabled: !enabled,
-                    onchange: move |x: Event<FormData>| {
-                        let res = match x.data.value().parse::<i32>() {
-                            Ok(s) => {
-                                if 1 <= s && s <= 2000 {
-                                    s
-                                } else {
-                                    base_res
-                                }
-                            },
-                            _ => base_res
-                        };
-
-                        preset_state.write().scaling.base_res = res;
+                    onchange: move |x: i64| {
+                        preset_state.write().scaling.base_res = x as i32;
                     },
                 },
                 number_field::number_field {
@@ -157,19 +124,8 @@ pub fn scaling() -> Element {
                     max: 200,
                     value: res_modifier as i64,
                     disabled: !enabled,
-                    onchange: move |x: Event<FormData>| {
-                        let modifier = match x.data.value().parse::<i32>() {
-                            Ok(s) => {
-                                if 1 <= s && s <= 200 {
-                                    s
-                                } else {
-                                    res_modifier
-                                }
-                            },
-                            _ => res_modifier
-                        };
-
-                        preset_state.write().scaling.res_modifier = modifier;
+                    onchange: move |x: i64| {
+                        preset_state.write().scaling.res_modifier = x as i32;
                     },
                 },
             },
