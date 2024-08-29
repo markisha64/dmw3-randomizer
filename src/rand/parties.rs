@@ -304,9 +304,9 @@ fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshi
 
         // swap ids
         for _ in 0..preset.shuffles {
-            for i in 0..(dmw3_consts::DIGIVOLUTION_COUNT - 2) {
+            for i in 0..(dmw3_consts::DIGIVOLUTION_COUNT - 1) {
                 let uniform: usize = rng.next_u64() as usize;
-                let j = i + uniform % (dmw3_consts::DIGIVOLUTION_COUNT - 1 - i);
+                let j = i + uniform % (dmw3_consts::DIGIVOLUTION_COUNT - i);
 
                 let ind = conds.conditions[j].index;
 
@@ -366,9 +366,9 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
                 .collect();
 
             for _ in 0..preset.shuffles {
-                for i in 0..length - 2 {
+                for i in 0..length - 1 {
                     let uniform: usize = rng.next_u64() as usize;
-                    let j = i + uniform % (length - 1 - i);
+                    let j = i + uniform % (length - i);
 
                     let ind = conds.conditions[indices[j]].index;
 
