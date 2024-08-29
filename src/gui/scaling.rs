@@ -137,19 +137,8 @@ pub fn scaling() -> Element {
                     label: "HP modifier",
                     disabled: !enabled,
                     tooltip: "Multiply enemy HP by",
-                    onchange: move  |x: Event<FormData>| {
-                        let modifier = match x.data.value().parse::<f64>() {
-                            Ok(s) => {
-                                if 0.01 <= s && s <= 4.0 {
-                                    s
-                                } else {
-                                    hp_modifier
-                                }
-                            },
-                            _ => hp_modifier
-                        };
-
-                        preset_state.write().scaling.hp_modifier = modifier;
+                    onchange: move  |x: f64| {
+                        preset_state.write().scaling.hp_modifier = x;
                     },
                     value: hp_modifier
                 }
