@@ -1348,8 +1348,10 @@ dependencies = [
  "futures-util",
  "quick-xml",
  "rand_xoshiro",
+ "rlen",
  "serde",
  "serde_json",
+ "tim",
  "tokio",
 ]
 
@@ -3444,6 +3446,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rlen"
+version = "0.1.0"
+source = "git+https://github.com/markisha64/dmw3-util#8c4edcdd6428977287159b12c6038fcc91da436c"
+dependencies = [
+ "clap",
+]
+
+[[package]]
 name = "rustc-demangle"
 version = "0.1.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4083,6 +4093,14 @@ checksum = "8b9ef9bad013ada3808854ceac7b46812a6465ba368859a37e2100283d2d719c"
 dependencies = [
  "cfg-if",
  "once_cell",
+]
+
+[[package]]
+name = "tim"
+version = "0.1.0"
+source = "git+https://github.com/markisha64/dmw3-util#8c4edcdd6428977287159b12c6038fcc91da436c"
+dependencies = [
+ "clap",
 ]
 
 [[package]]
