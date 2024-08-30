@@ -3,7 +3,6 @@ use binwrite::BinWrite;
 use dmw3_model::Header;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
-use std::collections::btree_map::RangeMut;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::fs;
@@ -103,7 +102,7 @@ pub struct MapObject {
 }
 
 pub struct ModelObject {
-    packed: Packed,
+    packed: dmw3_pack::Packed,
     file_name: String,
     header: Header,
 }
@@ -613,11 +612,14 @@ fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
     for modelr in model_itr {
         let model = modelr.unwrap();
 
+        dbg!(model.path());
         let model_buf = fs::read(model.path()).unwrap();
 
-        let packed = Packed::from(model_buf);
+        let packed = dmw3_pack::Packed::try_from(model_buf).unwrap();
 
-        let header_buf = match packed.files.iter().enumerate().rev().find(|(_, obj)| {
+        let header_buf = match packed.iter().rev().find(|idx| {
+            let obj = packed.get_file(*idx).unwrap();
+
             if obj.len() < 8 {
                 return false;
             }
@@ -648,7 +650,7 @@ fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
 
         let file_name = String::from(model.path().file_name().unwrap().to_str().unwrap());
 
-        let header = Header::read(&mut Cursor::new(&packed.files[header_buf.0])).unwrap();
+        let header = Header::read(&mut Cursor::new(&packed.get_file(header_buf).unwrap())).unwrap();
 
         r.push(ModelObject {
             packed,
@@ -965,7 +967,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         ))
         .unwrap();
 
-        let packed = Packed::from(file);
+        let packed = Packed::from_text(file);
 
         item_files.insert(
             *lang,
@@ -992,7 +994,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
             let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
 
-            let packed = Packed::from(file);
+            let packed = Packed::from_text(file);
 
             files.insert(
                 *lang,

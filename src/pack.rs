@@ -16,8 +16,8 @@ impl Packed {
     }
 }
 
-impl From<Vec<u8>> for Packed {
-    fn from(file: Vec<u8>) -> Self {
+impl Packed {
+    pub fn from_text(file: Vec<u8>) -> Packed {
         let mut reader = Cursor::new(&file);
         let mut files: Vec<Vec<u8>> = Vec::new();
 
@@ -33,6 +33,41 @@ impl From<Vec<u8>> for Packed {
         }
 
         for i in 0..offsets.len() - 1 {
+            if offsets[i] >= offsets[i + 1] {
+                files.push(Vec::new());
+                continue;
+            }
+
+            files.push(file[offsets[i] as usize..offsets[i + 1] as usize].into());
+        }
+
+        files.push(file[*offsets.last().unwrap() as usize..].into());
+        Packed { files }
+    }
+}
+
+impl From<Vec<u8>> for Packed {
+    fn from(file: Vec<u8>) -> Self {
+        let mut reader = Cursor::new(&file);
+        let mut files: Vec<Vec<u8>> = Vec::new();
+
+        let first_offset = u32::read(&mut reader).unwrap();
+
+        if first_offset == 0 {
+            return Packed { files };
+        }
+
+        let mut offsets: Vec<u32> = Vec::new();
+        for _ in 0..first_offset / 4 {
+            offsets.push(u32::read(&mut reader).unwrap());
+        }
+
+        for i in 0..offsets.len() - 1 {
+            if offsets[i] >= offsets[i + 1] {
+                files.push(Vec::new());
+                continue;
+            }
+
             files.push(file[offsets[i] as usize..offsets[i + 1] as usize].into());
         }
 

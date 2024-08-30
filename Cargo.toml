@@ -21,6 +21,7 @@ tokio = { version = "1.32.0", features = ["process"] }
 dmw3_structs = { git = "https://github.com/markisha64/dmw3-util" }
 dmw3_consts = { git = "https://github.com/markisha64/dmw3-util" }
 dmw3_model = { git = "https://github.com/markisha64/dmw3-util" }
+dmw3_pack = { git = "https://github.com/markisha64/dmw3-util" }
 rlen = { git = "https://github.com/markisha64/dmw3-util" }
 tim = { git = "https://github.com/markisha64/dmw3-util" }
 async-std = "1.12.0"

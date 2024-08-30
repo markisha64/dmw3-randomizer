@@ -2,17 +2,23 @@ use rand_xoshiro::{rand_core::RngCore, Xoshiro256StarStar};
 use rlen::rlen_decode;
 use tim::Tim;
 
-use crate::{json::Randomizer, pack::Packed, rand::Objects};
+use crate::{json::Randomizer, rand::Objects};
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     for _ in 0..preset.shuffles {
         for model in &mut objects.model_objects {
-            let texture_packed =
-                Packed::from(model.packed.files[model.header.texture_offset as usize].clone());
+            dbg!(&model.file_name);
+            let texture_packed = dmw3_pack::Packed::try_from(
+                model
+                    .packed
+                    .get_file(model.header.texture_offset as usize)
+                    .unwrap(),
+            )
+            .unwrap();
 
-            let texture_raw = match rlen_decode(&texture_packed.files[0].clone()[..]) {
+            let texture_raw = match rlen_decode(&texture_packed.get_file(0).unwrap()[..]) {
                 Ok(file) => file,
-                Err(_) => texture_packed.files[0].clone(),
+                Err(_) => texture_packed.get_file(0).unwrap().into(),
             };
 
             let mut texture_tim = Tim::from(texture_raw);
