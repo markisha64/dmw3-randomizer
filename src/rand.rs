@@ -103,6 +103,7 @@ pub struct MapObject {
 
 pub struct ModelObject {
     packed: dmw3_pack::Packed,
+    og_len: usize,
     file_name: String,
     header: Header,
 }
@@ -606,6 +607,12 @@ fn write_model_objects(path: &PathBuf, objects: &Objects) {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 
     for model in &objects.model_objects {
+        if model.packed.buffer.len()
+            > ((model.og_len / 2048) + (model.og_len % 2048 != 0) as usize) * 2048
+        {
+            continue;
+        }
+
         let mut new_model = File::create(format!(
             "extract/{}/AAA/DAT/FIGHT/MODEL/{}",
             rom_name, model.file_name,
@@ -669,6 +676,7 @@ fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
         let header = Header::read(&mut Cursor::new(&packed.get_file(header_buf).unwrap())).unwrap();
 
         r.push(ModelObject {
+            og_len: packed.buffer.len(),
             packed,
             file_name,
             header,

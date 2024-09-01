@@ -5,6 +5,7 @@ use tim::Tim;
 use crate::{json::Randomizer, rand::Objects};
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let mut s = false;
     for model in &mut objects.model_objects {
         let texture_packed = dmw3_pack::Packed::try_from(
             model
@@ -19,15 +20,24 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             Err(_) => texture_packed.get_file(0).unwrap().into(),
         };
 
+        if (!s) {
+            std::fs::write("old.tim", &texture_raw).unwrap();
+        }
+
         let mut texture_tim = Tim::from(texture_raw);
 
-        let hue_shift = (rng.next_u32() as f64) / (rng.next_u32() as f64);
+        let hue_shift = (rng.next_u32() as f64).rem_euclid(360.0);
+
+        if (!s) {
+            dbg!(hue_shift);
+        }
 
         for i in 0..64 {
             for j in 0..4 {
-                let l = (i + (224 + j * 8) * 64) * 2;
+                let l1 = (i + (224 + j * 8) * 64) * 2;
+                let l2 = (i + (225 + j * 8) * 64) * 2;
 
-                let color = &texture_tim.image.bytes[l..l + 2];
+                let color = &texture_tim.image.bytes[l1..l1 + 2];
 
                 let raw = u16::from_le_bytes([color[0], color[1]]);
 
@@ -95,14 +105,22 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
                 let new_c_bytes = new_c.to_le_bytes();
 
-                texture_tim.image.bytes[l..l + 2]
-                    .copy_from_slice(&[new_c_bytes[0], new_c_bytes[1]]);
+                texture_tim.image.bytes[l1..l1 + 2].copy_from_slice(&new_c_bytes);
             }
         }
 
         let new_tim: Vec<u8> = texture_tim.into();
 
-        let recoded = rlen_encode(&new_tim);
+        if (!s) {
+            std::fs::write("new.tim", &new_tim).unwrap();
+            s = true;
+        }
+
+        let mut recoded = rlen_encode(&new_tim);
+
+        let padding_needed = 4 - (recoded.len() % 4);
+
+        recoded.extend(vec![0; padding_needed]);
 
         let offset = model
             .packed
@@ -119,19 +137,19 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
         model.packed.buffer.resize(new_size, 0);
 
-        model.packed.buffer[(offset + 8)..(offset + recoded.len() + 8)]
-            .copy_from_slice(&recoded[..]);
+        model.packed.buffer[(offset + 8)..(offset + recoded_length)].copy_from_slice(&recoded[..]);
 
-        model.packed.buffer[(offset + recoded.len() + 8)..].copy_from_slice(&ending[..]);
+        model.packed.buffer[(offset + recoded_length)..].copy_from_slice(&ending[..]);
 
         for idx in model.packed.iter() {
-            let mut offset = model.packed.get_offset(idx).unwrap() as usize;
+            let mut n_offset = model.packed.get_offset(idx).unwrap() as usize;
 
-            if offset >= offset + 8 + assumed_length {
-                offset += recoded_length - assumed_length;
+            if n_offset > offset {
+                n_offset += recoded_length;
+                n_offset -= assumed_length;
 
                 model.packed.buffer[idx * 4..(idx + 1) * 4]
-                    .copy_from_slice(&(offset as u32).to_le_bytes());
+                    .copy_from_slice(&(n_offset as u32).to_le_bytes());
             }
         }
     }
