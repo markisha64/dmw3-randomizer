@@ -13,6 +13,7 @@ mod checkbox;
 mod encounters;
 mod file_upload;
 mod maps;
+mod models;
 mod number_field;
 mod number_field_float;
 mod parties;
@@ -176,6 +177,7 @@ fn app() -> Element {
                 shops::shops {},
                 encounters::encounters {},
                 maps::maps {},
+                models::models {}
             },
         }
     }

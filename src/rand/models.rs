@@ -4,7 +4,7 @@ use tim::Tim;
 
 use crate::{json::Randomizer, rand::Objects};
 
-pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     for model in &mut objects.model_objects {
         let texture_packed = dmw3_pack::Packed::try_from(
             model
@@ -21,9 +21,9 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
         let mut texture_tim = Tim::from(texture_raw);
 
-        let mut hue_shift = 0.0;
+        let mut new_hue = 0.0;
         for _ in 0..preset.shuffles {
-            hue_shift = (rng.next_u32() % 360) as f64;
+            new_hue = (rng.next_u32() % 360) as f64;
         }
 
         for i in 0..64 {
@@ -56,29 +56,15 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                 let min = r.min(g).min(b);
                 let delta = max - min;
 
-                let h = if delta == 0.0 {
-                    0.0
-                } else if max == r {
-                    60.0 * (((g - b) / delta) % 6.0)
-                } else if max == g {
-                    60.0 * (((b - r) / delta) + 2.0)
-                } else {
-                    60.0 * (((r - g) / delta) + 4.0)
-                };
-
-                let h = if h < 0.0 { h + 360.0 } else { h };
-
                 let s = if max == 0.0 { 0.0 } else { delta / max };
 
                 let v = max;
 
-                let new_h = (h + hue_shift).rem_euclid(360.0);
-
                 let c = v * s;
-                let x = c * (1.0 - ((new_h / 60.0) % 2.0 - 1.0).abs());
+                let x = c * (1.0 - ((new_hue / 60.0) % 2.0 - 1.0).abs());
                 let m = v - c;
 
-                let (r, g, b) = match new_h {
+                let (r, g, b) = match new_hue {
                     0.0..=60.0 => (c, x, 0.0),
                     60.0..=120.0 => (x, c, 0.0),
                     120.0..=180.0 => (0.0, c, x),
@@ -140,5 +126,11 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                     .copy_from_slice(&(n_offset as u32).to_le_bytes());
             }
         }
+    }
+}
+
+pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    if preset.models.hue_enabled {
+        hue(preset, objects, rng);
     }
 }

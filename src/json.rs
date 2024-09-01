@@ -35,8 +35,10 @@ pub struct Randomizer {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Models {
-    #[serde(default = "default_bool_true")]
+    #[serde(default = "default_bool_false")]
     pub enabled: bool,
+    #[serde(default = "default_bool_true")]
+    pub hue_enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
