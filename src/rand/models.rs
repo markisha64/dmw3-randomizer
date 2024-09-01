@@ -5,7 +5,6 @@ use tim::Tim;
 use crate::{json::Randomizer, rand::Objects};
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    let mut s = false;
     for model in &mut objects.model_objects {
         let texture_packed = dmw3_pack::Packed::try_from(
             model
@@ -20,22 +19,16 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             Err(_) => texture_packed.get_file(0).unwrap().into(),
         };
 
-        if (!s) {
-            std::fs::write("old.tim", &texture_raw).unwrap();
-        }
-
         let mut texture_tim = Tim::from(texture_raw);
 
-        let hue_shift = (rng.next_u32() as f64).rem_euclid(360.0);
-
-        if (!s) {
-            dbg!(hue_shift);
+        let mut hue_shift = 0.0;
+        for _ in 0..preset.shuffles {
+            hue_shift = (rng.next_u32() % 360) as f64;
         }
 
         for i in 0..64 {
             for j in 0..4 {
                 let l1 = (i + (224 + j * 8) * 64) * 2;
-                let l2 = (i + (225 + j * 8) * 64) * 2;
 
                 let color = &texture_tim.image.bytes[l1..l1 + 2];
 
@@ -110,11 +103,6 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         }
 
         let new_tim: Vec<u8> = texture_tim.into();
-
-        if (!s) {
-            std::fs::write("new.tim", &new_tim).unwrap();
-            s = true;
-        }
 
         let mut recoded = rlen_encode(&new_tim);
 
