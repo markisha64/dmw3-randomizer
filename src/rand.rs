@@ -602,7 +602,19 @@ fn read_map_objects(
     result
 }
 
-fn write_model_objects() {}
+fn write_model_objects(path: &PathBuf, objects: &Objects) {
+    let rom_name = path.file_name().unwrap().to_str().unwrap();
+
+    for model in &objects.model_objects {
+        let mut new_model = File::create(format!(
+            "extract/{}/AAA/DAT/FIGHT/MODEL/{}",
+            rom_name, model.file_name,
+        ))
+        .unwrap();
+
+        new_model.write_all(&model.packed.buffer).unwrap();
+    }
+}
 
 fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
@@ -614,7 +626,6 @@ fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
     for modelr in model_itr {
         let model = modelr.unwrap();
 
-        dbg!(model.path());
         let model_buf = fs::read(model.path()).unwrap();
 
         let packed = dmw3_pack::Packed::try_from(model_buf).unwrap();
@@ -1346,6 +1357,8 @@ pub async fn patch(path: &PathBuf, preset: &Preset) {
     if preset.randomizer.models.enabled {
         models::patch(&preset.randomizer, &mut objects, &mut rng);
     }
+
+    write_model_objects(path, &mut objects);
 
     match write_objects(path, &mut objects) {
         Err(_) => panic!("Error writing objects"),

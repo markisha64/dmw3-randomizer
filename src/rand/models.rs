@@ -5,9 +5,7 @@ use tim::Tim;
 use crate::{json::Randomizer, rand::Objects};
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    dbg!(objects.model_objects.len());
     for model in &mut objects.model_objects {
-        dbg!(&model.file_name);
         let texture_packed = dmw3_pack::Packed::try_from(
             model
                 .packed
