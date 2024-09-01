@@ -620,19 +620,22 @@ fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
         let packed = dmw3_pack::Packed::try_from(model_buf).unwrap();
 
         let header_buf = match packed.iter().rev().find(|idx| {
-            let obj = packed.get_file(*idx).unwrap();
-
-            if obj.len() < 8 {
+            if packed.assumed_length[*idx] < 8 {
                 return false;
             }
 
-            let len = u32::from_le_bytes([obj[4], obj[5], obj[6], obj[7]]) as usize;
+            let s = match packed.get_file(*idx) {
+                Ok(f) => f,
+                Err(_) => return false,
+            };
 
-            if (8 + len * 12) != obj.len() {
+            let len = u32::from_le_bytes([s[4], s[5], s[6], s[7]]) as usize;
+
+            if (8 + len * 12) != packed.assumed_length[*idx] {
                 return false;
             }
 
-            let header = match Header::read(&mut Cursor::new(obj)) {
+            let header = match Header::read(&mut Cursor::new(s)) {
                 Ok(s) => s,
                 Err(_) => return false,
             };

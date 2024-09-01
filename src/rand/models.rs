@@ -5,6 +5,7 @@ use tim::Tim;
 use crate::{json::Randomizer, rand::Objects};
 
 pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    dbg!(objects.model_objects.len());
     for model in &mut objects.model_objects {
         dbg!(&model.file_name);
         let texture_packed = dmw3_pack::Packed::try_from(
@@ -110,8 +111,30 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             .get_offset(model.header.texture_offset as usize)
             .unwrap() as usize;
 
-        dbg!(model.packed.assumed_length[model.header.texture_offset as usize]);
+        let assumed_length = model.packed.assumed_length[model.header.texture_offset as usize];
 
-        model.packed.buffer[(8 + offset)..].copy_from_slice(&recoded[..]);
+        let recoded_length = recoded.len() + 8;
+
+        let ending = Vec::from(&model.packed.buffer[offset + assumed_length..]);
+
+        let new_size = model.packed.buffer.len() + recoded_length - assumed_length;
+
+        model.packed.buffer.resize(new_size, 0);
+
+        model.packed.buffer[(offset + 8)..(offset + recoded.len() + 8)]
+            .copy_from_slice(&recoded[..]);
+
+        model.packed.buffer[(offset + recoded.len() + 8)..].copy_from_slice(&ending[..]);
+
+        for idx in model.packed.iter() {
+            let mut offset = model.packed.get_offset(idx).unwrap() as usize;
+
+            if offset >= offset + 8 + assumed_length {
+                offset += recoded_length - assumed_length;
+
+                model.packed.buffer[idx * 4..(idx + 1) * 4]
+                    .copy_from_slice(&(offset as u32).to_le_bytes());
+            }
+        }
     }
 }
