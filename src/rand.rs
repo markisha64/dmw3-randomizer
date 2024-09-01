@@ -1,3 +1,6 @@
+use async_std::fs;
+use async_std::fs::File;
+use async_std::prelude::*;
 use binread::BinRead;
 use binwrite::BinWrite;
 use dmw3_model::Header;
@@ -5,9 +8,6 @@ use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
-use std::fs;
-use std::fs::File;
-use std::io::prelude::*;
 use std::io::Cursor;
 use std::path::PathBuf;
 
@@ -221,7 +221,7 @@ impl Executable {
     }
 }
 
-fn read_map_objects(
+async fn read_map_objects(
     path: &PathBuf,
     stage_load_data: &Vec<StageLoadData>,
     stage: &Pointer,
@@ -230,14 +230,16 @@ fn read_map_objects(
     executable: &Executable,
 ) -> Vec<MapObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
-    let pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).unwrap();
+    let mut pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name))
+        .await
+        .unwrap();
 
     let mut result: Vec<MapObject> = Vec::new();
 
-    for file_res in pro_folder {
+    while let Some(file_res) = pro_folder.next().await {
         let file = file_res.unwrap();
 
-        if let Ok(file_type) = file.file_type() {
+        if let Ok(file_type) = file.file_type().await {
             if file_type.is_dir() {
                 continue;
             }
@@ -248,7 +250,9 @@ fn read_map_objects(
             continue;
         }
 
-        let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name)).unwrap();
+        let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name))
+            .await
+            .unwrap();
 
         let mut offset: usize = 0x4;
         let mut idx = buf.len() - offset;
@@ -603,10 +607,10 @@ fn read_map_objects(
     result
 }
 
-fn write_model_objects(path: &PathBuf, objects: &Objects) {
+async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 
-    for model in &objects.model_objects {
+    for model in objects {
         if model.packed.buffer.len()
             > ((model.og_len / 2048) + (model.og_len % 2048 != 0) as usize) * 2048
         {
@@ -617,23 +621,26 @@ fn write_model_objects(path: &PathBuf, objects: &Objects) {
             "extract/{}/AAA/DAT/FIGHT/MODEL/{}",
             rom_name, model.file_name,
         ))
+        .await
         .unwrap();
 
-        new_model.write_all(&model.packed.buffer).unwrap();
+        new_model.write_all(&model.packed.buffer).await.unwrap();
     }
 }
 
-fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
+async fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 
-    let model_itr = fs::read_dir(format!("extract/{}/AAA/DAT/FIGHT/MODEL/", rom_name)).unwrap();
+    let mut model_itr = fs::read_dir(format!("extract/{}/AAA/DAT/FIGHT/MODEL/", rom_name))
+        .await
+        .unwrap();
 
     let mut r = Vec::new();
 
-    for modelr in model_itr {
+    while let Some(modelr) = model_itr.next().await {
         let model = modelr.unwrap();
 
-        let model_buf = fs::read(model.path()).unwrap();
+        let model_buf = fs::read(model.path()).await.unwrap();
 
         let packed = dmw3_pack::Packed::try_from(model_buf).unwrap();
 
@@ -690,40 +697,58 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
     let iso_project = xml_file();
 
-    let itr = fs::read_dir(format!("extract/{}/", rom_name)).unwrap();
+    let mut itr = fs::read_dir(format!("extract/{}/", rom_name))
+        .await
+        .unwrap();
 
-    let executable_opt = itr
-        .map(|x| -> Option<Executable> {
-            let dir_entry = x.unwrap();
+    let mut executable_opt = None;
+    while let Some(x) = itr.next().await {
+        let dir_entry = x.unwrap();
 
-            Executable::from_str(dir_entry.file_name().into_string().unwrap().as_str())
-        })
-        .find(|x| x.is_some());
+        match Executable::from_str(dir_entry.file_name().into_string().unwrap().as_str()) {
+            Some(exec) => {
+                executable_opt = Some(exec);
+                break;
+            }
+            None => {}
+        }
+    }
 
     let executable = match executable_opt {
-        Some(x) => match x {
-            Some(y) => y,
-            None => panic!("can't find extracted executable"),
-        },
+        Some(x) => x,
         None => panic!("can't find extracted executable"),
     };
 
-    let stats_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)).unwrap();
+    let stats_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE))
+        .await
+        .unwrap();
+
     let encounter_buf = fs::read(format!(
         "extract/{}/{}",
         rom_name,
         dmw3_consts::ENCOUNTERS_FILE
     ))
+    .await
     .unwrap();
-    let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str())).unwrap();
-    let shops_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).unwrap();
-    let exp_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).unwrap();
-    let map_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE)).unwrap();
+
+    let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str()))
+        .await
+        .unwrap();
+    let shops_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE))
+        .await
+        .unwrap();
+    let exp_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE))
+        .await
+        .unwrap();
+    let map_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE))
+        .await
+        .unwrap();
     let pack_select_buf = fs::read(format!(
         "extract/{}/{}",
         rom_name,
         dmw3_consts::PACK_SELECT_FILE
     ))
+    .await
     .unwrap();
 
     let overlay_address = Pointer {
@@ -989,6 +1014,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
             rom_name,
             lang.to_path(dmw3_consts::ITEM_NAMES)
         ))
+        .await
         .unwrap();
 
         let packed = Packed::from_text(file);
@@ -1016,7 +1042,9 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         for lang in executable.languages() {
             let fsname = lang.to_file_name(sname);
 
-            let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
+            let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname)))
+                .await
+                .unwrap();
 
             let packed = Packed::from_text(file);
 
@@ -1145,9 +1173,10 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         &file_map,
         &sector_offsets,
         &executable,
-    );
+    )
+    .await;
 
-    let model_objects = read_model_objects(path);
+    let model_objects = read_model_objects(path).await;
 
     Objects {
         executable,
@@ -1186,7 +1215,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     }
 }
 
-fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(), ()> {
+async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(), ()> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 
     for object in objects {
@@ -1216,9 +1245,11 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
 
         // write file
         let mut new_file =
-            File::create(format!("extract/{}/AAA/PRO/{}", rom_name, object.file_name)).unwrap();
+            File::create(format!("extract/{}/AAA/PRO/{}", rom_name, object.file_name))
+                .await
+                .unwrap();
 
-        match new_file.write_all(buf) {
+        match new_file.write_all(buf).await {
             Err(_) => return Err(()),
             _ => {}
         }
@@ -1227,7 +1258,7 @@ fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(),
     Ok(())
 }
 
-fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
+async fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
     objects.enemy_stats.write_buf(&mut objects.bufs.stats_buf);
     objects
         .encounters
@@ -1253,24 +1284,30 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
         rom_name,
         objects.executable.as_str()
     ))
+    .await
     .unwrap();
-    let mut new_stats =
-        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)).unwrap();
+    let mut new_stats = File::create(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE))
+        .await
+        .unwrap();
     let mut new_encounters = File::create(format!(
         "extract/{}/{}",
         rom_name,
         dmw3_consts::ENCOUNTERS_FILE
     ))
+    .await
     .unwrap();
-    let mut new_shops =
-        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).unwrap();
-    let mut new_exp =
-        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).unwrap();
+    let mut new_shops = File::create(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE))
+        .await
+        .unwrap();
+    let mut new_exp = File::create(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE))
+        .await
+        .unwrap();
     let mut new_pack_select = File::create(format!(
         "extract/{}/{}",
         rom_name,
         dmw3_consts::PACK_SELECT_FILE
     ))
+    .await
     .unwrap();
 
     for sname in objects.executable.text_files().iter() {
@@ -1284,51 +1321,58 @@ fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
                 .unwrap();
 
             let mut new_file =
-                File::create(format!("extract/{}/{}", rom_name, lang.to_path(sname))).unwrap();
+                File::create(format!("extract/{}/{}", rom_name, lang.to_path(sname)))
+                    .await
+                    .unwrap();
 
             let bytes: Vec<u8> = text_file.file.clone().into();
 
-            match new_file.write_all(&bytes) {
+            match new_file.write_all(&bytes).await {
                 Err(_) => return Err(()),
                 _ => {}
             }
         }
     }
 
-    match new_main_executable.write_all(&objects.bufs.main_buf) {
+    match new_main_executable.write_all(&objects.bufs.main_buf).await {
         Err(_) => return Err(()),
         _ => {}
     }
 
-    match new_stats.write_all(&objects.bufs.stats_buf) {
+    match new_stats.write_all(&objects.bufs.stats_buf).await {
         Err(_) => return Err(()),
         _ => {}
     }
 
-    match new_encounters.write_all(&objects.bufs.encounter_buf) {
+    match new_encounters.write_all(&objects.bufs.encounter_buf).await {
         Err(_) => return Err(()),
         _ => {}
     }
 
-    match new_shops.write_all(&objects.bufs.shops_buf) {
+    match new_shops.write_all(&objects.bufs.shops_buf).await {
         Err(_) => return Err(()),
         _ => {}
     }
 
-    match new_exp.write_all(&objects.bufs.exp_buf) {
+    match new_exp.write_all(&objects.bufs.exp_buf).await {
         Err(_) => return Err(()),
         _ => {}
     }
 
-    match new_pack_select.write_all(&objects.bufs.pack_select_buf) {
+    match new_pack_select
+        .write_all(&objects.bufs.pack_select_buf)
+        .await
+    {
         Err(_) => return Err(()),
         _ => {}
     }
 
-    match write_map_objects(path, &mut objects.map_objects) {
+    match write_map_objects(path, &mut objects.map_objects).await {
         Err(_) => return Err(()),
         _ => {}
     }
+
+    write_model_objects(path, &objects.model_objects).await;
 
     Ok(())
 }
@@ -1366,9 +1410,7 @@ pub async fn patch(path: &PathBuf, preset: &Preset) {
         models::patch(&preset.randomizer, &mut objects, &mut rng);
     }
 
-    write_model_objects(path, &mut objects);
-
-    match write_objects(path, &mut objects) {
+    match write_objects(path, &mut objects).await {
         Err(_) => panic!("Error writing objects"),
         _ => (),
     }
