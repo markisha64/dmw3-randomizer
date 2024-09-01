@@ -1,5 +1,5 @@
 use rand_xoshiro::{rand_core::RngCore, Xoshiro256StarStar};
-use rlen::rlen_decode;
+use rlen::{rlen_decode, rlen_encode};
 use tim::Tim;
 
 use crate::{json::Randomizer, rand::Objects};
@@ -8,7 +8,7 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     for _ in 0..preset.shuffles {
         for model in &mut objects.model_objects {
             dbg!(&model.file_name);
-            let texture_packed = dmw3_pack::Packed::try_from(
+            let mut texture_packed = dmw3_pack::Packed::try_from(
                 model
                     .packed
                     .get_file(model.header.texture_offset as usize)
@@ -99,6 +99,17 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
                     color[1] = new_c_bytes[1];
                 }
             }
+
+            let new_tim: Vec<u8> = texture_tim.into();
+
+            let recoded = rlen_encode(&new_tim);
+
+            let offset = model
+                .packed
+                .get_offset(model.header.texture_offset as usize)
+                .unwrap() as usize;
+
+            model.packed.buffer[(8 + offset)..].copy_from_slice(&recoded[..]);
         }
     }
 }

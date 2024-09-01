@@ -602,6 +602,8 @@ fn read_map_objects(
     result
 }
 
+fn write_model_objects() {}
+
 fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
     let rom_name = path.file_name().unwrap().to_str().unwrap();
 
