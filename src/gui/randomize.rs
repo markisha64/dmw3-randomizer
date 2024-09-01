@@ -61,17 +61,21 @@ pub fn randomize() -> Element {
                 if !current_state.randomizing() {
                     state.set(Steps::Extracting);
 
+                    let args = args_state.read().clone();
+
                     spawn(async move {
-                        match &args_state.read().path {
+                        match &args.path {
                             Some(path) => {
-                                preset_state.write().randomizer.seed = match &args_state.read().seed {
-                                    Some(seed) => *seed,
+                                preset_state.write().randomizer.seed = match args.seed {
+                                    Some(seed) => seed,
                                     None => preset_state.read().randomizer.seed,
                                 };
 
-                                let file_name = match &args_state.read().output {
+                                let preset = preset_state.read().clone();
+
+                                let file_name = match &args.output {
                                     Some(name) => name.clone(),
-                                    None => format!("{}", preset_state.read().randomizer.seed)
+                                    None => format!("{}", preset.randomizer.seed)
                                 };
 
                                 if !mkpsxiso::extract(path).await {
@@ -80,7 +84,7 @@ pub fn randomize() -> Element {
 
                                 state.set(Steps::Randomizing);
 
-                                patch(path, &preset_state.read()).await;
+                                patch(path, &preset).await;
 
                                 state.set(Steps::Packaging);
 
