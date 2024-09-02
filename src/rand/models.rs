@@ -21,9 +21,9 @@ fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar)
 
         let mut texture_tim = Tim::from(texture_raw);
 
-        let mut new_hue = 0.0;
+        let mut hue_shift = 0.0;
         for _ in 0..preset.shuffles {
-            new_hue = (rng.next_u32() % 360) as f64;
+            hue_shift = (rng.next_u32() % 360) as f64;
         }
 
         for i in 0..64 {
@@ -56,9 +56,23 @@ fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar)
                 let min = r.min(g).min(b);
                 let delta = max - min;
 
+                let h = if delta == 0.0 {
+                    0.0
+                } else if max == r {
+                    60.0 * (((g - b) / delta) % 6.0)
+                } else if max == g {
+                    60.0 * (((b - r) / delta) + 2.0)
+                } else {
+                    60.0 * (((r - g) / delta) + 4.0)
+                };
+
+                let h = if h < 0.0 { h + 360.0 } else { h };
+
                 let s = if max == 0.0 { 0.0 } else { delta / max };
 
                 let v = max;
+
+                let new_hue = (h + hue_shift).rem_euclid(360.0);
 
                 let c = v * s;
                 let x = c * (1.0 - ((new_hue / 60.0) % 2.0 - 1.0).abs());
