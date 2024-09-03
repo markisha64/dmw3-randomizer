@@ -9,7 +9,7 @@ pub fn init() -> anyhow::Result<()> {
                 id INTEGER PRIMARY KEY,
                 created_at INTEGER NOT NULL,
                 preset TEXT NOT NULL,
-                arguments TEXT NOT NULL,
+                arguments TEXT NOT NULL
             );
         ",
         (),
