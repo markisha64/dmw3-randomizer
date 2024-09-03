@@ -6,6 +6,7 @@ use rand_xoshiro::rand_core::SeedableRng;
 use crate::json::Preset;
 
 use crate::cli::Arguments;
+use crate::db;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::PathBuf;
 
@@ -30,7 +31,10 @@ pub fn launch_app() {
 }
 
 fn app() -> Element {
-    use_context_provider(|| Signal::new(Arguments::default()));
+    use_context_provider(|| match db::last() {
+        Ok(history) => serde_json::from_str(history.args.as_str()).unwrap_or(Arguments::default()),
+        Err(_) => Arguments::default(),
+    });
     use_context_provider::<Signal<Preset>>(|| Signal::new(serde_json::from_str("{}").unwrap()));
 
     let mut state = use_context::<Signal<Arguments>>();
