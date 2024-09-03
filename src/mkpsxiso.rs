@@ -88,35 +88,27 @@ pub struct File {
     _type: String,
 }
 
-async fn exists(exec: &str) -> bool {
-    let output_res = Command::new(exec).output().await;
-
-    match output_res {
-        Ok(output) => output.status.success(),
-        Err(_) => false,
-    }
+async fn exists(exec: &str) -> anyhow::Result<bool> {
+    Ok(Command::new(exec).output().await?.status.success())
 }
 
-async fn find_bin(name: &str) -> Result<String, ()> {
-    if exists(name).await {
+async fn find_bin(name: &str) -> anyhow::Result<String> {
+    if exists(name).await? {
         return Ok(String::from(name));
     }
 
     let built = format!("mkpsxiso/build/{name}");
-    if exists(&built).await {
+    if exists(&built).await? {
         return Ok(built);
     }
 
-    Err(())
+    Err(anyhow::anyhow!("Can't find bin"))
 }
 
-pub async fn extract(path: &std::path::PathBuf) -> bool {
-    let bin_res = find_bin("dumpsxiso").await;
-    if bin_res.is_err() {
-        return false;
-    }
+pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<bool> {
+    let bin = find_bin("dumpsxiso").await?;
 
-    Command::new(bin_res.unwrap())
+    Ok(Command::new(bin)
         .arg("-x")
         .arg(format!(
             "extract/{}/",
@@ -127,28 +119,24 @@ pub async fn extract(path: &std::path::PathBuf) -> bool {
         .arg("-pt")
         .arg(path)
         .output()
-        .await
-        .unwrap()
+        .await?
         .status
-        .success()
+        .success())
 }
 
-pub async fn xml_file() -> IsoProject {
-    let xml = fs::read_to_string("extract/out.xml").await.unwrap();
+pub async fn xml_file() -> anyhow::Result<IsoProject> {
+    let xml = fs::read_to_string("extract/out.xml").await?;
 
-    from_str(&xml).unwrap()
+    Ok(from_str(&xml)?)
 }
 
-pub async fn build(file_name: &str) -> bool {
-    let bin_res = find_bin("mkpsxiso").await;
-    if bin_res.is_err() {
-        return false;
-    }
+pub async fn build(file_name: &str) -> anyhow::Result<bool> {
+    let binf = find_bin("mkpsxiso").await?;
 
     let bin = format!("{}.bin", file_name);
     let cue = format!("{}.cue", file_name);
 
-    Command::new(bin_res.unwrap())
+    Ok(Command::new(binf)
         .arg("-o")
         .arg(&bin)
         .arg("-c")
@@ -156,8 +144,7 @@ pub async fn build(file_name: &str) -> bool {
         .arg("extract/out.xml")
         .arg("-y")
         .output()
-        .await
-        .unwrap()
+        .await?
         .status
-        .success()
+        .success())
 }

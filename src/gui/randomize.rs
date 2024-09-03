@@ -78,7 +78,7 @@ pub fn randomize() -> Element {
                                     None => format!("{}", preset.randomizer.seed)
                                 };
 
-                                if !mkpsxiso::extract(path).await {
+                                if !mkpsxiso::extract(path).await.unwrap() {
                                     panic!("Error extracting");
                                 }
 
@@ -88,7 +88,7 @@ pub fn randomize() -> Element {
 
                                 state.set(Steps::Packaging);
 
-                                if !mkpsxiso::build(&file_name).await {
+                                if !mkpsxiso::build(&file_name).await.unwrap() {
                                     panic!("Error repacking")
                                 }
 

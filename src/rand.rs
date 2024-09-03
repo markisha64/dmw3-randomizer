@@ -699,7 +699,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .ok_or(anyhow::anyhow!("Failed file name get"))?
         .to_str()
         .ok_or(anyhow::anyhow!("Failed to_str conversion"))?;
-    let iso_project = xml_file();
+    let iso_project = xml_file().await?;
 
     let mut itr = fs::read_dir(format!("extract/{}/", rom_name)).await?;
 
@@ -754,7 +754,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         &main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
     );
 
-    let file_map = iso_project.await.flatten()?;
+    let file_map = iso_project.flatten()?;
 
     let mut sector_offsets: Vec<u32> = Vec::new();
     sector_offsets.reserve(file_map.len());

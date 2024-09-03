@@ -22,16 +22,16 @@ fn main() -> anyhow::Result<()> {
     rt.block_on(async {
         if let Some(path) = &args.path {
             if args.dump {
-                if !mkpsxiso::extract(path).await {
+                if !mkpsxiso::extract(path).await? {
                     panic!("Error extracting");
                 }
 
                 dump::dump(path).await;
-
-                
             }
         }
-    });
+
+        Ok::<(), anyhow::Error>(())
+    })?;
 
     match &args.path {
         Some(path) => rt.block_on(async {
@@ -47,22 +47,24 @@ fn main() -> anyhow::Result<()> {
                 None => format!("{}", preset.randomizer.seed),
             };
 
-            if !mkpsxiso::extract(path).await {
+            if !mkpsxiso::extract(path).await? {
                 panic!("Error extracting");
             }
 
             patch(path, &preset).await;
 
-            if !mkpsxiso::build(&file_name).await {
+            if !mkpsxiso::build(&file_name).await? {
                 panic!("Error repacking")
             }
 
             println!("randomized into {file_name}");
+
+            Ok(())
         }),
         None => {
             gui::launch_app();
+
+            Ok(())
         }
     }
-
-    Ok(())
 }
