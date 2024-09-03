@@ -17,7 +17,7 @@ mod gui;
 fn main() -> anyhow::Result<()> {
     let args = cli::Arguments::parse();
 
-    let rt = Runtime::new().unwrap();
+    let rt = Runtime::new()?;
 
     rt.block_on(async {
         if let Some(path) = &args.path {
@@ -48,13 +48,13 @@ fn main() -> anyhow::Result<()> {
             };
 
             if !mkpsxiso::extract(path).await? {
-                panic!("Error extracting");
+                return Err(anyhow::anyhow!("Error extracting"));
             }
 
             patch(path, &preset).await;
 
             if !mkpsxiso::build(&file_name).await? {
-                panic!("Error repacking")
+                return Err(anyhow::anyhow!("Error repacking"));
             }
 
             println!("randomized into {file_name}");
