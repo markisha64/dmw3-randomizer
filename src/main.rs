@@ -4,6 +4,7 @@ mod cli;
 mod json;
 mod mkpsxiso;
 
+mod db;
 mod dump;
 mod lang;
 mod pack;
@@ -15,6 +16,8 @@ use tokio::runtime::Runtime;
 mod gui;
 
 fn main() -> anyhow::Result<()> {
+    db::init()?;
+
     let args = cli::Arguments::parse();
 
     let rt = Runtime::new()?;
