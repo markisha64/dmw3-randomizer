@@ -767,14 +767,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         ));
     }
 
-    let enemy_stats_index = stats_buf
-        .windows(16)
-        .position(|window| {
-            window == b"\x20\x00\x00\x00\x02\x00\x3a\x00\xDC\x00\x00\x00\x00\x00\x32\x00"
-        })
-        .ok_or(anyhow::anyhow!("Can't find enemy stats beginning"))?;
-
-    let mut enemy_stats_reader = Cursor::new(&stats_buf[enemy_stats_index..]);
+    let mut enemy_stats_reader = Cursor::new(&stats_buf);
 
     let mut enemy_stats_arr: Vec<dmw3_structs::EnemyStats> = Vec::new();
 
@@ -1043,7 +1036,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let enemy_stats_object = ObjectArray {
         original: enemy_stats_arr,
         modified: enemy_stats_arr_copy,
-        index: enemy_stats_index,
+        index: 0,
         slen: 0x46,
     };
 
