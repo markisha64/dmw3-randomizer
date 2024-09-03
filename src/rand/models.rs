@@ -39,8 +39,9 @@ fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar)
                 let r = raw & 0x1f;
                 let g = (raw >> 5) & 0x1f;
                 let b = (raw >> 10) & 0x1f;
+                let stp = raw >> 15;
 
-                if r == 0 && g == 0 && b == 0 {
+                if r == 0 && g == 0 && b == 0 && stp == 0 {
                     continue;
                 }
 
@@ -91,10 +92,12 @@ fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar)
                 let r = ((r + m) * 255.0).round() as u8;
                 let g = ((g + m) * 255.0).round() as u8;
                 let b = ((b + m) * 255.0).round() as u8;
+                let stp = (r == 0 && g == 0 && b == 0) as u16;
 
                 let new_c: u16 = (((b as u16 * 0x1f) / 255) << 10)
                     | (((g as u16 * 0x1f) / 255) << 5)
-                    | ((r as u16 * 0x1f) / 255);
+                    | ((r as u16 * 0x1f) / 255)
+                    | stp << 15;
 
                 let new_c_bytes = new_c.to_le_bytes();
 
