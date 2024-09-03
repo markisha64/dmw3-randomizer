@@ -1352,6 +1352,7 @@ dependencies = [
 name = "dmw3_randomizer"
 version = "1.0.0"
 dependencies = [
+ "anyhow",
  "async-std",
  "binread",
  "binwrite",

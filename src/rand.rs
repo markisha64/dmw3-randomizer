@@ -693,17 +693,19 @@ async fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
     r
 }
 
-pub async fn read_objects(path: &PathBuf) -> Objects {
-    let rom_name = path.file_name().unwrap().to_str().unwrap();
+pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
+    let rom_name = path
+        .file_name()
+        .ok_or(anyhow::anyhow!("Failed file name get"))?
+        .to_str()
+        .ok_or(anyhow::anyhow!("Failed to_str conversion"))?;
     let iso_project = xml_file();
 
-    let mut itr = fs::read_dir(format!("extract/{}/", rom_name))
-        .await
-        .unwrap();
+    let mut itr = fs::read_dir(format!("extract/{}/", rom_name)).await?;
 
     let mut executable_opt = None;
     while let Some(x) = itr.next().await {
-        let dir_entry = x.unwrap();
+        let dir_entry = x?;
 
         match Executable::from_str(dir_entry.file_name().into_string().unwrap().as_str()) {
             Some(exec) => {
@@ -714,42 +716,27 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         }
     }
 
-    let executable = match executable_opt {
-        Some(x) => x,
-        None => panic!("can't find extracted executable"),
-    };
+    let executable = executable_opt.ok_or(anyhow::anyhow!("Can't find extracted executable"))?;
 
-    let stats_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE))
-        .await
-        .unwrap();
+    let stats_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)).await?;
 
     let encounter_buf = fs::read(format!(
         "extract/{}/{}",
         rom_name,
         dmw3_consts::ENCOUNTERS_FILE
     ))
-    .await
-    .unwrap();
+    .await?;
 
-    let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str()))
-        .await
-        .unwrap();
-    let shops_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE))
-        .await
-        .unwrap();
-    let exp_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE))
-        .await
-        .unwrap();
-    let map_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE))
-        .await
-        .unwrap();
+    let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str())).await?;
+    let shops_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).await?;
+    let exp_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).await?;
+    let map_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE)).await?;
     let pack_select_buf = fs::read(format!(
         "extract/{}/{}",
         rom_name,
         dmw3_consts::PACK_SELECT_FILE
     ))
-    .await
-    .unwrap();
+    .await?;
 
     let overlay_address = Pointer {
         value: dmw3_consts::OVERLAY_ADDRESS,
@@ -767,7 +754,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         &main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
     );
 
-    let file_map = iso_project.await.flatten();
+    let file_map = iso_project.await.flatten()?;
 
     let mut sector_offsets: Vec<u32> = Vec::new();
     sector_offsets.reserve(file_map.len());
@@ -776,9 +763,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
     for i in 0..file_map.len() {
         sector_offsets.push(u32::from_le_bytes(
-            main_buf[sector_offsets_index + i * 4..sector_offsets_index + i * 4 + 4]
-                .try_into()
-                .unwrap(),
+            main_buf[sector_offsets_index + i * 4..sector_offsets_index + i * 4 + 4].try_into()?,
         ));
     }
 
@@ -787,25 +772,20 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         .position(|window| {
             window == b"\x20\x00\x00\x00\x02\x00\x3a\x00\xDC\x00\x00\x00\x00\x00\x32\x00"
         })
-        .unwrap();
+        .ok_or(anyhow::anyhow!("Can't find enemy stats beginning"))?;
 
     let mut enemy_stats_reader = Cursor::new(&stats_buf[enemy_stats_index..]);
 
     let mut enemy_stats_arr: Vec<dmw3_structs::EnemyStats> = Vec::new();
 
     loop {
-        let stats = EnemyStats::read(&mut enemy_stats_reader);
+        let stats = EnemyStats::read(&mut enemy_stats_reader)?;
 
-        let unwrapped: EnemyStats = match stats {
-            Ok(stat) => stat,
-            Err(_) => panic!("Binread error"),
-        };
-
-        if unwrapped.digimon_id == 0 {
+        if stats.digimon_id == 0 {
             break;
         }
 
-        enemy_stats_arr.push(unwrapped);
+        enemy_stats_arr.push(stats);
     }
 
     let encounter_data_index = encounter_buf
@@ -820,26 +800,21 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     let mut encounter_data_arr: Vec<EncounterData> = Vec::new();
 
     loop {
-        let encounter = EncounterData::read(&mut encounter_data_reader);
-
-        let unwrapped = match encounter {
-            Ok(enc) => enc,
-            Err(_) => panic!("Binread error"),
-        };
+        let encounter = EncounterData::read(&mut encounter_data_reader)?;
 
         // this check works because after Encounter array
         // goes Team array which starts with a non null ptr
-        if unwrapped.digimon_id > 500 {
+        if encounter.digimon_id > 500 {
             break;
         }
 
-        encounter_data_arr.push(unwrapped);
+        encounter_data_arr.push(encounter);
     }
 
     let shops_index = shops_buf
         .windows(8)
         .position(|window| window == b"\x00\x00\x00\x00\x0b\x00\x00\x00")
-        .unwrap()
+        .ok_or(anyhow::anyhow!("Can't find shops beginning"))?
         + 4;
 
     let mut shops_reader = Cursor::new(&shops_buf[shops_index..]);
@@ -848,21 +823,18 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     shops_arr.reserve(dmw3_consts::SHOPS_LEN);
 
     for _ in 0..dmw3_consts::SHOPS_LEN {
-        let shop = Shop::read(&mut shops_reader);
+        let shop = Shop::read(&mut shops_reader)?;
 
-        match shop {
-            Ok(s) => shops_arr.push(s),
-            Err(_) => panic!("Binread error"),
-        }
+        shops_arr.push(shop);
     }
 
     let front_index = shops_arr
         .first()
-        .unwrap()
+        .ok_or(anyhow::anyhow!("No shops found"))?
         .items
         .to_index_overlay(overlay.value as u32) as usize;
 
-    let back_shop = shops_arr.last().unwrap();
+    let back_shop = shops_arr.last().ok_or(anyhow::anyhow!("No shops found"))?;
 
     let back_index =
         (back_shop.item_count + back_shop.items.to_index_overlay(overlay.value as u32)) as usize;
@@ -878,7 +850,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         .position(|window| -> bool {
             window == b"\x64\x01\x65\x01\x66\x01\x67\x01\x00\x00\x00\x00"
         })
-        .unwrap();
+        .ok_or(anyhow::anyhow!("Can't find item shop data beginning"))?;
 
     let mut item_shop_data_reader = Cursor::new(&main_buf[item_shop_data_index..]);
 
@@ -886,12 +858,9 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     item_shop_data_arr.reserve(403);
 
     for _ in 0..403 {
-        let item_shop_data = ItemShopData::read(&mut item_shop_data_reader);
+        let item_shop_data = ItemShopData::read(&mut item_shop_data_reader)?;
 
-        match item_shop_data {
-            Ok(data) => item_shop_data_arr.push(data),
-            Err(_) => panic!("Binread error"),
-        }
+        item_shop_data_arr.push(item_shop_data);
     }
 
     let digivolution_data_index = main_buf
@@ -899,7 +868,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         .position(|window| -> bool {
             window == b"\x7f\x01\x30\x00\x2c\x00\x29\x00\x22\x00\x21\x00\x01\x00\x55\x00"
         })
-        .unwrap();
+        .ok_or(anyhow::anyhow!("Can't find digivolution data beginning"))?;
 
     let mut digivolution_data_reader = Cursor::new(&main_buf[digivolution_data_index..]);
 
@@ -907,24 +876,18 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     rookie_data_arr.reserve(dmw3_consts::ROOKIE_COUNT);
 
     for _ in 0..dmw3_consts::ROOKIE_COUNT {
-        let rookie_data = DigivolutionData::read(&mut digivolution_data_reader);
+        let rookie_data = DigivolutionData::read(&mut digivolution_data_reader)?;
 
-        match rookie_data {
-            Ok(data) => rookie_data_arr.push(data),
-            Err(_) => panic!("Binread error"),
-        }
+        rookie_data_arr.push(rookie_data);
     }
 
     let mut digivolution_data_arr: Vec<DigivolutionData> = Vec::new();
     digivolution_data_arr.reserve(dmw3_consts::DIGIVOLUTION_COUNT);
 
     for _ in 0..dmw3_consts::DIGIVOLUTION_COUNT {
-        let digivolution_data = DigivolutionData::read(&mut digivolution_data_reader);
+        let digivolution_data = DigivolutionData::read(&mut digivolution_data_reader)?;
 
-        match digivolution_data {
-            Ok(data) => digivolution_data_arr.push(data),
-            Err(_) => panic!("Binread error"),
-        }
+        digivolution_data_arr.push(digivolution_data);
     }
 
     let mut move_data_arr: Vec<MoveData> = Vec::new();
@@ -935,24 +898,21 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         .position(|window| -> bool {
             window == b"\x00\x00\x3c\x00\x02\x02\x6e\x01\x01\x01\x01\x01\x01\x00\x02\x39\x05\x01"
         })
-        .unwrap();
+        .ok_or(anyhow::anyhow!("Can't find move data beginning"))?;
 
     let mut move_data_reader = Cursor::new(&main_buf[move_data_index..]);
 
     // hardcoding this for now
     for _ in 0..443 {
-        let move_data = MoveData::read(&mut move_data_reader);
+        let move_data = MoveData::read(&mut move_data_reader)?;
 
-        match move_data {
-            Ok(move_data) => move_data_arr.push(move_data),
-            Err(_) => panic!("Binread error"),
-        }
+        move_data_arr.push(move_data);
     }
 
     let parties_index = main_buf
         .windows(9)
         .position(|window| window == dmw3_consts::PACKS)
-        .unwrap();
+        .ok_or(anyhow::anyhow!("Can't find parties"))?;
 
     let default_packs: Vec<u32> = dmw3_consts::PACKS.iter().map(|x| *x as u32).collect();
     let mut default_pack_preview: Vec<u8> = Vec::new();
@@ -965,7 +925,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     let pack_select_preview_index = pack_select_buf
         .windows(36)
         .position(|window| window == default_pack_preview)
-        .unwrap();
+        .ok_or(anyhow::anyhow!("Can't find parties preview"))?;
 
     let mut dv_cond_arr: Vec<DigivolutionConditions> = Vec::new();
     dv_cond_arr.reserve(dmw3_consts::ROOKIE_COUNT);
@@ -973,17 +933,14 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     let dv_cond_index = exp_buf
         .windows(8)
         .position(|x| x == b"\x09\x00\x00\x00\x00\x00\x01\x00")
-        .unwrap();
+        .ok_or(anyhow::anyhow!("Can't find DV conditions beginning"))?;
 
     let mut dv_cond_reader = Cursor::new(&exp_buf[dv_cond_index..]);
 
     for _ in 0..dmw3_consts::ROOKIE_COUNT {
-        let dv_cond = DigivolutionConditions::read(&mut dv_cond_reader);
+        let dv_cond = DigivolutionConditions::read(&mut dv_cond_reader)?;
 
-        match dv_cond {
-            Ok(cond) => dv_cond_arr.push(cond),
-            Err(_) => panic!("Binread error"),
-        }
+        dv_cond_arr.push(dv_cond);
     }
 
     let stage_load_data_index = executable
@@ -996,12 +953,9 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
     let mut stage_load_data_reader = Cursor::new(&map_buf[stage_load_data_index..]);
 
     for _ in 0..dmw3_consts::STAGE_LOAD_DATA_LENGTH {
-        let res = StageLoadData::read(&mut stage_load_data_reader);
+        let stage_load_data = StageLoadData::read(&mut stage_load_data_reader)?;
 
-        match res {
-            Ok(stage_load_data) => stage_load_data_arr.push(stage_load_data),
-            Err(_) => panic!("Binread error"),
-        }
+        stage_load_data_arr.push(stage_load_data);
     }
 
     let mut item_files: HashMap<Language, TextFile> = HashMap::new();
@@ -1014,8 +968,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
             rom_name,
             lang.to_path(dmw3_consts::ITEM_NAMES)
         ))
-        .await
-        .unwrap();
+        .await?;
 
         let packed = Packed::from_text(file);
 
@@ -1042,9 +995,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
         for lang in executable.languages() {
             let fsname = lang.to_file_name(sname);
 
-            let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname)))
-                .await
-                .unwrap();
+            let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).await?;
 
             let packed = Packed::from_text(file);
 
@@ -1178,7 +1129,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
     let model_objects = read_model_objects(path).await;
 
-    Objects {
+    Ok(Objects {
         executable,
         file_map,
         stage,
@@ -1212,7 +1163,7 @@ pub async fn read_objects(path: &PathBuf) -> Objects {
 
         text_files,
         items,
-    }
+    })
 }
 
 async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(), ()> {
@@ -1378,7 +1329,7 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> 
 }
 
 pub async fn patch(path: &PathBuf, preset: &Preset) {
-    let mut objects = read_objects(path).await;
+    let mut objects = read_objects(path).await.unwrap();
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(preset.randomizer.seed);
 

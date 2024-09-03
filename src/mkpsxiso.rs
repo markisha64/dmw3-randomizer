@@ -10,9 +10,13 @@ pub struct IsoProject {
 }
 
 impl IsoProject {
-    pub fn flatten(&self) -> Vec<File> {
+    pub fn flatten(&self) -> anyhow::Result<Vec<File>> {
         let mut result: Vec<File> = Vec::new();
-        let data = self.track.iter().find(|t| t.r#type == "data").unwrap();
+        let data = self
+            .track
+            .iter()
+            .find(|t| t.r#type == "data")
+            .ok_or(anyhow::anyhow!("Missing data track"))?;
 
         for entry in data.directory_tree.field.iter() {
             match entry {
@@ -23,7 +27,7 @@ impl IsoProject {
             }
         }
 
-        result
+        Ok(result)
     }
 }
 

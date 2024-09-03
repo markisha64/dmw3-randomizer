@@ -14,7 +14,7 @@ use tokio::runtime::Runtime;
 
 mod gui;
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let args = cli::Arguments::parse();
 
     let rt = Runtime::new().unwrap();
@@ -63,4 +63,6 @@ fn main() {
             gui::launch_app();
         }
     }
+
+    Ok(())
 }
