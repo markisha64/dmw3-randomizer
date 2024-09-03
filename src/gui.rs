@@ -29,23 +29,9 @@ pub fn launch_app() {
         .launch(app);
 }
 
-#[derive(Clone)]
-pub struct GlobalState {
-    pub shop_limit_enabled: bool,
-}
-
-impl Default for GlobalState {
-    fn default() -> Self {
-        GlobalState {
-            shop_limit_enabled: true,
-        }
-    }
-}
-
 fn app() -> Element {
     use_context_provider(|| Signal::new(Arguments::default()));
     use_context_provider::<Signal<Preset>>(|| Signal::new(serde_json::from_str("{}").unwrap()));
-    use_context_provider(|| Signal::new(GlobalState::default()));
 
     let mut state = use_context::<Signal<Arguments>>();
     let mut preset_state = use_context::<Signal<Preset>>();

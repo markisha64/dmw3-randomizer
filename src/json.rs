@@ -140,8 +140,10 @@ pub struct Parties {
 pub struct Shops {
     #[serde(default = "default_bool_true")]
     pub enabled: bool,
+    #[serde(default = "default_bool_true")]
+    pub limit_shop_items_enabled: bool,
     #[serde(default = "default_shop_limit")]
-    pub limit_shop_items: Option<u8>,
+    pub limit_shop_items: u8,
     #[serde(default = "ShopItems::default")]
     pub items_only: ShopItems,
     #[serde(default = "default_bool_true")]
@@ -182,8 +184,8 @@ pub struct Scaling {
     pub natural_scaling: bool,
 }
 
-fn default_shop_limit() -> Option<u8> {
-    Some(8)
+fn default_shop_limit() -> u8 {
+    8
 }
 
 fn default_randomizer() -> Randomizer {

@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::{number_field, GlobalState};
+use crate::gui::number_field;
 use crate::json::{Preset, ShopItems};
 
 use crate::gui::checkbox;
@@ -8,17 +8,14 @@ use crate::gui::checkbox;
 #[component]
 pub fn shops() -> Element {
     let mut preset_state = use_context::<Signal<Preset>>();
-    let mut global_state = use_context::<Signal<GlobalState>>();
 
     let read_preset_state = preset_state.read();
-    let read_global_state = global_state.read();
-
-    let limit_enabled = read_global_state.shop_limit_enabled;
 
     let enabled = read_preset_state.randomizer.shops.enabled;
+    let limit_enabled = read_preset_state.randomizer.shops.limit_shop_items_enabled;
     let selected = read_preset_state.randomizer.shops.items_only.clone();
 
-    let limit = read_preset_state.randomizer.shops.limit_shop_items.unwrap_or(64);
+    let limit = read_preset_state.randomizer.shops.limit_shop_items;
 
     let sell_price = read_preset_state.randomizer.shops.sell_price;
     let min_sell_price = read_preset_state.randomizer.shops.min_sell_price;
@@ -86,7 +83,7 @@ pub fn shops() -> Element {
                             checked: limit_enabled,
                             disabled: !enabled,
                             onchange: move |x: bool| {
-                                global_state.write().shop_limit_enabled = x;
+                                preset_state.write().randomizer.shops.limit_shop_items_enabled = x;
                             },
                         },
                         input {
@@ -108,7 +105,7 @@ pub fn shops() -> Element {
                                     _ => limit
                                 };
 
-                                preset_state.write().randomizer.shops.limit_shop_items = Some(limit);
+                                preset_state.write().randomizer.shops.limit_shop_items = limit;
                             }
                         },
                     },

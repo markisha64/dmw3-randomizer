@@ -8,11 +8,11 @@ use std::collections::BTreeSet;
 pub fn patch(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     let shoppable = shoppable(objects, preset);
 
-    match preset.limit_shop_items {
-        Some(limit) => {
-            randomize_limited(&limit, objects, rng, shoppable);
+    match preset.limit_shop_items_enabled {
+        true => {
+            randomize_limited(&preset.limit_shop_items, objects, rng, shoppable);
         }
-        None => {
+        false => {
             randomize_existing(objects, rng, shoppable);
         }
     }
