@@ -35,7 +35,7 @@ jobs:
     - name: Install Cargo bundle
       run: cargo install cargo-bundle
     - name: Build
-      run: cargo build --verbose --release
+      run: cargo build --verbose --release --locked
     - name: Build mkpsxiso
       run: |
         cmake --preset ci -S ./mkpsxiso -B ./mkpsxiso/build
@@ -64,7 +64,7 @@ jobs:
         key: windows-cargo-${{ hashFiles('Cargo.lock') }}
         restore-keys: windows-cargo-${{ hashFiles('Cargo.lock') }}
     - name: Build
-      run: cargo build --verbose --release
+      run: cargo build --verbose --release --locked
     - name: Build mkpsxiso
       run: |
         cmake --preset ci -S ./mkpsxiso -B ./mkpsxiso/build -G "Visual Studio 17 2022"
