@@ -26,7 +26,7 @@ fn main() -> anyhow::Result<()> {
                     panic!("Error extracting");
                 }
 
-                dump::dump(path).await;
+                dump::dump(path).await?;
             }
         }
 

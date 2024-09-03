@@ -56,25 +56,29 @@ pub struct ObjectArray<T> {
 }
 
 trait WriteObjects {
-    fn write_buf(&self, source_buf: &mut Vec<u8>);
+    fn write_buf(&self, source_buf: &mut Vec<u8>) -> anyhow::Result<()>;
 }
 
 impl<T: BinWrite> WriteObjects for Object<T> {
-    fn write_buf(&self, write_buf: &mut Vec<u8>) {
+    fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
         let mut buf = vec![];
 
-        self.modified.write(&mut buf).unwrap();
+        self.modified.write(&mut buf)?;
         write_buf[self.index..(self.index + self.slen)].copy_from_slice(&mut buf);
+
+        Ok(())
     }
 }
 
 impl<T: BinWrite> WriteObjects for ObjectArray<T> {
-    fn write_buf(&self, write_buf: &mut Vec<u8>) {
+    fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
         let mut buf = vec![];
 
-        self.modified.write(&mut buf).unwrap();
+        self.modified.write(&mut buf)?;
         write_buf[self.index..(self.index + self.slen * self.original.len())]
             .copy_from_slice(&mut buf);
+
+        Ok(())
     }
 }
 
@@ -228,16 +232,19 @@ async fn read_map_objects(
     file_map: &Vec<mkpsxiso::File>,
     sector_offsets: &Vec<u32>,
     executable: &Executable,
-) -> Vec<MapObject> {
-    let rom_name = path.file_name().unwrap().to_str().unwrap();
-    let mut pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name))
-        .await
-        .unwrap();
+) -> anyhow::Result<Vec<MapObject>> {
+    let rom_name = path
+        .file_name()
+        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .to_str()
+        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
+
+    let mut pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).await?;
 
     let mut result: Vec<MapObject> = Vec::new();
 
     while let Some(file_res) = pro_folder.next().await {
-        let file = file_res.unwrap();
+        let file = file_res?;
 
         if let Ok(file_type) = file.file_type().await {
             if file_type.is_dir() {
@@ -250,9 +257,7 @@ async fn read_map_objects(
             continue;
         }
 
-        let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name))
-            .await
-            .unwrap();
+        let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name)).await?;
 
         let mut offset: usize = 0x4;
         let mut idx = buf.len() - offset;
@@ -333,18 +338,18 @@ async fn read_map_objects(
         let sector_offset = file_map
             .iter()
             .find(|file| file.name == file_name)
-            .unwrap()
+            .ok_or(anyhow::anyhow!("Failed to find sector offset"))?
             .offs;
 
         let sector_offsets_index = sector_offsets
             .iter()
             .position(|off| *off == sector_offset)
-            .unwrap() as u32;
+            .ok_or(anyhow::anyhow!("Failed to get idx"))? as u32;
 
         let stage_load_data_row = stage_load_data
             .iter()
             .find(|sldr| sldr.file_index == sector_offsets_index)
-            .unwrap();
+            .ok_or(anyhow::anyhow!("Failed to get stage load data"))?;
 
         let bg_file_index = u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
 
@@ -383,17 +388,14 @@ async fn read_map_objects(
                 let idx = map_color_address.to_index_overlay(stage.value) as usize;
 
                 let mut map_color_reader = Cursor::new(&buf[idx..idx + 4]);
-                let res = MapColor::read(&mut map_color_reader);
+                let color = MapColor::read(&mut map_color_reader)?;
 
-                map_color = match res {
-                    Ok(color) => Some(Object {
-                        original: color.clone(),
-                        modified: color.clone(),
-                        index: idx,
-                        slen: 0x4,
-                    }),
-                    Err(_) => panic!("binread error"),
-                };
+                map_color = Some(Object {
+                    original: color.clone(),
+                    modified: color.clone(),
+                    index: idx,
+                    slen: 0x4,
+                });
             }
         }
 
@@ -443,7 +445,7 @@ async fn read_map_objects(
                 .windows(2)
                 .rev()
                 .position(|x| x == instr)
-                .unwrap();
+                .ok_or(anyhow::anyhow!("Failed to find instruction"))?;
 
             let instruction = initsp_index + talk_file_set - res - 2;
 
@@ -466,21 +468,16 @@ async fn read_map_objects(
             let mut environmentals_reader = Cursor::new(&buf[(env_index as usize)..]);
 
             loop {
-                let environmental = Environmental::read(&mut environmentals_reader);
+                let environmental = Environmental::read(&mut environmentals_reader)?;
 
-                let unwrapped = match environmental {
-                    Ok(env) => env,
-                    Err(_) => panic!("binread error"),
-                };
-
-                if unwrapped.conditions[0] == 0x0000ffff
-                    && unwrapped.conditions[1] == 0x0000ffff
-                    && unwrapped.next_stage_id == 0
+                if environmental.conditions[0] == 0x0000ffff
+                    && environmental.conditions[1] == 0x0000ffff
+                    && environmental.next_stage_id == 0
                 {
                     break;
                 }
 
-                environmentals.push(unwrapped);
+                environmentals.push(environmental);
             }
         }
 
@@ -514,13 +511,7 @@ async fn read_map_objects(
                     Cursor::new(&buf[(real_idx as usize)..(real_idx as usize) + 0x14 * i]);
 
                 for _ in 0..i {
-                    let entity_result = EntityData::read(&mut entities_reader);
-
-                    if entity_result.is_err() {
-                        panic!("binread error");
-                    }
-
-                    let entity = entity_result.unwrap();
+                    let entity = EntityData::read(&mut entities_reader)?;
 
                     if !entity.logic.null() {
                         let logic_idx = entity.logic.to_index_overlay(stage.value);
@@ -604,11 +595,15 @@ async fn read_map_objects(
         });
     }
 
-    result
+    Ok(result)
 }
 
-async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) {
-    let rom_name = path.file_name().unwrap().to_str().unwrap();
+async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) -> anyhow::Result<()> {
+    let rom_name = path
+        .file_name()
+        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .to_str()
+        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
 
     for model in objects {
         if model.packed.buffer.len()
@@ -621,28 +616,31 @@ async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) {
             "extract/{}/AAA/DAT/FIGHT/MODEL/{}",
             rom_name, model.file_name,
         ))
-        .await
-        .unwrap();
+        .await?;
 
-        new_model.write_all(&model.packed.buffer).await.unwrap();
+        new_model.write_all(&model.packed.buffer).await?;
     }
+
+    Ok(())
 }
 
-async fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
-    let rom_name = path.file_name().unwrap().to_str().unwrap();
+async fn read_model_objects(path: &PathBuf) -> anyhow::Result<Vec<ModelObject>> {
+    let rom_name = path
+        .file_name()
+        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .to_str()
+        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
 
-    let mut model_itr = fs::read_dir(format!("extract/{}/AAA/DAT/FIGHT/MODEL/", rom_name))
-        .await
-        .unwrap();
+    let mut model_itr = fs::read_dir(format!("extract/{}/AAA/DAT/FIGHT/MODEL/", rom_name)).await?;
 
     let mut r = Vec::new();
 
     while let Some(modelr) = model_itr.next().await {
-        let model = modelr.unwrap();
+        let model = modelr?;
 
-        let model_buf = fs::read(model.path()).await.unwrap();
+        let model_buf = fs::read(model.path()).await?;
 
-        let packed = dmw3_pack::Packed::try_from(model_buf).unwrap();
+        let packed = dmw3_pack::Packed::try_from(model_buf)?;
 
         let header_buf = match packed.iter().rev().find(|idx| {
             if packed.assumed_length[*idx] < 8 {
@@ -678,9 +676,14 @@ async fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
             _ => continue,
         };
 
-        let file_name = String::from(model.path().file_name().unwrap().to_str().unwrap());
+        let file_name = String::from(
+            path.file_name()
+                .ok_or(anyhow::anyhow!("Failed to get file name"))?
+                .to_str()
+                .ok_or(anyhow::anyhow!("Failed to convert to str"))?,
+        );
 
-        let header = Header::read(&mut Cursor::new(&packed.get_file(header_buf).unwrap())).unwrap();
+        let header = Header::read(&mut Cursor::new(&packed.get_file(header_buf)?))?;
 
         r.push(ModelObject {
             og_len: packed.buffer.len(),
@@ -690,7 +693,7 @@ async fn read_model_objects(path: &PathBuf) -> Vec<ModelObject> {
         })
     }
 
-    r
+    Ok(r)
 }
 
 pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
@@ -1118,9 +1121,9 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         &sector_offsets,
         &executable,
     )
-    .await;
+    .await?;
 
-    let model_objects = read_model_objects(path).await;
+    let model_objects = read_model_objects(path).await?;
 
     Ok(Objects {
         executable,
@@ -1159,164 +1162,145 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     })
 }
 
-async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> Result<(), ()> {
-    let rom_name = path.file_name().unwrap().to_str().unwrap();
+async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyhow::Result<()> {
+    let rom_name = path
+        .file_name()
+        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .to_str()
+        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
 
     for object in objects {
         let buf = &mut object.buf;
 
         if let Some(environmentals) = &mut object.environmentals {
-            environmentals.write_buf(buf);
+            environmentals.write_buf(buf)?;
         }
 
         if let Some(entities) = &mut object.entities {
-            entities.write_buf(buf);
+            entities.write_buf(buf)?;
         }
 
         for logic in &mut object.entity_logics {
-            logic.write_buf(buf);
+            logic.write_buf(buf)?;
         }
 
         for script in &mut object.scripts {
-            script.write_buf(buf);
+            script.write_buf(buf)?;
         }
 
         if let Some(map_color) = &mut object.map_color {
-            map_color.write_buf(buf);
+            map_color.write_buf(buf)?;
         }
 
-        object.background_file_index.write_buf(buf);
+        object.background_file_index.write_buf(buf)?;
 
         // write file
         let mut new_file =
-            File::create(format!("extract/{}/AAA/PRO/{}", rom_name, object.file_name))
-                .await
-                .unwrap();
+            File::create(format!("extract/{}/AAA/PRO/{}", rom_name, object.file_name)).await?;
 
-        match new_file.write_all(buf).await {
-            Err(_) => return Err(()),
-            _ => {}
-        }
+        new_file.write_all(buf).await?;
     }
 
     Ok(())
 }
 
-async fn write_objects(path: &PathBuf, objects: &mut Objects) -> Result<(), ()> {
-    objects.enemy_stats.write_buf(&mut objects.bufs.stats_buf);
+async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<()> {
+    objects.enemy_stats.write_buf(&mut objects.bufs.stats_buf)?;
     objects
         .encounters
-        .write_buf(&mut objects.bufs.encounter_buf);
-    objects.parties.write_buf(&mut objects.bufs.main_buf);
-    objects.rookie_data.write_buf(&mut objects.bufs.main_buf);
+        .write_buf(&mut objects.bufs.encounter_buf)?;
+    objects.parties.write_buf(&mut objects.bufs.main_buf)?;
+    objects.rookie_data.write_buf(&mut objects.bufs.main_buf)?;
     objects
         .digivolution_data
-        .write_buf(&mut objects.bufs.main_buf);
-    objects.shop_items.write_buf(&mut objects.bufs.shops_buf);
-    objects.shops.write_buf(&mut objects.bufs.shops_buf);
-    objects.item_shop_data.write_buf(&mut objects.bufs.main_buf);
-    objects.move_data.write_buf(&mut objects.bufs.main_buf);
-    objects.dv_cond.write_buf(&mut objects.bufs.exp_buf);
+        .write_buf(&mut objects.bufs.main_buf)?;
+    objects.shop_items.write_buf(&mut objects.bufs.shops_buf)?;
+    objects.shops.write_buf(&mut objects.bufs.shops_buf)?;
+    objects
+        .item_shop_data
+        .write_buf(&mut objects.bufs.main_buf)?;
+    objects.move_data.write_buf(&mut objects.bufs.main_buf)?;
+    objects.dv_cond.write_buf(&mut objects.bufs.exp_buf)?;
     objects
         .pack_previews
-        .write_buf(&mut objects.bufs.pack_select_buf);
+        .write_buf(&mut objects.bufs.pack_select_buf)?;
 
-    let rom_name = path.file_name().unwrap().to_str().unwrap();
+    let rom_name = path
+        .file_name()
+        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .to_str()
+        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
 
     let mut new_main_executable = File::create(format!(
         "extract/{}/{}",
         rom_name,
         objects.executable.as_str()
     ))
-    .await
-    .unwrap();
-    let mut new_stats = File::create(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE))
-        .await
-        .unwrap();
+    .await?;
+
+    let mut new_stats =
+        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)).await?;
+
     let mut new_encounters = File::create(format!(
         "extract/{}/{}",
         rom_name,
         dmw3_consts::ENCOUNTERS_FILE
     ))
-    .await
-    .unwrap();
-    let mut new_shops = File::create(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE))
-        .await
-        .unwrap();
-    let mut new_exp = File::create(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE))
-        .await
-        .unwrap();
+    .await?;
+
+    let mut new_shops =
+        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).await?;
+
+    let mut new_exp =
+        File::create(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).await?;
+
     let mut new_pack_select = File::create(format!(
         "extract/{}/{}",
         rom_name,
         dmw3_consts::PACK_SELECT_FILE
     ))
-    .await
-    .unwrap();
+    .await?;
 
     for sname in objects.executable.text_files().iter() {
         for lang in objects.executable.languages() {
             let text_file = objects
                 .text_files
                 .get(*sname)
-                .unwrap()
+                .ok_or(anyhow::anyhow!("Failed to get text file"))?
                 .files
                 .get(lang)
-                .unwrap();
+                .ok_or(anyhow::anyhow!("Failed to get language"))?;
 
             let mut new_file =
-                File::create(format!("extract/{}/{}", rom_name, lang.to_path(sname)))
-                    .await
-                    .unwrap();
+                File::create(format!("extract/{}/{}", rom_name, lang.to_path(sname))).await?;
 
             let bytes: Vec<u8> = text_file.file.clone().into();
 
-            match new_file.write_all(&bytes).await {
-                Err(_) => return Err(()),
-                _ => {}
-            }
+            new_file.write_all(&bytes).await?
         }
     }
 
-    match new_main_executable.write_all(&objects.bufs.main_buf).await {
-        Err(_) => return Err(()),
-        _ => {}
-    }
+    new_main_executable
+        .write_all(&objects.bufs.main_buf)
+        .await?;
 
-    match new_stats.write_all(&objects.bufs.stats_buf).await {
-        Err(_) => return Err(()),
-        _ => {}
-    }
+    new_stats.write_all(&objects.bufs.stats_buf).await?;
 
-    match new_encounters.write_all(&objects.bufs.encounter_buf).await {
-        Err(_) => return Err(()),
-        _ => {}
-    }
+    new_encounters
+        .write_all(&objects.bufs.encounter_buf)
+        .await?;
 
-    match new_shops.write_all(&objects.bufs.shops_buf).await {
-        Err(_) => return Err(()),
-        _ => {}
-    }
+    new_shops.write_all(&objects.bufs.shops_buf).await?;
 
-    match new_exp.write_all(&objects.bufs.exp_buf).await {
-        Err(_) => return Err(()),
-        _ => {}
-    }
+    new_exp.write_all(&objects.bufs.exp_buf).await?;
 
-    match new_pack_select
+    new_pack_select
         .write_all(&objects.bufs.pack_select_buf)
-        .await
-    {
-        Err(_) => return Err(()),
-        _ => {}
-    }
+        .await?;
 
-    match write_map_objects(path, &mut objects.map_objects).await {
-        Err(_) => return Err(()),
-        _ => {}
-    }
+    write_map_objects(path, &mut objects.map_objects).await?;
 
-    write_model_objects(path, &objects.model_objects).await;
+    write_model_objects(path, &objects.model_objects).await?;
 
     Ok(())
 }
