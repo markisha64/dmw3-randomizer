@@ -13,6 +13,7 @@ pub fn import() -> Element {
             id: "import-preset",
             label: "Import",
             accept: ".json",
+            tooltip: "Import preset",
             onchange: move |x: Event<FormData>| {
                 if let Some(file_engine) = &x.files() {
                     let files = file_engine.files();

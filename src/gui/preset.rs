@@ -9,7 +9,7 @@ pub fn preset() -> Element {
         div {
             class: "segment",
             div {
-                class: "left",
+                class: "center",
                 "Preset",
                 import::import {},
                 export::export {}

@@ -4,21 +4,20 @@ use std::io::Write;
 use crate::json::Preset;
 use dioxus::prelude::*;
 
-
 #[component]
 pub fn export() -> Element {
     let state = use_context::<Signal<Preset>>();
 
     rsx! {
         div {
-            class: "tooltip",
+            class: "center tooltip",
             span {
                 class: "tooltiptext",
                 "Exports to preset.json"
             },
             label {
                 r#for: "export",
-                class: "randomize",
+                class: "file-upload",
                 "Export"
             },
             input {
