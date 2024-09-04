@@ -4,6 +4,7 @@ use dioxus::prelude::*;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::rand_core::SeedableRng;
 
+use crate::gui::preset::history::get_mapped;
 use crate::json::Preset;
 
 use crate::cli::Arguments;
@@ -32,6 +33,7 @@ pub fn launch_app() {
 }
 
 fn app() -> Element {
+    use_context_provider(|| Signal::new(get_mapped()));
     use_context_provider(|| {
         let last = db::last();
 

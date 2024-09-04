@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 mod export;
-mod history;
+pub mod history;
 mod import;
 
 #[component]

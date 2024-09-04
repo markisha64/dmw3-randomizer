@@ -1,3 +1,4 @@
+use crate::gui::preset::history::{get_mapped, HistoryMapped};
 use crate::{cli::Arguments, db, json::Preset, mkpsxiso, patch};
 
 use dioxus::prelude::*;
@@ -34,6 +35,7 @@ pub fn randomize() -> Element {
     let mut state = use_signal::<Steps>(Steps::default);
     let args_state = use_context::<Signal<Arguments>>();
     let mut preset_state = use_context::<Signal<Preset>>();
+    let mut history_state = use_context::<Signal<Vec<HistoryMapped>>>();
 
     let percent = state.read().to_percent();
 
@@ -74,6 +76,7 @@ pub fn randomize() -> Element {
                                 let preset = preset_state.read().clone();
 
                                 db::insert(&preset, &args).unwrap();
+                                history_state.set(get_mapped());
 
                                 let file_name = match &args.output {
                                     Some(name) => name.clone(),

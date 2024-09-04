@@ -176,10 +176,10 @@ dialog {
 	border: 1px solid rgba(255, 255, 255, 0.5);
 	padding: 5px;
 	border-radius: 5px;
-	position: fixed;
-	margin: 0 auto;
+	position: absolute;
+	margin: 150px auto 0 auto;
 	width: 400px;
-	max-height: 200px;
+	max-height: 500px;
 	top: 20%;
 	transform: translateY(-50%);
 	border-radius: 8px;
