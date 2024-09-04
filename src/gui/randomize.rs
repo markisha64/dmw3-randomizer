@@ -1,4 +1,4 @@
-use crate::{cli::Arguments, json::Preset, mkpsxiso, patch};
+use crate::{cli::Arguments, db, json::Preset, mkpsxiso, patch};
 
 use dioxus::prelude::*;
 
@@ -72,6 +72,8 @@ pub fn randomize() -> Element {
                                 };
 
                                 let preset = preset_state.read().clone();
+
+                                db::insert(&preset, &args).unwrap();
 
                                 let file_name = match &args.output {
                                     Some(name) => name.clone(),

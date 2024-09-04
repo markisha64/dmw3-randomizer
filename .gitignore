@@ -28,3 +28,6 @@ dist/
 mkpsxiso
 dump
 .DS_store
+
+# db
+db

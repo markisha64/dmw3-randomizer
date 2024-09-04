@@ -1,8 +1,9 @@
 use chrono::Utc;
 use clap::Parser;
+use serde::{Deserialize, Serialize};
 
 /// Randomize dmw3
-#[derive(Parser, Debug, Clone)]
+#[derive(Parser, Debug, Clone, Deserialize, Serialize)]
 pub struct Arguments {
     /// bin path
     pub path: Option<std::path::PathBuf>,

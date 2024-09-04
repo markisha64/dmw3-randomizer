@@ -1,3 +1,4 @@
+use chrono::Utc;
 use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::prelude::*;
 use rand_xoshiro::rand_core::RngCore;
@@ -31,11 +32,35 @@ pub fn launch_app() {
 }
 
 fn app() -> Element {
-    use_context_provider(|| match db::last() {
-        Ok(history) => serde_json::from_str(history.args.as_str()).unwrap_or(Arguments::default()),
-        Err(_) => Arguments::default(),
+    use_context_provider(|| {
+        let last = db::last();
+
+        let mut args = match last {
+            Ok(history) => {
+                serde_json::from_str(history.arguments.as_str()).unwrap_or(Arguments::default())
+            }
+            Err(_) => Arguments::default(),
+        };
+
+        args.path = match args.path {
+            Some(path) => match path.exists() {
+                true => Some(path),
+                false => None,
+            },
+            None => None,
+        };
+
+        args.seed = Some(Utc::now().timestamp() as u64);
+
+        Signal::new(args)
     });
-    use_context_provider::<Signal<Preset>>(|| Signal::new(serde_json::from_str("{}").unwrap()));
+    use_context_provider(|| {
+        Signal::new(match db::last() {
+            Ok(history) => serde_json::from_str::<Preset>(history.preset.as_str())
+                .unwrap_or(serde_json::from_str("{}").unwrap()),
+            Err(_) => serde_json::from_str("{}").unwrap(),
+        })
+    });
 
     let mut state = use_context::<Signal<Arguments>>();
     let mut preset_state = use_context::<Signal<Preset>>();

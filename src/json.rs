@@ -4,13 +4,6 @@ use std::fs;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
-pub struct History {
-    seeds: Vec<u8>,
-    preset: Preset,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-#[serde(rename_all = "camelCase")]
 pub struct Preset {
     #[serde(default = "default_randomizer")]
     pub randomizer: Randomizer,
