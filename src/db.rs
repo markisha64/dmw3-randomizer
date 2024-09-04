@@ -1,12 +1,37 @@
-use std::error::Error;
+use std::{error::Error, path::PathBuf};
 
 use chrono::Utc;
+use home::home_dir;
 use rusqlite::Connection;
 
 use crate::{cli::Arguments, json::Preset};
 
+fn init_homedir() -> anyhow::Result<PathBuf> {
+    let mut home = match home_dir() {
+        Some(home) => home,
+        None => return Err(anyhow::anyhow!("Can't determine home directory")),
+    };
+
+    home.push(".dmw3-randomizer");
+
+    if !home.exists() {
+        std::fs::create_dir(&home)?;
+    }
+
+    home.push("db");
+
+    Ok(home)
+}
+
+fn get_conn() -> rusqlite::Result<Connection> {
+    match init_homedir() {
+        Ok(path) => Connection::open(path),
+        Err(_) => Connection::open("db"),
+    }
+}
+
 pub fn init() -> anyhow::Result<()> {
-    let conn = Connection::open("db")?;
+    let conn = get_conn()?;
 
     conn.execute(
         "CREATE TABLE IF NOT EXISTS history (
@@ -30,7 +55,7 @@ pub struct History {
 }
 
 pub fn last() -> rusqlite::Result<History> {
-    let conn = Connection::open("db")?;
+    let conn = get_conn()?;
 
     let mut result = conn.prepare(
         "SELECT id, created_at, preset, arguments FROM history ORDER BY created_at DESC LIMIT 1",
@@ -49,7 +74,7 @@ pub fn last() -> rusqlite::Result<History> {
 }
 
 pub fn insert(preset: &Preset, arguments: &Arguments) -> Result<(), Box<dyn Error>> {
-    let conn = Connection::open("db")?;
+    let conn = get_conn()?;
 
     conn.execute(
         "INSERT INTO history (created_at, preset, arguments) VALUES (?1, ?2, ?3)",
@@ -64,7 +89,7 @@ pub fn insert(preset: &Preset, arguments: &Arguments) -> Result<(), Box<dyn Erro
 }
 
 pub fn history() -> rusqlite::Result<Vec<History>> {
-    let conn = Connection::open("db")?;
+    let conn = get_conn()?;
 
     let mut qres = conn.prepare(
         "SELECT id, created_at, preset, arguments FROM history ORDER BY created_at DESC",
