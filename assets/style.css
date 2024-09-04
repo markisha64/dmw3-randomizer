@@ -170,3 +170,37 @@ input[type="number"] {
 input[type="checkbox"] {
 	margin-right: 15px;
 }
+
+dialog {
+	background-color: #000021;
+	border: 1px solid rgba(255, 255, 255, 0.5);
+	padding: 5px;
+	border-radius: 5px;
+	position: fixed;
+	margin: 0 auto;
+	width: 400px;
+	max-height: 200px;
+	top: 20%;
+	transform: translateY(-50%);
+	border-radius: 8px;
+	color: #ffffff;
+}
+
+dialog::backdrop {
+	background: rgba(0, 0, 0, 0.3);
+}
+
+dialog label {
+	margin: 2px;
+}
+
+dialog ul {
+	list-style: none;
+}
+
+dialog td,
+th {
+	border: 1px solid;
+	text-align: center;
+	padding: 4px;
+}

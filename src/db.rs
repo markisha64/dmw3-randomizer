@@ -23,7 +23,7 @@ pub fn init() -> anyhow::Result<()> {
 
 #[derive(Debug)]
 pub struct History {
-    pub id: i32,
+    pub _id: i32,
     pub created_at: i64,
     pub preset: String,
     pub arguments: String,
@@ -38,7 +38,7 @@ pub fn last() -> rusqlite::Result<History> {
 
     let s = result.query_row([], |row| {
         Ok(History {
-            id: row.get(0)?,
+            _id: row.get(0)?,
             created_at: row.get(1)?,
             preset: row.get(2)?,
             arguments: row.get(3)?,
@@ -61,4 +61,25 @@ pub fn insert(preset: &Preset, arguments: &Arguments) -> Result<(), Box<dyn Erro
     )?;
 
     Ok(())
+}
+
+pub fn history() -> rusqlite::Result<Vec<History>> {
+    let conn = Connection::open("db")?;
+
+    let mut qres = conn.prepare(
+        "SELECT id, created_at, preset, arguments FROM history ORDER BY created_at DESC",
+    )?;
+
+    let rows = qres.query_map([], |row| {
+        Ok(History {
+            _id: row.get(0)?,
+            created_at: row.get(1)?,
+            preset: row.get(2)?,
+            arguments: row.get(3)?,
+        })
+    })?;
+
+    let result: Vec<_> = rows.collect::<rusqlite::Result<Vec<_>>>()?;
+
+    Ok(result)
 }

@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 
 mod export;
+mod history;
 mod import;
 
 #[component]
@@ -12,7 +13,8 @@ pub fn preset() -> Element {
                 class: "center",
                 "Preset",
                 import::import {},
-                export::export {}
+                export::export {},
+                history::history {}
             }
         }
     }
