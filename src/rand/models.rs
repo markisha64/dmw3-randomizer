@@ -4,19 +4,21 @@ use tim::Tim;
 
 use crate::{json::Randomizer, rand::Objects};
 
-fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn hue(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     for model in &mut objects.model_objects {
         let texture_packed = dmw3_pack::Packed::try_from(
             model
                 .packed
-                .get_file(model.header.texture_offset as usize)
-                .unwrap(),
-        )
-        .unwrap();
+                .get_file(model.header.texture_offset as usize)?,
+        )?;
 
-        let texture_raw = match rlen_decode(&texture_packed.get_file(0).unwrap()[..]) {
+        let texture_raw = match rlen_decode(&texture_packed.get_file(0)?[..]) {
             Ok(file) => file,
-            Err(_) => texture_packed.get_file(0).unwrap().into(),
+            Err(_) => texture_packed.get_file(0)?.into(),
         };
 
         let mut texture_tim = Tim::from(texture_raw);
@@ -115,8 +117,7 @@ fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar)
 
         let offset = model
             .packed
-            .get_offset(model.header.texture_offset as usize)
-            .unwrap() as usize;
+            .get_offset(model.header.texture_offset as usize)? as usize;
 
         let assumed_length = model.packed.assumed_length[model.header.texture_offset as usize];
 
@@ -133,7 +134,7 @@ fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar)
         model.packed.buffer[(offset + recoded_length)..].copy_from_slice(&ending[..]);
 
         for idx in model.packed.iter() {
-            let mut n_offset = model.packed.get_offset(idx).unwrap() as usize;
+            let mut n_offset = model.packed.get_offset(idx)? as usize;
 
             if n_offset > offset {
                 n_offset += recoded_length;
@@ -144,10 +145,18 @@ fn hue(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar)
             }
         }
     }
+
+    Ok(())
 }
 
-pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+pub fn patch(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     if preset.models.hue_enabled {
-        hue(preset, objects, rng);
+        hue(preset, objects, rng)?;
     }
+
+    Ok(())
 }

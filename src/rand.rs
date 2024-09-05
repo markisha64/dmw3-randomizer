@@ -1,3 +1,4 @@
+use anyhow::Context;
 use async_std::fs;
 use async_std::fs::File;
 use async_std::prelude::*;
@@ -235,9 +236,9 @@ async fn read_map_objects(
 ) -> anyhow::Result<Vec<MapObject>> {
     let rom_name = path
         .file_name()
-        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .context("Failed to get file name")?
         .to_str()
-        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
+        .context("Failed to convert to str")?;
 
     let mut pro_folder = fs::read_dir(format!("extract/{}/AAA/PRO", rom_name)).await?;
 
@@ -338,18 +339,18 @@ async fn read_map_objects(
         let sector_offset = file_map
             .iter()
             .find(|file| file.name == file_name)
-            .ok_or(anyhow::anyhow!("Failed to find sector offset"))?
+            .context("Failed to find sector offset")?
             .offs;
 
         let sector_offsets_index = sector_offsets
             .iter()
             .position(|off| *off == sector_offset)
-            .ok_or(anyhow::anyhow!("Failed to get idx"))? as u32;
+            .context("Failed to get idx")? as u32;
 
         let stage_load_data_row = stage_load_data
             .iter()
             .find(|sldr| sldr.file_index == sector_offsets_index)
-            .ok_or(anyhow::anyhow!("Failed to get stage load data"))?;
+            .context("Failed to get stage load data")?;
 
         let bg_file_index = u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
 
@@ -445,7 +446,7 @@ async fn read_map_objects(
                 .windows(2)
                 .rev()
                 .position(|x| x == instr)
-                .ok_or(anyhow::anyhow!("Failed to find instruction"))?;
+                .context("Failed to find instruction")?;
 
             let instruction = initsp_index + talk_file_set - res - 2;
 
@@ -601,9 +602,9 @@ async fn read_map_objects(
 async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) -> anyhow::Result<()> {
     let rom_name = path
         .file_name()
-        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .context("Failed to get file name")?
         .to_str()
-        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
+        .context("Failed to convert to str")?;
 
     for model in objects {
         if model.packed.buffer.len()
@@ -627,9 +628,9 @@ async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) -> anyh
 async fn read_model_objects(path: &PathBuf) -> anyhow::Result<Vec<ModelObject>> {
     let rom_name = path
         .file_name()
-        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .context("Failed to get file name")?
         .to_str()
-        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
+        .context("Failed to convert to str")?;
 
     let mut model_itr = fs::read_dir(format!("extract/{}/AAA/DAT/FIGHT/MODEL/", rom_name)).await?;
 
@@ -678,9 +679,9 @@ async fn read_model_objects(path: &PathBuf) -> anyhow::Result<Vec<ModelObject>> 
 
         let file_name = String::from(
             path.file_name()
-                .ok_or(anyhow::anyhow!("Failed to get file name"))?
+                .context("Failed to get file name")?
                 .to_str()
-                .ok_or(anyhow::anyhow!("Failed to convert to str"))?,
+                .context("Failed to convert to str")?,
         );
 
         let header = Header::read(&mut Cursor::new(&packed.get_file(header_buf)?))?;
@@ -699,9 +700,9 @@ async fn read_model_objects(path: &PathBuf) -> anyhow::Result<Vec<ModelObject>> 
 pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let rom_name = path
         .file_name()
-        .ok_or(anyhow::anyhow!("Failed file name get"))?
+        .context("Failed file name get")?
         .to_str()
-        .ok_or(anyhow::anyhow!("Failed to_str conversion"))?;
+        .context("Failed to_str conversion")?;
     let iso_project = xml_file().await?;
 
     let mut itr = fs::read_dir(format!("extract/{}/", rom_name)).await?;
@@ -719,7 +720,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         }
     }
 
-    let executable = executable_opt.ok_or(anyhow::anyhow!("Can't find extracted executable"))?;
+    let executable = executable_opt.context("Can't find extracted executable")?;
 
     let stats_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)).await?;
 
@@ -810,7 +811,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let shops_index = shops_buf
         .windows(8)
         .position(|window| window == b"\x00\x00\x00\x00\x0b\x00\x00\x00")
-        .ok_or(anyhow::anyhow!("Can't find shops beginning"))?
+        .context("Can't find shops beginning")?
         + 4;
 
     let mut shops_reader = Cursor::new(&shops_buf[shops_index..]);
@@ -826,11 +827,11 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     let front_index = shops_arr
         .first()
-        .ok_or(anyhow::anyhow!("No shops found"))?
+        .context("No shops found")?
         .items
         .to_index_overlay(overlay.value as u32) as usize;
 
-    let back_shop = shops_arr.last().ok_or(anyhow::anyhow!("No shops found"))?;
+    let back_shop = shops_arr.last().context("No shops found")?;
 
     let back_index =
         (back_shop.item_count + back_shop.items.to_index_overlay(overlay.value as u32)) as usize;
@@ -846,7 +847,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .position(|window| -> bool {
             window == b"\x64\x01\x65\x01\x66\x01\x67\x01\x00\x00\x00\x00"
         })
-        .ok_or(anyhow::anyhow!("Can't find item shop data beginning"))?;
+        .context("Can't find item shop data beginning")?;
 
     let mut item_shop_data_reader = Cursor::new(&main_buf[item_shop_data_index..]);
 
@@ -864,7 +865,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .position(|window| -> bool {
             window == b"\x7f\x01\x30\x00\x2c\x00\x29\x00\x22\x00\x21\x00\x01\x00\x55\x00"
         })
-        .ok_or(anyhow::anyhow!("Can't find digivolution data beginning"))?;
+        .context("Can't find digivolution data beginning")?;
 
     let mut digivolution_data_reader = Cursor::new(&main_buf[digivolution_data_index..]);
 
@@ -894,7 +895,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .position(|window| -> bool {
             window == b"\x00\x00\x3c\x00\x02\x02\x6e\x01\x01\x01\x01\x01\x01\x00\x02\x39\x05\x01"
         })
-        .ok_or(anyhow::anyhow!("Can't find move data beginning"))?;
+        .context("Can't find move data beginning")?;
 
     let mut move_data_reader = Cursor::new(&main_buf[move_data_index..]);
 
@@ -908,7 +909,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let parties_index = main_buf
         .windows(9)
         .position(|window| window == dmw3_consts::PACKS)
-        .ok_or(anyhow::anyhow!("Can't find parties"))?;
+        .context("Can't find parties")?;
 
     let default_packs: Vec<u32> = dmw3_consts::PACKS.iter().map(|x| *x as u32).collect();
     let mut default_pack_preview: Vec<u8> = Vec::new();
@@ -921,7 +922,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let pack_select_preview_index = pack_select_buf
         .windows(36)
         .position(|window| window == default_pack_preview)
-        .ok_or(anyhow::anyhow!("Can't find parties preview"))?;
+        .context("Can't find parties preview")?;
 
     let mut dv_cond_arr: Vec<DigivolutionConditions> = Vec::new();
     dv_cond_arr.reserve(dmw3_consts::ROOKIE_COUNT);
@@ -929,7 +930,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let dv_cond_index = exp_buf
         .windows(8)
         .position(|x| x == b"\x09\x00\x00\x00\x00\x00\x01\x00")
-        .ok_or(anyhow::anyhow!("Can't find DV conditions beginning"))?;
+        .context("Can't find DV conditions beginning")?;
 
     let mut dv_cond_reader = Cursor::new(&exp_buf[dv_cond_index..]);
 
@@ -1165,9 +1166,9 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyhow::Result<()> {
     let rom_name = path
         .file_name()
-        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .context("Failed to get file name")?
         .to_str()
-        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
+        .context("Failed to convert to str")?;
 
     for object in objects {
         let buf = &mut object.buf;
@@ -1227,9 +1228,9 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
 
     let rom_name = path
         .file_name()
-        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .context("Failed to get file name")?
         .to_str()
-        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
+        .context("Failed to convert to str")?;
 
     let mut new_main_executable = File::create(format!(
         "extract/{}/{}",
@@ -1266,10 +1267,10 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
             let text_file = objects
                 .text_files
                 .get(*sname)
-                .ok_or(anyhow::anyhow!("Failed to get text file"))?
+                .context("Failed to get text file")?
                 .files
                 .get(lang)
-                .ok_or(anyhow::anyhow!("Failed to get language"))?;
+                .context("Failed to get language")?;
 
             let mut new_file =
                 File::create(format!("extract/{}/{}", rom_name, lang.to_path(sname))).await?;
@@ -1305,21 +1306,21 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     Ok(())
 }
 
-pub async fn patch(path: &PathBuf, preset: &Preset) {
+pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<()> {
     let mut objects = read_objects(path).await.unwrap();
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(preset.randomizer.seed);
 
     if preset.randomizer.encounters.enabled {
-        encounters::patch(&preset.randomizer, &mut objects, &mut rng);
+        encounters::patch(&preset.randomizer, &mut objects, &mut rng)?;
     }
 
     if preset.randomizer.parties.enabled {
-        parties::patch(&preset.randomizer, &mut objects, &mut rng);
+        parties::patch(&preset.randomizer, &mut objects, &mut rng)?;
     }
 
     if preset.scaling.enabled {
-        scaling::patch(&preset.scaling, &mut objects, &mut rng);
+        scaling::patch(&preset.scaling, &mut objects, &mut rng)?;
     }
 
     if preset.fixes.scaling {
@@ -1327,19 +1328,18 @@ pub async fn patch(path: &PathBuf, preset: &Preset) {
     }
 
     if preset.randomizer.shops.enabled {
-        shops::patch(&preset.randomizer.shops, &mut objects, &mut rng);
+        shops::patch(&preset.randomizer.shops, &mut objects, &mut rng)?;
     }
 
     if preset.randomizer.maps.enabled {
-        maps::patch(&preset.randomizer, &mut objects, &mut rng);
+        maps::patch(&preset.randomizer, &mut objects, &mut rng)?;
     }
 
     if preset.randomizer.models.enabled {
-        models::patch(&preset.randomizer, &mut objects, &mut rng);
+        models::patch(&preset.randomizer, &mut objects, &mut rng)?;
     }
 
-    match write_objects(path, &mut objects).await {
-        Err(_) => panic!("Error writing objects"),
-        _ => (),
-    }
+    write_objects(path, &mut objects).await?;
+
+    Ok(())
 }

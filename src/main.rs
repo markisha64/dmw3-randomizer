@@ -54,7 +54,7 @@ fn main() -> anyhow::Result<()> {
                 return Err(anyhow::anyhow!("Error extracting"));
             }
 
-            patch(path, &preset).await;
+            patch(path, &preset).await?;
 
             if !mkpsxiso::build(&file_name).await? {
                 return Err(anyhow::anyhow!("Error repacking"));

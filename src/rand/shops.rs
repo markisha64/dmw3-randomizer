@@ -1,16 +1,21 @@
 use crate::rand::Objects;
+use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::{ShopItems, Shops};
 use std::collections::BTreeSet;
 
-pub fn patch(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+pub fn patch(
+    preset: &Shops,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     let shoppable = shoppable(objects, preset);
 
     match preset.limit_shop_items_enabled {
         true => {
-            randomize_limited(&preset.limit_shop_items, objects, rng, shoppable);
+            randomize_limited(&preset.limit_shop_items, objects, rng, shoppable)?;
         }
         false => {
             randomize_existing(objects, rng, shoppable);
@@ -26,6 +31,8 @@ pub fn patch(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar
         objects.item_shop_data.modified[i].buy_price =
             2 * objects.item_shop_data.modified[i].sell_price;
     }
+
+    Ok(())
 }
 
 fn randomize_sell_price(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
@@ -72,8 +79,8 @@ fn randomize_limited(
     objects: &mut Objects,
     rng: &mut Xoshiro256StarStar,
     shoppable: BTreeSet<u16>,
-) {
-    let mut ptr = objects.shops.modified.first().unwrap().items;
+) -> anyhow::Result<()> {
+    let mut ptr = objects.shops.modified.first().context("empty shops")?.items;
     for i in 0..objects.shops.original.len() {
         let mut shoppable_arr = Vec::from_iter(shoppable.clone().into_iter());
         let shop = &mut objects.shops.modified[i];
@@ -90,6 +97,8 @@ fn randomize_limited(
         objects.shop_items.modified[i * 9 + limit_deref as usize] = 0;
         ptr.value += (limit_deref as u32 + 1) * 2;
     }
+
+    Ok(())
 }
 
 fn randomize_existing(

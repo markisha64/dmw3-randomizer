@@ -1,3 +1,4 @@
+use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -67,7 +68,11 @@ impl Stat {
     }
 }
 
-pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+pub fn patch(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     if preset.parties.parties {
         let parties = &mut objects.parties.modified;
         let all_digimon: Vec<u8> = vec![0, 1, 2, 3, 4, 5, 6, 7];
@@ -165,12 +170,12 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
 
     if preset.parties.digivolutions {
         if preset.parties.keep_stages {
-            dv_cond_limited(preset, objects, rng);
+            dv_cond_limited(preset, objects, rng)?;
         } else {
-            dv_cond_unlimited(preset, objects, rng);
+            dv_cond_unlimited(preset, objects, rng)?;
         }
 
-        blasts(objects);
+        blasts(objects)?;
     }
 
     if preset.parties.exp_modifier {
@@ -188,6 +193,8 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             false => hp_mp_unbalanced(objects, rng, preset),
         }
     }
+
+    Ok(())
 }
 
 fn hp_mp_unbalanced(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Randomizer) {
@@ -298,7 +305,11 @@ fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Rando
     }
 }
 
-fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn dv_cond_unlimited(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     for dindex in 0..dmw3_consts::ROOKIE_COUNT {
         let conds = &mut objects.dv_cond.modified[dindex];
 
@@ -325,7 +336,7 @@ fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshi
                     .conditions
                     .iter()
                     .position(|x| x.index == cond.dv_index_1 as u32)
-                    .unwrap();
+                    .context("failed to find dv conditions")?;
 
                 cond.dv_index_1 = (cloned[cond_index].index) as u16;
             }
@@ -335,25 +346,31 @@ fn dv_cond_unlimited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshi
                     .conditions
                     .iter()
                     .position(|x| x.index == cond.dv_index_2 as u32)
-                    .unwrap();
+                    .context("failed to find dv conditions")?;
 
                 cond.dv_index_2 = (cloned[cond_index].index) as u16;
             }
         }
     }
+
+    Ok(())
 }
 
-fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn dv_cond_limited(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     for dindex in 0..dmw3_consts::ROOKIE_COUNT {
         let conds = &mut objects.dv_cond.modified[dindex];
 
         // swap ids
-        let mut dv_limited = |ids: Vec<u16>| {
+        let mut dv_limited = |ids: Vec<u16>| -> anyhow::Result<()> {
             let length = ids.len();
 
             let indices: Vec<usize> = ids
                 .iter()
-                .map(|x| -> usize {
+                .map(|x| {
                     objects.dv_cond.original[dindex]
                         .conditions
                         .iter()
@@ -361,9 +378,9 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
                             objects.digivolution_data.original[y.index as usize - 9].digimon_id
                                 == *x
                         })
-                        .unwrap()
                 })
-                .collect();
+                .collect::<Option<Vec<_>>>()
+                .context("failed to parse all indices")?;
 
             for _ in 0..preset.shuffles {
                 for i in 0..length - 1 {
@@ -376,13 +393,15 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
                     conds.conditions[indices[i]].index = ind;
                 }
             }
+
+            Ok(())
         };
 
-        dv_limited(Vec::from(dmw3_consts::CHAMPIONS));
-        dv_limited(Vec::from(dmw3_consts::ULTIMATES));
-        dv_limited(Vec::from(dmw3_consts::MEGAS));
-        dv_limited(Vec::from(dmw3_consts::MEGAPLUS));
-        dv_limited(Vec::from(dmw3_consts::ULTRAS));
+        dv_limited(Vec::from(dmw3_consts::CHAMPIONS))?;
+        dv_limited(Vec::from(dmw3_consts::ULTIMATES))?;
+        dv_limited(Vec::from(dmw3_consts::MEGAS))?;
+        dv_limited(Vec::from(dmw3_consts::MEGAPLUS))?;
+        dv_limited(Vec::from(dmw3_consts::ULTRAS))?;
 
         // we can clone because we're not touching index anymore
         let cloned = conds.conditions.clone();
@@ -394,7 +413,7 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
                     .conditions
                     .iter()
                     .position(|x| x.index == cond.dv_index_1 as u32)
-                    .unwrap();
+                    .context("failed to find cond")?;
 
                 cond.dv_index_1 = (cloned[cond_index].index) as u16;
             }
@@ -404,15 +423,17 @@ fn dv_cond_limited(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro
                     .conditions
                     .iter()
                     .position(|x| x.index == cond.dv_index_2 as u32)
-                    .unwrap();
+                    .context("failed to find cond")?;
 
                 cond.dv_index_2 = (cloned[cond_index].index) as u16;
             }
         }
     }
+
+    Ok(())
 }
 
-fn blasts(objects: &mut Objects) {
+fn blasts(objects: &mut Objects) -> anyhow::Result<()> {
     for r in 0..dmw3_consts::ROOKIE_COUNT {
         let rookie = &mut objects.rookie_data.modified[r];
         for i in 0..5 {
@@ -424,9 +445,11 @@ fn blasts(objects: &mut Objects) {
                 .conditions
                 .iter()
                 .position(|x| x.index == rookie.blast_indices[i] as u32)
-                .unwrap();
+                .context("failed to find cond")?;
 
             rookie.blast_indices[i] = objects.dv_cond.modified[r].conditions[index].index as u8;
         }
     }
+
+    Ok(())
 }

@@ -53,7 +53,7 @@ pub fn shops() -> Element {
                         id: "shops.items_only",
                         disabled: !enabled,
                         onchange: move |x: Event<FormData>| {
-                            preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap());
+                            preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
                         },
                         option {
                             value: "0",

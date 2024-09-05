@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 
 use crate::{rand::Objects, util};
+use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -37,7 +38,11 @@ fn shoppable(objects: &mut Objects, preset: &Maps) -> Vec<u32> {
     Vec::from_iter(shoppable)
 }
 
-pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+pub fn patch(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     let maps = &preset.maps;
 
     if maps.color {
@@ -45,12 +50,14 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
     }
 
     if maps.backgrounds {
-        backgrounds(preset, objects, rng);
+        backgrounds(preset, objects, rng)?;
     }
 
     if maps.item_boxes {
-        item_boxes(preset, objects, rng);
+        item_boxes(preset, objects, rng)?;
     }
+
+    Ok(())
 }
 
 fn color(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
@@ -63,7 +70,11 @@ fn color(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     }
 }
 
-fn backgrounds(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn backgrounds(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     let possible_indices: BTreeSet<u16> = BTreeSet::from_iter(
         objects
             .map_objects
@@ -78,11 +89,17 @@ fn backgrounds(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256S
         util::uniform_random_vector(&possible_arr, maps_with_bgs, preset.shuffles, rng);
 
     for map in &mut objects.map_objects {
-        map.background_file_index.modified = shuffled_bgs.pop().unwrap();
+        map.background_file_index.modified = shuffled_bgs.pop().context("no bgs left")?;
     }
+
+    Ok(())
 }
 
-fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn item_boxes(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     let pool = shoppable(objects, &preset.maps);
 
     for map in &mut objects.map_objects {
@@ -99,7 +116,7 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
                         Pointer::from_index_overlay(x.index as u32, objects.stage.value)
                             == entity.logic
                     })
-                    .unwrap();
+                    .context("failed to find logic")?;
 
                 if logic.original.script.null() {
                     continue;
@@ -112,7 +129,7 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
                         Pointer::from_index_overlay(x.index as u32, objects.stage.value)
                             == logic.original.script
                     })
-                    .unwrap();
+                    .context("failed to find script")?;
 
                 for i in 0..script.original.len() {
                     let t = (script.original[i] & 0xfffe) >> 8;
@@ -129,17 +146,20 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
                         break;
                     }
 
-                    let talk_file_index = map.talk_file.unwrap();
+                    let talk_file_index = map.talk_file.context("failed to find talk file")?;
 
                     let real_file = objects
                         .file_map
                         .iter()
                         .find(|x| x.offs == objects.sector_offsets[talk_file_index as usize])
-                        .unwrap();
+                        .context("failed to find real file")?;
 
                     let sname = &real_file.name[1..];
 
-                    let group = objects.text_files.get_mut(sname).unwrap();
+                    let group = objects
+                        .text_files
+                        .get_mut(sname)
+                        .context("failed to get mut")?;
 
                     for (_lang, text_file) in &mut group.files {
                         text_file.file.files[talk_file_index as usize] = vec![0, 0, 0, 0];
@@ -178,8 +198,14 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
 
                     let mut idx = 0;
                     for (lang, talk_file) in &mut group.files {
-                        let item_name =
-                            objects.items.files.get(lang).unwrap().file.files[nv as usize].clone();
+                        let item_name = objects
+                            .items
+                            .files
+                            .get(lang)
+                            .context("failed to get by lang")?
+                            .file
+                            .files[nv as usize]
+                            .clone();
 
                         let received_item_text = lang.to_received_item(item_name);
                         idx = talk_file.file.files.len() as u16;
@@ -196,4 +222,6 @@ fn item_boxes(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
             }
         }
     }
+
+    Ok(())
 }

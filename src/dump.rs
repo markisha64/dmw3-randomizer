@@ -1,5 +1,6 @@
 use std::fs;
 
+use anyhow::Context;
 use binwrite::BinWrite;
 
 use crate::rand::read_objects;
@@ -9,9 +10,9 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     let rom_name = path
         .file_name()
-        .ok_or(anyhow::anyhow!("Failed to get file name"))?
+        .context("Failed to get file name")?
         .to_str()
-        .ok_or(anyhow::anyhow!("Failed to convert to str"))?;
+        .context("Failed to convert to str")?;
 
     fs::create_dir_all(format!("dump/{rom_name}"))?;
 

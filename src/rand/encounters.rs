@@ -1,10 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 
-use rand_xoshiro::Xoshiro256StarStar;
-
 use crate::json::{Encounters, Randomizer, TNTStrategy};
 use crate::rand::{dmw3_structs::EncounterData, Objects};
 use crate::util::{self, uniform_random_vector};
+use anyhow::Context;
+use rand_xoshiro::Xoshiro256StarStar;
 
 fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
     (!preset.cardmon
@@ -21,7 +21,11 @@ fn skip(encounter: &EncounterData, preset: &Encounters) -> bool {
             && dmw3_consts::GALACTICMON_IDS.contains(&(encounter.digimon_id as u16)))
 }
 
-pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+pub fn patch(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     let len = objects.encounters.original.len();
     let modified_encounters = &mut objects.encounters.modified;
     let modified_enemy_stats = &mut objects.enemy_stats.modified;
@@ -69,20 +73,20 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             continue;
         };
 
-        let new_encounter_id = shuffled_ids.pop().unwrap();
+        let new_encounter_id = shuffled_ids.pop().context("no ids left")?;
 
         *encounter = shuffled_encounters_digimon
             .get_mut(&new_encounter_id)
-            .unwrap()
+            .context("failed to get mut ref")?
             .pop()
-            .unwrap();
+            .context("no encounters left")?;
     }
 
     if preset.encounters.strategy == TNTStrategy::Swap {
         let tric = modified_enemy_stats
             .iter()
             .find(|&x| x.digimon_id == dmw3_consts::TRICERAMON_ID)
-            .unwrap();
+            .context("failed to find triceramon")?;
 
         let mut titem = tric.droppable_item;
         let mut tdrop = tric.drop_rate;
@@ -92,12 +96,12 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
             .position(|&x| {
                 x.digimon_id as u16 == dmw3_consts::TRICERAMON_ID && x.lv == 6 && x.multiplier == 16
             })
-            .unwrap();
+            .context("failed to find triceramon")?;
 
         let swapped = modified_enemy_stats
             .iter_mut()
             .find(|&&mut x| x.digimon_id == modified_encounters[tric_index].digimon_id as u16)
-            .unwrap();
+            .context("failed to find swapped")?;
 
         std::mem::swap(&mut titem, &mut swapped.droppable_item);
         std::mem::swap(&mut tdrop, &mut swapped.drop_rate);
@@ -105,9 +109,11 @@ pub fn patch(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256Sta
         let tricm = modified_enemy_stats
             .iter_mut()
             .find(|&&mut x| x.digimon_id == dmw3_consts::TRICERAMON_ID)
-            .unwrap();
+            .context("failed to find triceramon")?;
 
         std::mem::swap(&mut titem, &mut tricm.droppable_item);
         std::mem::swap(&mut tdrop, &mut tricm.drop_rate);
     }
+
+    Ok(())
 }

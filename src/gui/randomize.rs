@@ -89,7 +89,7 @@ pub fn randomize() -> Element {
 
                                 state.set(Steps::Randomizing);
 
-                                patch(path, &preset).await;
+                                patch(path, &preset).await.unwrap();
 
                                 state.set(Steps::Packaging);
 

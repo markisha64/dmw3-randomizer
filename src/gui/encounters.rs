@@ -79,7 +79,7 @@ pub fn encounters() -> Element {
                         id: "encounters.tnt",
                         disabled: !enabled,
                         onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.encounters.strategy = TNTStrategy::from(x.data.value().parse::<u8>().unwrap());
+                            state.write().randomizer.encounters.strategy = TNTStrategy::from(x.data.value().parse::<u8>().unwrap_or(0));
                         },
                         option {
                             value: "2",

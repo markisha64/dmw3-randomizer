@@ -79,7 +79,7 @@ pub fn maps() -> Element {
                     id: "maps.item_boxes_items_only",
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
-                        state.write().randomizer.maps.item_boxes_items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap());
+                        state.write().randomizer.maps.item_boxes_items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
                     },
                     option {
                         value: "0",

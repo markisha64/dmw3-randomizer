@@ -1,11 +1,16 @@
 use crate::json::Scaling;
 
+use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::rand::{dmw3_structs::EncounterData, Objects};
 
-pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+pub fn patch(
+    preset: &Scaling,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
     let len = objects.encounters.original.len();
     let modified_encounters = &mut objects.encounters.modified;
     let modified_enemy_stats = &mut objects.enemy_stats.modified;
@@ -29,7 +34,7 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
             .enumerate()
             .filter(|(_, x)| x.digimon_id == enemy_stats.digimon_id as u32)
             .min_by(|(_, x), (_, y)| x.lv.cmp(&y.lv))
-            .unwrap()
+            .context("empty encounters")?
             .0;
 
         let min_lv: &mut EncounterData = &mut modified_encounters[min_lv_index];
@@ -145,7 +150,7 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
         .original
         .iter()
         .position(|x| x.digimon_id as u16 == dmw3_consts::GALACTICMON_1ST_PHASE)
-        .unwrap();
+        .context("failed to find galacticmon phase 1 encounter")?;
 
     let phase_3 = phase_1 + 2;
 
@@ -159,7 +164,7 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
         let stats = modified_enemy_stats
             .iter_mut()
             .find(|&&mut x| x.digimon_id == phase_1_digimon_id as u16)
-            .unwrap();
+            .context("failed to find phase 1 stats")?;
 
         stats.str = ((stats.str as u16 * current_multiplier) / target_multiplier) as i16;
         stats.def = ((stats.def as u16 * current_multiplier) / target_multiplier) as i16;
@@ -178,4 +183,6 @@ pub fn patch(preset: &Scaling, objects: &mut Objects, rng: &mut Xoshiro256StarSt
 
         attack.power = (attack.power * current_multiplier) / target_multiplier;
     }
+
+    Ok(())
 }
