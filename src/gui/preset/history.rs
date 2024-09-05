@@ -1,3 +1,5 @@
+use std::{fs::File, io::Write};
+
 use crate::{
     cli::Arguments,
     db::{self},
@@ -7,7 +9,7 @@ use crate::{
 use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use dioxus::prelude::*;
 
-pub type HistoryMapped = (i64, NaiveDateTime, u64, Preset);
+pub type HistoryMapped = (i64, NaiveDateTime, u64, Preset, Preset);
 
 pub fn get_mapped() -> Vec<HistoryMapped> {
     let history = db::history().unwrap_or(Vec::new());
@@ -28,6 +30,7 @@ pub fn get_mapped() -> Vec<HistoryMapped> {
                 history.created_at,
                 timestamp,
                 preset.randomizer.seed,
+                preset.clone(),
                 preset,
             )
         })
@@ -72,19 +75,58 @@ pub fn history() -> Element {
                     tr {
                         th { "Timestamp" },
                         th { "Seed" },
+                        th {
+                            colspan: 2,
+                            ""
+                        }
                     }
                     for entry in history {
                         tr {
-                            onclick: move |_| {
-                                eval(format!("document.getElementById(\"history_dialog\").close();").as_str());
-                                preset_state.set(entry.3.clone());
-                                args_state.write().seed = Some(entry.2);
-                            },
                             td {
                                 "{entry.1}"
                             },
                             td {
                                 "{entry.2}"
+                            },
+                            td {
+                                div {
+                                    class: "center",
+                                    label {
+                                        r#for: "apply_{entry.0}",
+                                        class: "file-upload",
+                                        "Apply"
+                                    },
+                                    input {
+                                        r#type: "button",
+                                        id: "apply_{entry.0}",
+                                        onclick: move |_| {
+                                            eval(format!("document.getElementById(\"history_dialog\").close();").as_str());
+                                            preset_state.set(entry.3.clone());
+                                            args_state.write().seed = Some(entry.2);
+                                        },
+                                    }
+                                }
+                            },
+                            td {
+                                div {
+                                    class: "center",
+                                    label {
+                                        r#for: "export_{entry.0}",
+                                        class: "file-upload",
+                                        "Export"
+                                    },
+                                    input {
+                                        r#type: "button",
+                                        id: "export_{entry.0}",
+                                        onclick: move |_| {
+                                            eval(format!("document.getElementById(\"history_dialog\").close();").as_str());
+                                            let json_str = serde_json::to_string::<Preset>(&entry.4).unwrap();
+
+                                            let mut file = File::create("preset.json").unwrap();
+                                            let _ = file.write(json_str.as_bytes());
+                                        },
+                                    }
+                                }
                             }
                         }
                     }
