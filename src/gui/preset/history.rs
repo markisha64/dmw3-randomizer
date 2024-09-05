@@ -4,7 +4,7 @@ use crate::{
     json::Preset,
 };
 
-use chrono::{DateTime, NaiveDateTime};
+use chrono::{DateTime, Local, NaiveDateTime, TimeZone};
 use dioxus::prelude::*;
 
 pub type HistoryMapped = (i64, NaiveDateTime, u64, Preset);
@@ -16,8 +16,12 @@ pub fn get_mapped() -> Vec<HistoryMapped> {
         .iter()
         .map(|history| {
             let preset: Preset = serde_json::from_str(&history.preset).unwrap();
-            let timestamp = DateTime::from_timestamp(history.created_at, 0)
-                .expect("invalid timestamt")
+            let timestamp = Local
+                .from_utc_datetime(
+                    &DateTime::from_timestamp(history.created_at, 0)
+                        .expect("timestamp error")
+                        .naive_utc(),
+                )
                 .naive_local();
 
             (
