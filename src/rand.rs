@@ -678,7 +678,9 @@ async fn read_model_objects(path: &PathBuf) -> anyhow::Result<Vec<ModelObject>> 
         };
 
         let file_name = String::from(
-            path.file_name()
+            model
+                .path()
+                .file_name()
                 .context("Failed to get file name")?
                 .to_str()
                 .context("Failed to convert to str")?,
