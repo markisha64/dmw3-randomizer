@@ -149,6 +149,13 @@ enum Executable {
 }
 
 impl Executable {
+    fn to_model_path(&self) -> &'static str {
+        match self {
+            Executable::USA => "AAA/DAT/MODEL",
+            _ => "AAA/DAT/FIGHT/MODEL",
+        }
+    }
+
     fn as_str(&self) -> &'static str {
         match self {
             Executable::PAL => "SLES_039.36",
@@ -599,7 +606,11 @@ async fn read_map_objects(
     Ok(result)
 }
 
-async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) -> anyhow::Result<()> {
+async fn write_model_objects(
+    path: &PathBuf,
+    objects: &Vec<ModelObject>,
+    executable: &Executable,
+) -> anyhow::Result<()> {
     let rom_name = path
         .file_name()
         .context("Failed to get file name")?
@@ -614,8 +625,10 @@ async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) -> anyh
         }
 
         let mut new_model = File::create(format!(
-            "extract/{}/AAA/DAT/FIGHT/MODEL/{}",
-            rom_name, model.file_name,
+            "extract/{}/{}/{}",
+            rom_name,
+            executable.to_model_path(),
+            model.file_name,
         ))
         .await?;
 
@@ -625,14 +638,22 @@ async fn write_model_objects(path: &PathBuf, objects: &Vec<ModelObject>) -> anyh
     Ok(())
 }
 
-async fn read_model_objects(path: &PathBuf) -> anyhow::Result<Vec<ModelObject>> {
+async fn read_model_objects(
+    path: &PathBuf,
+    executable: &Executable,
+) -> anyhow::Result<Vec<ModelObject>> {
     let rom_name = path
         .file_name()
         .context("Failed to get file name")?
         .to_str()
         .context("Failed to convert to str")?;
 
-    let mut model_itr = fs::read_dir(format!("extract/{}/AAA/DAT/FIGHT/MODEL/", rom_name)).await?;
+    let mut model_itr = fs::read_dir(format!(
+        "extract/{}/{}/",
+        rom_name,
+        executable.to_model_path()
+    ))
+    .await?;
 
     let mut r = Vec::new();
 
@@ -1126,7 +1147,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     )
     .await?;
 
-    let model_objects = read_model_objects(path).await?;
+    let model_objects = read_model_objects(path, &executable).await?;
 
     Ok(Objects {
         executable,
@@ -1303,7 +1324,7 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
 
     write_map_objects(path, &mut objects.map_objects).await?;
 
-    write_model_objects(path, &objects.model_objects).await?;
+    write_model_objects(path, &objects.model_objects, &objects.executable).await?;
 
     Ok(())
 }
