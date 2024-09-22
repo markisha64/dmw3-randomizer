@@ -130,11 +130,11 @@ pub async fn xml_file() -> anyhow::Result<IsoProject> {
     Ok(from_str(&xml)?)
 }
 
-pub async fn build(file_name: &str) -> anyhow::Result<bool> {
+pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<bool> {
     let binf = find_bin("mkpsxiso").await?;
 
-    let bin = format!("{}.bin", file_name);
-    let cue = format!("{}.cue", file_name);
+    let bin = format!("randomized/{}/{}/new.bin", rom_name, file_name);
+    let cue = format!("randomized/{}/{}/new.cue", rom_name, file_name);
 
     Ok(Command::new(binf)
         .arg("-o")

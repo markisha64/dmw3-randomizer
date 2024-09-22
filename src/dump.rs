@@ -1,9 +1,12 @@
-use std::fs;
+use std::{fs, io::Write};
 
 use anyhow::Context;
+use async_std::fs::{create_dir_all, File};
+use async_std::prelude::*;
 use binwrite::BinWrite;
+use tar::{Builder, Header};
 
-use crate::rand::read_objects;
+use crate::rand::{read_objects, Objects};
 
 pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let objects = read_objects(path).await?;
@@ -63,6 +66,95 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     )?;
 
     fs::write(format!("dump/{rom_name}/move_data"), move_data_bytes)?;
+
+    Ok(())
+}
+
+fn append_file<W: Write>(
+    tar_builder: &mut Builder<W>,
+    file_name: &str,
+    buf: &Vec<u8>,
+) -> anyhow::Result<()> {
+    let mut header = Header::new_gnu();
+
+    header.set_size(buf.len() as u64);
+    header.set_mode(0o644);
+    header.set_cksum();
+
+    tar_builder.append_data(&mut header, file_name, &buf[..])?;
+
+    Ok(())
+}
+
+pub async fn create_spoiler(
+    objects: &Objects,
+    path: &std::path::PathBuf,
+    file_name: &str,
+) -> anyhow::Result<()> {
+    let mut enemy_stats_bytes = Vec::new();
+    let mut encounter_bytes = Vec::new();
+    let mut digivolution_bytes = Vec::new();
+    let mut rookie_bytes = Vec::new();
+    let mut item_shop_bytes = Vec::new();
+    let mut digivolution_condition_bytes = Vec::new();
+    let mut move_data_bytes = Vec::new();
+
+    let _ = &objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
+
+    let _ = &objects.encounters.original.write(&mut encounter_bytes)?;
+
+    let _ = &objects
+        .digivolution_data
+        .original
+        .write(&mut digivolution_bytes)?;
+
+    let _ = &objects.rookie_data.original.write(&mut rookie_bytes)?;
+
+    let _ = &objects
+        .item_shop_data
+        .original
+        .write(&mut item_shop_bytes)?;
+
+    let _ = &objects
+        .dv_cond
+        .original
+        .write(&mut digivolution_condition_bytes)?;
+
+    let _ = &objects.move_data.original.write(&mut move_data_bytes)?;
+
+    let mut buffer = Vec::new();
+    let mut tar_builder = Builder::new(&mut buffer);
+
+    append_file(&mut tar_builder, "enemy_stats", &enemy_stats_bytes)?;
+    append_file(&mut tar_builder, "encounters", &encounter_bytes)?;
+    append_file(&mut tar_builder, "digivolutions", &digivolution_bytes)?;
+    append_file(&mut tar_builder, "rookies", &rookie_bytes)?;
+    append_file(&mut tar_builder, "item_shops", &item_shop_bytes)?;
+    append_file(
+        &mut tar_builder,
+        "digivolution_conditions",
+        &digivolution_condition_bytes,
+    )?;
+    append_file(&mut tar_builder, "move_data", &move_data_bytes)?;
+
+    tar_builder.finish()?;
+
+    drop(tar_builder);
+
+    let rom_name = path
+        .file_name()
+        .context("Failed file name get")?
+        .to_str()
+        .context("Failed to_str conversion")?;
+
+    create_dir_all(format!("randomized/{}/{}", rom_name, file_name)).await?;
+
+    let mut spoiler =
+        File::create(format!("randomized/{}/{}/spoiler.tar", rom_name, file_name)).await?;
+
+    println!("here");
+
+    spoiler.write_all(&buffer).await?;
 
     Ok(())
 }

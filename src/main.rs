@@ -1,3 +1,4 @@
+use anyhow::Context;
 use clap::Parser;
 
 mod cli;
@@ -54,9 +55,15 @@ fn main() -> anyhow::Result<()> {
                 return Err(anyhow::anyhow!("Error extracting"));
             }
 
+            let rom_name = path
+                .file_name()
+                .context("Failed file name get")?
+                .to_str()
+                .context("Failed to_str conversion")?;
+
             patch(path, &preset).await?;
 
-            if !mkpsxiso::build(&file_name).await? {
+            if !mkpsxiso::build(rom_name, &file_name).await? {
                 return Err(anyhow::anyhow!("Error repacking"));
             }
 

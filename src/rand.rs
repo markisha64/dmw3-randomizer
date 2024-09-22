@@ -1329,7 +1329,7 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     Ok(())
 }
 
-pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<()> {
+pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
     let mut objects = read_objects(path).await.unwrap();
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(preset.randomizer.seed);
@@ -1364,5 +1364,5 @@ pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<()> {
 
     write_objects(path, &mut objects).await?;
 
-    Ok(())
+    Ok(objects)
 }

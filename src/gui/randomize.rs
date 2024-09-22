@@ -1,6 +1,8 @@
+use crate::dump::create_spoiler;
 use crate::gui::preset::history::{get_mapped, HistoryMapped};
 use crate::{cli::Arguments, db, json::Preset, mkpsxiso, patch};
 
+use anyhow::Context;
 use dioxus::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Default)]
@@ -89,11 +91,19 @@ pub fn randomize() -> Element {
 
                                 state.set(Steps::Randomizing);
 
-                                patch(path, &preset).await.unwrap();
+                                let rom_name = path
+                                    .file_name()
+                                    .context("Failed file name get").unwrap()
+                                    .to_str()
+                                    .context("Failed to_str conversion").unwrap();
+
+                                let objects = patch(path, &preset).await.unwrap();
+
+                                create_spoiler(&objects, path, file_name.as_str()).await.unwrap();
 
                                 state.set(Steps::Packaging);
 
-                                if !mkpsxiso::build(&file_name).await.unwrap() {
+                                if !mkpsxiso::build(rom_name, &file_name).await.unwrap() {
                                     panic!("Error repacking")
                                 }
 
