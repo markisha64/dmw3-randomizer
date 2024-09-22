@@ -99,28 +99,28 @@ pub async fn create_spoiler(
     let mut digivolution_condition_bytes = Vec::new();
     let mut move_data_bytes = Vec::new();
 
-    let _ = &objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
+    let _ = &objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
 
-    let _ = &objects.encounters.original.write(&mut encounter_bytes)?;
+    let _ = &objects.encounters.modified.write(&mut encounter_bytes)?;
 
     let _ = &objects
         .digivolution_data
-        .original
+        .modified
         .write(&mut digivolution_bytes)?;
 
-    let _ = &objects.rookie_data.original.write(&mut rookie_bytes)?;
+    let _ = &objects.rookie_data.modified.write(&mut rookie_bytes)?;
 
     let _ = &objects
         .item_shop_data
-        .original
+        .modified
         .write(&mut item_shop_bytes)?;
 
     let _ = &objects
         .dv_cond
-        .original
+        .modified
         .write(&mut digivolution_condition_bytes)?;
 
-    let _ = &objects.move_data.original.write(&mut move_data_bytes)?;
+    let _ = &objects.move_data.modified.write(&mut move_data_bytes)?;
 
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
