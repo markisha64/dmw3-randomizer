@@ -20,6 +20,10 @@ Support is added for all 3 versions, if you notice any problems, fill out an iss
 - Randomized map backgrounds
 - Randomized item box items
 
+## Spoiler
+
+- You can import the spoiler file at [dmw3-tools](https://markisha64.github.io/dmw3-tools/)
+
 ## Binary Download
 
 [Releases](https://github.com/markisha64/dmw3-randomizer/releases) for Windows/Ubuntu, built by github CI
