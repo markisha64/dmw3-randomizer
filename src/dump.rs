@@ -136,9 +136,9 @@ pub async fn create_spoiler(
 
     let _ = &objects.move_data.modified.write(&mut move_data_bytes)?;
 
-    let _ = &objects.shops.original.write(&mut shop_bytes)?;
+    let _ = &objects.shops.modified.write(&mut shop_bytes)?;
 
-    let _ = &objects.shop_items.original.write(&mut shop_item_bytes)?;
+    let _ = &objects.shop_items.modified.write(&mut shop_item_bytes)?;
 
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
