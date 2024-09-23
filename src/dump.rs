@@ -27,6 +27,9 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let mut digivolution_condition_bytes = Vec::new();
     let mut move_data_bytes = Vec::new();
 
+    let mut shop_bytes = Vec::new();
+    let mut shop_item_bytes = Vec::new();
+
     let _ = &objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
 
     let _ = &objects.encounters.original.write(&mut encounter_bytes)?;
@@ -50,6 +53,10 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     let _ = &objects.move_data.original.write(&mut move_data_bytes)?;
 
+    let _ = &objects.shops.original.write(&mut shop_bytes)?;
+
+    let _ = &objects.shop_items.original.write(&mut shop_item_bytes)?;
+
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
 
     fs::write(format!("dump/{rom_name}/encounters"), encounter_bytes)?;
@@ -66,6 +73,10 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     )?;
 
     fs::write(format!("dump/{rom_name}/move_data"), move_data_bytes)?;
+
+    fs::write(format!("dump/{rom_name}/shops"), shop_bytes)?;
+
+    fs::write(format!("dump/{rom_name}/shop_items"), shop_item_bytes)?;
 
     Ok(())
 }
@@ -99,6 +110,9 @@ pub async fn create_spoiler(
     let mut digivolution_condition_bytes = Vec::new();
     let mut move_data_bytes = Vec::new();
 
+    let mut shop_bytes = Vec::new();
+    let mut shop_item_bytes = Vec::new();
+
     let _ = &objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
 
     let _ = &objects.encounters.modified.write(&mut encounter_bytes)?;
@@ -122,6 +136,10 @@ pub async fn create_spoiler(
 
     let _ = &objects.move_data.modified.write(&mut move_data_bytes)?;
 
+    let _ = &objects.shops.original.write(&mut shop_bytes)?;
+
+    let _ = &objects.shop_items.original.write(&mut shop_item_bytes)?;
+
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
 
@@ -136,6 +154,9 @@ pub async fn create_spoiler(
         &digivolution_condition_bytes,
     )?;
     append_file(&mut tar_builder, "move_data", &move_data_bytes)?;
+
+    append_file(&mut tar_builder, "shops", &shop_bytes)?;
+    append_file(&mut tar_builder, "shop_items", &shop_item_bytes)?;
 
     tar_builder.finish()?;
 
