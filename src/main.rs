@@ -14,6 +14,8 @@ mod util;
 use rand::patch;
 use tokio::runtime::Runtime;
 
+use crate::dump::create_spoiler;
+
 mod gui;
 
 fn main() -> anyhow::Result<()> {
@@ -61,7 +63,9 @@ fn main() -> anyhow::Result<()> {
                 .to_str()
                 .context("Failed to_str conversion")?;
 
-            patch(path, &preset).await?;
+            let objects = patch(path, &preset).await?;
+
+            create_spoiler(&objects, path, file_name.as_str()).await?;
 
             if !mkpsxiso::build(rom_name, &file_name).await? {
                 return Err(anyhow::anyhow!("Error repacking"));
