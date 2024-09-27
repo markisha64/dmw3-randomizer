@@ -7,17 +7,17 @@ description = "Digimon World 3 Randomizer"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-binread = "2.2.0"
+binread = { version = "2.2.0", default-features = false }
 binwrite = "0.2.1"
-chrono = "0.4.26"
-clap = { version = "4.0", features = ["derive"] }
-dioxus = { version = "0.5.1", features = ["desktop"] }
-futures-util = "0.3.28"
-quick-xml = { version = "0.31.0", features = ["serialize", "overlapped-lists"] }
+chrono = { version = "0.4.26", features = ["clock"], default-features = false }
+clap = { version = "4.0", features = ["derive"], default-features = false }
+dioxus = { version = "0.5.1", features = ["desktop", "hooks", "launch", "signals", "html", "macro"], default-features = false }
+futures-util = { version = "0.3.28", default-features = false }
+quick-xml = { version = "0.31.0", features = ["serialize", "overlapped-lists"], default-features = false }
 rand_xoshiro = "0.6.0"
-serde = { version = "1.0.185", features = ["derive"] }
-serde_json = "1.0.105"
-tokio = { version = "1.32.0", features = ["process"] }
+serde = { version = "1.0.185", features = ["derive"], default-features = false }
+serde_json = { version = "1.0.105", default-features = false }
+tokio = { version = "1.32.0", features = ["process"], default-features = false }
 dmw3_structs = { git = "https://github.com/markisha64/dmw3-util" }
 dmw3_consts = { git = "https://github.com/markisha64/dmw3-util" }
 dmw3_model = { git = "https://github.com/markisha64/dmw3-util" }
@@ -25,10 +25,10 @@ dmw3_pack = { git = "https://github.com/markisha64/dmw3-util" }
 rlen = { git = "https://github.com/markisha64/dmw3-util" }
 tim = { git = "https://github.com/markisha64/dmw3-util" }
 async-std = "1.12.0"
-anyhow = "1.0.86"
+anyhow = { version = "1.0.86", default-features = false }
 rusqlite = { version = "0.32.1", features = ["bundled"] }
 home = "0.5.9"
-tar = "0.4.41"
+tar = { version = "0.4.41", default-features = false }
 
 [package.metadata.bundle]
 name = "DMW3 Randomizer"
