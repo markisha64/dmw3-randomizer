@@ -21,6 +21,7 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     let mut enemy_stats_bytes = Vec::new();
     let mut encounter_bytes = Vec::new();
+    let mut enemy_party_bytes = Vec::new();
     let mut digivolution_bytes = Vec::new();
     let mut rookie_bytes = Vec::new();
     let mut item_shop_bytes = Vec::new();
@@ -33,6 +34,11 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let _ = &objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
 
     let _ = &objects.encounters.original.write(&mut encounter_bytes)?;
+
+    let _ = &objects
+        .enemy_parties
+        .original
+        .write(&mut enemy_party_bytes)?;
 
     let _ = &objects
         .digivolution_data
@@ -60,6 +66,8 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
 
     fs::write(format!("dump/{rom_name}/encounters"), encounter_bytes)?;
+
+    fs::write(format!("dump/{rom_name}/enemy_parties"), enemy_party_bytes)?;
 
     fs::write(format!("dump/{rom_name}/digivolutions"), digivolution_bytes)?;
 
@@ -104,6 +112,7 @@ pub async fn create_spoiler(
 ) -> anyhow::Result<()> {
     let mut enemy_stats_bytes = Vec::new();
     let mut encounter_bytes = Vec::new();
+    let mut enemy_party_bytes = Vec::new();
     let mut digivolution_bytes = Vec::new();
     let mut rookie_bytes = Vec::new();
     let mut item_shop_bytes = Vec::new();
@@ -116,6 +125,11 @@ pub async fn create_spoiler(
     let _ = &objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
 
     let _ = &objects.encounters.modified.write(&mut encounter_bytes)?;
+
+    let _ = &objects
+        .enemy_parties
+        .modified
+        .write(&mut enemy_party_bytes)?;
 
     let _ = &objects
         .digivolution_data
@@ -145,6 +159,7 @@ pub async fn create_spoiler(
 
     append_file(&mut tar_builder, "enemy_stats", &enemy_stats_bytes)?;
     append_file(&mut tar_builder, "encounters", &encounter_bytes)?;
+    append_file(&mut tar_builder, "enemy_parties", &enemy_party_bytes)?;
     append_file(&mut tar_builder, "digivolutions", &digivolution_bytes)?;
     append_file(&mut tar_builder, "rookies", &rookie_bytes)?;
     append_file(&mut tar_builder, "item_shops", &item_shop_bytes)?;

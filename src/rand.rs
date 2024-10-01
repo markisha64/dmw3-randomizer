@@ -28,7 +28,7 @@ mod scaling;
 mod shops;
 use dmw3_structs::{
     DigivolutionConditions, DigivolutionData, EncounterData, EnemyStats, EntityData, EntityLogic,
-    Environmental, ItemShopData, MapColor, MoveData, Pointer, Shop, StageLoadData,
+    Environmental, ItemShopData, MapColor, MoveData, PartyData, Pointer, Shop, StageLoadData,
 };
 
 pub struct Object<T> {
@@ -127,6 +127,7 @@ pub struct Objects {
 
     pub enemy_stats: ObjectArray<EnemyStats>,
     pub encounters: ObjectArray<EncounterData>,
+    pub enemy_parties: ObjectArray<PartyData>,
     pub rookie_data: ObjectArray<DigivolutionData>,
     pub digivolution_data: ObjectArray<DigivolutionData>,
     pub shops: ObjectArray<Shop>,
@@ -831,6 +832,17 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         encounter_data_arr.push(encounter);
     }
 
+    let mut enemy_party_data_arr = Vec::new();
+    enemy_party_data_arr.reserve(335);
+
+    let enemy_party_data_index = encounter_data_index + 0xc * encounter_data_arr.len();
+
+    let mut enemy_party_reader = Cursor::new(&encounter_buf[enemy_party_data_index..]);
+
+    for _ in 0..335 {
+        enemy_party_data_arr.push(PartyData::read(&mut enemy_party_reader)?);
+    }
+
     let shops_index = shops_buf
         .windows(8)
         .position(|window| window == b"\x00\x00\x00\x00\x0b\x00\x00\x00")
@@ -1056,6 +1068,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
+    let enemy_party_data_arr_copy = enemy_party_data_arr.clone();
     let rookie_data_copy = rookie_data_arr.clone();
     let digivolution_data_copy = digivolution_data_arr.clone();
     let dv_cond_copy = dv_cond_arr.clone();
@@ -1072,6 +1085,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         modified: encounter_data_arr_copy,
         index: encounter_data_index,
         slen: 0xc,
+    };
+
+    let enemy_parties_object = ObjectArray {
+        original: enemy_party_data_arr,
+        modified: enemy_party_data_arr_copy,
+        index: enemy_party_data_index,
+        slen: 0x1c,
     };
 
     let parties_object: ObjectArray<u8> = ObjectArray {
@@ -1167,6 +1187,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         },
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
+        enemy_parties: enemy_parties_object,
 
         parties: parties_object,
         pack_previews: party_previewes_object,
