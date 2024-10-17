@@ -36,8 +36,6 @@ fn hue(
 
                 let raw = u16::from_le_bytes([color[0], color[1]]);
 
-                let _stp = (raw >> 15) > 0;
-
                 let r = raw & 0x1f;
                 let g = (raw >> 5) & 0x1f;
                 let b = (raw >> 10) & 0x1f;
@@ -91,15 +89,17 @@ fn hue(
                     _ => (0.0, 0.0, 0.0), // Fallback case (shouldn't happen with valid input)
                 };
 
-                let r = ((r + m) * 255.0).round() as u8;
-                let g = ((g + m) * 255.0).round() as u8;
-                let b = ((b + m) * 255.0).round() as u8;
-                let stp = (r == 0 && g == 0 && b == 0) as u16;
+                let mut r = ((((r + m) * 255.0).round() as u16) * 0x1f) / 255;
+                let mut g = ((((g + m) * 255.0).round() as u16) * 0x1f) / 255;
+                let mut b = ((((b + m) * 255.0).round() as u16) * 0x1f) / 255;
 
-                let new_c: u16 = (((b as u16 * 0x1f) / 255) << 10)
-                    | (((g as u16 * 0x1f) / 255) << 5)
-                    | ((r as u16 * 0x1f) / 255)
-                    | stp << 15;
+                if r == g && g == b && b == 0x1f {
+                    r -= 1;
+                    g -= 1;
+                    b -= 1;
+                }
+
+                let new_c: u16 = (b << 10) | (g << 5) | r | stp << 15;
 
                 let new_c_bytes = new_c.to_le_bytes();
 
