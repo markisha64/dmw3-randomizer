@@ -93,10 +93,10 @@ fn hue(
                 let mut g = ((((g + m) * 255.0).round() as u16) * 0x1f) / 255;
                 let mut b = ((((b + m) * 255.0).round() as u16) * 0x1f) / 255;
 
-                if r == g && g == b && b == 0x1f {
-                    r -= 1;
-                    g -= 1;
-                    b -= 1;
+                if r == g && g == b && b == 0 {
+                    r += 1;
+                    g += 1;
+                    b += 1;
                 }
 
                 let new_c: u16 = (b << 10) | (g << 5) | r | stp << 15;
