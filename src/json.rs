@@ -73,6 +73,8 @@ pub struct Maps {
     pub item_boxes_items_only: ShopItems,
     #[serde(default = "default_bool_true")]
     pub fight_backgrounds: bool,
+    #[serde(default = "GroupStrategy::default")]
+    pub group_strategy: GroupStrategy,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -335,6 +337,26 @@ impl From<u8> for TNTStrategy {
             0 => TNTStrategy::Shuffle,
             1 => TNTStrategy::Keep,
             _ => TNTStrategy::Swap,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+#[derive(Default)]
+pub enum GroupStrategy {
+    None,
+    Map,
+    #[default]
+    Party,
+}
+
+impl From<u8> for GroupStrategy {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => GroupStrategy::None,
+            1 => GroupStrategy::Map,
+            _ => GroupStrategy::Party,
         }
     }
 }

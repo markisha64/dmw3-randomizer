@@ -1,6 +1,6 @@
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashMap};
 
-use crate::{rand::Objects, util};
+use crate::{json::GroupStrategy, rand::Objects, util};
 use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
@@ -58,13 +58,13 @@ pub fn patch(
     }
 
     if maps.fight_backgrounds {
-        random_fight_backgrounds(objects, rng);
+        random_fight_backgrounds(preset, objects, rng);
     }
 
     Ok(())
 }
 
-fn random_fight_backgrounds(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+fn random_fight_backgrounds_ungrouped(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     for map in &mut objects.map_objects {
         if let Some(se_obj) = &mut map.stage_encounters {
             for opt in &mut se_obj.stage_encounters {
@@ -75,6 +75,51 @@ fn random_fight_backgrounds(objects: &mut Objects, rng: &mut Xoshiro256StarStar)
                 }
             }
         }
+    }
+}
+
+fn random_fight_backgrounds_grouped(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) {
+    let mut generated = HashMap::new();
+
+    for map in &mut objects.map_objects {
+        if let Some(se_obj) = &mut map.stage_encounters {
+            for opt in &mut se_obj.stage_encounters {
+                if let Some(encounters_obj) = opt {
+                    for encounter in &mut encounters_obj.modified {
+                        encounter.stage = match generated.get(&encounter.team_id) {
+                            Some(x) => *x,
+                            None => {
+                                let nv = rng.next_u32() % 0x39;
+
+                                generated.insert(encounter.team_id, rng.next_u32() % 0x39);
+
+                                nv
+                            }
+                        };
+                    }
+                }
+            }
+        }
+
+        if preset.maps.group_strategy == GroupStrategy::Map {
+            generated.clear();
+        }
+    }
+}
+
+fn random_fight_backgrounds(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) {
+    if preset.maps.group_strategy == GroupStrategy::None {
+        random_fight_backgrounds_ungrouped(objects, rng);
+    } else {
+        random_fight_backgrounds_grouped(preset, objects, rng);
     }
 }
 

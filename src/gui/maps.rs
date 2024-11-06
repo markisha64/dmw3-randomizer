@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::gui::checkbox;
-use crate::json::{Preset, ShopItems};
+use crate::json::{GroupStrategy, Preset, ShopItems};
 
 #[component]
 pub fn maps() -> Element {
@@ -14,6 +14,9 @@ pub fn maps() -> Element {
     let backgrounds = read_state.randomizer.maps.backgrounds;
     let fight_backgrounds = read_state.randomizer.maps.fight_backgrounds;
     let item_boxes = read_state.randomizer.maps.item_boxes;
+
+    let selected_group_strategy = read_state.randomizer.maps.group_strategy;
+
     let selected = read_state.randomizer.maps.item_boxes_items_only.clone();
 
     rsx! {
@@ -61,8 +64,8 @@ pub fn maps() -> Element {
                 }
             },
             div {
+                class: "left",
                 div {
-                    class: "left",
                     checkbox::checkbox {
                         label: "Fight Backgrounds",
                         id: "maps.fight_backgrounds",
@@ -73,6 +76,44 @@ pub fn maps() -> Element {
                             state.write().randomizer.maps.fight_backgrounds = x;
                         }
                     },
+                },
+                div {
+                    class: "tooltip",
+                    span {
+                        class: "tooltiptext",
+                        style: "width: 200px",
+                        "None => fully random",
+                        br {},
+                        "Map => group based on overworld map",
+                        br {},
+                        "Party => group based on party id"
+                    },
+                    label {
+                        r#for: "maps.group_strategy",
+                        "Group Strategy"
+                    },
+                    select {
+                        id: "maps.group_strategy",
+                        disabled: !enabled || !fight_backgrounds,
+                        onchange: move |x: Event<FormData>| {
+                            state.write().randomizer.maps.group_strategy = GroupStrategy::from(x.data.value().parse::<u8>().unwrap_or(0));
+                        },
+                        option {
+                            value: "0",
+                            selected: selected_group_strategy == GroupStrategy::None,
+                            "None"
+                        },
+                        option {
+                            value: "1",
+                            selected: selected_group_strategy == GroupStrategy::Map,
+                            "Map"
+                        },
+                        option {
+                            value: "2",
+                            selected: selected_group_strategy == GroupStrategy::Party,
+                            "Party"
+                        },
+                    }
                 }
             },
             div {
