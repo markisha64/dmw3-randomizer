@@ -5,6 +5,9 @@ use async_std::prelude::*;
 use binread::BinRead;
 use binwrite::BinWrite;
 use dmw3_model::Header;
+use dmw3_structs::StageEncounter;
+use dmw3_structs::StageEncounterArea;
+use dmw3_structs::StageEncounters;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::BTreeMap;
@@ -93,6 +96,12 @@ struct Bufs {
     _map_buf: Vec<u8>,
 }
 
+pub struct StageEncountersObject {
+    stage_encounters_object: Object<StageEncounters>,
+    stage_encounter_areas: Vec<Option<Object<StageEncounterArea>>>,
+    stage_encounters: Vec<Option<ObjectArray<StageEncounter>>>,
+}
+
 pub struct MapObject {
     file_name: String,
     buf: Vec<u8>,
@@ -103,6 +112,7 @@ pub struct MapObject {
     entity_logics: Vec<Object<EntityLogic>>,
     scripts: Vec<ObjectArray<u32>>,
     talk_file: Option<u16>,
+    pub stage_encounters: Option<StageEncountersObject>,
     _stage_id: u16,
 }
 
@@ -441,6 +451,13 @@ async fn read_map_objects(
             sw[1],
         ];
 
+        let stage_encounters_instruction = [
+            dmw3_consts::STAGE_ENCOUNTERS_INSTRUCTION[0],
+            dmw3_consts::STAGE_ENCOUNTERS_INSTRUCTION[1],
+            sw[0],
+            sw[1],
+        ];
+
         if let Some(talk_file_set) = buf[initsp_index..initp_end_index]
             .windows(4)
             .position(|x| x == talk_file_instruction)
@@ -574,6 +591,96 @@ async fn read_map_objects(
             }
         }
 
+        let mut stage_encounters_object = None;
+        if let Some(stage_encounters_set) = buf[(initsp_index / 4) * 4..(initp_end_index / 4) * 4]
+            .chunks(4)
+            .position(|x| x == stage_encounters_instruction)
+        {
+            let stage_encounters_address = Pointer::from_instruction(
+                &buf[initsp_index..initsp_index + stage_encounters_set * 4],
+            );
+
+            if stage_encounters_address.is_valid() {
+                if stage.value <= stage_encounters_address.value {
+                    let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
+
+                    let mut reader = Cursor::new(&buf[index..]);
+
+                    let stage_encounters_obj = StageEncounters::read(&mut reader)?;
+
+                    let areas: Vec<_> = stage_encounters_obj
+                        .areas
+                        .iter()
+                        .map(|p| {
+                            if !p.is_valid() {
+                                return None;
+                            }
+
+                            let index = p.to_index_overlay(stage.value) as usize;
+
+                            let mut reader = Cursor::new(&buf[index..]);
+
+                            let area = StageEncounterArea::read(&mut reader).unwrap();
+
+                            Some(Object {
+                                original: area.clone(),
+                                modified: area,
+                                index,
+                                slen: 0x24,
+                            })
+                        })
+                        .collect();
+
+                    let encounters: Vec<_> = areas
+                        .iter()
+                        .map(|area_opt| {
+                            if area_opt.is_none() {
+                                return None;
+                            }
+
+                            let area = area_opt.as_ref().unwrap();
+
+                            let ptr = area.original.teams[0];
+
+                            if ptr.is_valid() {
+                                return None;
+                            }
+
+                            let index = ptr.to_index_overlay(stage.value) as usize;
+
+                            let mut reader = Cursor::new(&buf[index..]);
+
+                            let mut stage_encounters = Vec::new();
+
+                            for _ in 0..8 {
+                                let enc = StageEncounter::read(&mut reader).unwrap();
+
+                                stage_encounters.push(enc);
+                            }
+
+                            Some(ObjectArray {
+                                original: stage_encounters.clone(),
+                                modified: stage_encounters,
+                                index,
+                                slen: 0xc,
+                            })
+                        })
+                        .collect();
+
+                    stage_encounters_object = Some(StageEncountersObject {
+                        stage_encounters_object: Object {
+                            original: stage_encounters_obj.clone(),
+                            modified: stage_encounters_obj,
+                            index,
+                            slen: 0x18,
+                        },
+                        stage_encounter_areas: areas,
+                        stage_encounters: encounters,
+                    });
+                }
+            }
+        }
+
         let environmental_object = environmentals_index.map(|idx| ObjectArray {
             original: environmentals.clone(),
             modified: environmentals.clone(),
@@ -600,6 +707,7 @@ async fn read_map_objects(
             map_color,
             background_file_index: background_object,
             talk_file,
+            stage_encounters: stage_encounters_object,
             _stage_id: stage_id,
         });
     }
@@ -1235,6 +1343,22 @@ async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyh
 
         if let Some(map_color) = &mut object.map_color {
             map_color.write_buf(buf)?;
+        }
+
+        if let Some(se_obj) = &mut object.stage_encounters {
+            se_obj.stage_encounters_object.write_buf(buf)?;
+
+            for opt in &mut se_obj.stage_encounter_areas {
+                if let Some(area) = opt {
+                    area.write_buf(buf)?;
+                }
+            }
+
+            for opt in &mut se_obj.stage_encounters {
+                if let Some(encounter) = opt {
+                    encounter.write_buf(buf)?;
+                }
+            }
         }
 
         object.background_file_index.write_buf(buf)?;
