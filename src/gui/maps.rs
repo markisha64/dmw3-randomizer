@@ -12,6 +12,7 @@ pub fn maps() -> Element {
 
     let color = read_state.randomizer.maps.color;
     let backgrounds = read_state.randomizer.maps.backgrounds;
+    let fight_backgrounds = read_state.randomizer.maps.fight_backgrounds;
     let item_boxes = read_state.randomizer.maps.item_boxes;
     let selected = read_state.randomizer.maps.item_boxes_items_only.clone();
 
@@ -55,6 +56,21 @@ pub fn maps() -> Element {
                         tooltip: "Randomize map colorations (can crash)",
                         onchange: move |x: bool| {
                             state.write().randomizer.maps.backgrounds = x;
+                        }
+                    },
+                }
+            },
+            div {
+                div {
+                    class: "left",
+                    checkbox::checkbox {
+                        label: "Fight Backgrounds",
+                        id: "maps.fight_backgrounds",
+                        checked: fight_backgrounds,
+                        disabled: !enabled,
+                        tooltip: "Randomize fight backgrounds",
+                        onchange: move |x: bool| {
+                            state.write().randomizer.maps.fight_backgrounds = x;
                         }
                     },
                 }

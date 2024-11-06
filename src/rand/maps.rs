@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashSet};
 
 use crate::{rand::Objects, util};
 use anyhow::Context;
@@ -57,7 +57,25 @@ pub fn patch(
         item_boxes(preset, objects, rng)?;
     }
 
+    if maps.fight_backgrounds {
+        random_fight_backgrounds(objects, rng);
+    }
+
     Ok(())
+}
+
+fn random_fight_backgrounds(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    for map in &mut objects.map_objects {
+        if let Some(se_obj) = &mut map.stage_encounters {
+            for opt in &mut se_obj.stage_encounters {
+                if let Some(encounters_obj) = opt {
+                    for encounter in &mut encounters_obj.modified {
+                        encounter.stage = rng.next_u32() % 0x39;
+                    }
+                }
+            }
+        }
+    }
 }
 
 fn color(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {

@@ -71,6 +71,8 @@ pub struct Maps {
     pub item_boxes: bool,
     #[serde(default = "ShopItems::default")]
     pub item_boxes_items_only: ShopItems,
+    #[serde(default = "default_bool_true")]
+    pub fight_backgrounds: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

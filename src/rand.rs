@@ -642,7 +642,7 @@ async fn read_map_objects(
 
                             let ptr = area.original.teams[0];
 
-                            if ptr.is_valid() {
+                            if !ptr.is_valid() {
                                 return None;
                             }
 
