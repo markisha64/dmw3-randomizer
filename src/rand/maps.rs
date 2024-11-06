@@ -95,7 +95,7 @@ fn random_fight_backgrounds_grouped(
                             None => {
                                 let nv = rng.next_u32() % 0x39;
 
-                                generated.insert(encounter.team_id, rng.next_u32() % 0x39);
+                                generated.insert(encounter.team_id, nv);
 
                                 nv
                             }
