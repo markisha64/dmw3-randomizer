@@ -188,8 +188,6 @@ pub async fn create_spoiler(
     let mut spoiler =
         File::create(format!("randomized/{}/{}/spoiler.tar", rom_name, file_name)).await?;
 
-    println!("here");
-
     spoiler.write_all(&buffer).await?;
 
     Ok(())
