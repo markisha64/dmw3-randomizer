@@ -601,25 +601,59 @@ async fn read_map_objects(
             })
             .collect();
 
-        let mut stage_encounters_objects = Vec::new();
-        for i in 0..stage_encounter_sets.len().min(2) {
-            let stage_encounters_address_z = Pointer::from_instruction(
-                &buf[initsp_index..initsp_index + stage_encounter_sets[0].0 * 4],
-            );
+        let stage_encounters_f = stage_encounter_sets.iter().find(|(idx, _)| {
+            let stage_encounters_address =
+                Pointer::from_instruction(&buf[initsp_index..initsp_index + idx * 4]);
 
-            let stage_encounters_address = Pointer {
-                value: stage_encounters_address_z.value + 0x18 * i as u32,
-            };
-
-            if stage_encounters_address.is_valid() && stage_encounters_address.value <= stage.value
+            if stage_encounters_address.is_valid() && stage_encounters_address.value >= stage.value
             {
                 let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
 
                 if index <= buf.len() {
                     let mut reader = Cursor::new(&buf[index..]);
 
-                    let stage_encounters_obj = StageEncounters::read(&mut reader)?;
+                    let stage_encounters_obj = StageEncounters::read(&mut reader);
 
+                    if let Ok(se) = stage_encounters_obj {
+                        return se.unk2 == 0
+                            && se.areas[0].null()
+                            && se.areas[1].is_valid()
+                            && se.areas[2].is_valid()
+                            && se.areas[3].is_valid()
+                            && se.areas[4].is_valid();
+                    }
+                }
+            }
+
+            false
+        });
+
+        let mut stage_encounters_objects = Vec::new();
+        if let Some((idx, _)) = stage_encounters_f {
+            let mut i = 0;
+
+            let stage_encounters_address =
+                Pointer::from_instruction(&buf[initsp_index..initsp_index + idx * 4]);
+
+            let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
+
+            loop {
+                let mut reader = Cursor::new(&buf[index + i * 0x1c..]);
+
+                let stage_encounters_opt = StageEncounters::read(&mut reader);
+
+                let stage_encounters_obj = match stage_encounters_opt {
+                    Ok(se) => se,
+                    Err(_) => break,
+                };
+
+                if stage_encounters_obj.unk2 == i as i32
+                    && stage_encounters_obj.areas[0].null()
+                    && stage_encounters_obj.areas[1].is_valid()
+                    && stage_encounters_obj.areas[2].is_valid()
+                    && stage_encounters_obj.areas[3].is_valid()
+                    && stage_encounters_obj.areas[4].is_valid()
+                {
                     let areas: Vec<_> = stage_encounters_obj
                         .areas
                         .iter()
@@ -684,12 +718,14 @@ async fn read_map_objects(
                             original: stage_encounters_obj.clone(),
                             modified: stage_encounters_obj,
                             index,
-                            slen: 0x18,
+                            slen: 0x1c,
                         },
                         stage_encounter_areas: areas,
                         stage_encounters: encounters,
                     });
                 }
+
+                i += 1;
             }
         }
 
