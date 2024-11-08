@@ -66,7 +66,7 @@ pub fn patch(
 
 fn random_fight_backgrounds_ungrouped(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
     for map in &mut objects.map_objects {
-        if let Some(se_obj) = &mut map.stage_encounters {
+        for se_obj in &mut map.stage_encounters {
             for opt in &mut se_obj.stage_encounters {
                 if let Some(encounters_obj) = opt {
                     for encounter in &mut encounters_obj.modified {
@@ -86,7 +86,7 @@ fn random_fight_backgrounds_grouped(
     let mut generated = HashMap::new();
 
     for map in &mut objects.map_objects {
-        if let Some(se_obj) = &mut map.stage_encounters {
+        for se_obj in &mut map.stage_encounters {
             for opt in &mut se_obj.stage_encounters {
                 if let Some(encounters_obj) = opt {
                     for encounter in &mut encounters_obj.modified {

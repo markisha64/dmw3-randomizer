@@ -112,7 +112,7 @@ pub struct MapObject {
     entity_logics: Vec<Object<EntityLogic>>,
     scripts: Vec<ObjectArray<u32>>,
     talk_file: Option<u16>,
-    pub stage_encounters: Option<StageEncountersObject>,
+    pub stage_encounters: Vec<StageEncountersObject>,
     _stage_id: u16,
 }
 
@@ -591,19 +591,31 @@ async fn read_map_objects(
             }
         }
 
-        let mut stage_encounters_object = None;
-        if let Some(stage_encounters_set) = buf[(initsp_index / 4) * 4..(initp_end_index / 4) * 4]
+        let stage_encounter_sets: Vec<_> = buf[initsp_index..initp_end_index]
             .chunks(4)
-            .position(|x| x == stage_encounters_instruction)
-        {
-            let stage_encounters_address = Pointer::from_instruction(
-                &buf[initsp_index..initsp_index + stage_encounters_set * 4],
+            .enumerate()
+            .filter(|(_idx, v)| {
+                v[0] == stage_encounters_instruction[0]
+                    && v[1] == stage_encounters_instruction[1]
+                    && v[3] == stage_encounters_instruction[3]
+            })
+            .collect();
+
+        let mut stage_encounters_objects = Vec::new();
+        for i in 0..stage_encounter_sets.len().min(2) {
+            let stage_encounters_address_z = Pointer::from_instruction(
+                &buf[initsp_index..initsp_index + stage_encounter_sets[0].0 * 4],
             );
 
-            if stage_encounters_address.is_valid() {
-                if stage.value <= stage_encounters_address.value {
-                    let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
+            let stage_encounters_address = Pointer {
+                value: stage_encounters_address_z.value + 0x18 * i as u32,
+            };
 
+            if stage_encounters_address.is_valid() && stage_encounters_address.value <= stage.value
+            {
+                let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
+
+                if index <= buf.len() {
                     let mut reader = Cursor::new(&buf[index..]);
 
                     let stage_encounters_obj = StageEncounters::read(&mut reader)?;
@@ -667,7 +679,7 @@ async fn read_map_objects(
                         })
                         .collect();
 
-                    stage_encounters_object = Some(StageEncountersObject {
+                    stage_encounters_objects.push(StageEncountersObject {
                         stage_encounters_object: Object {
                             original: stage_encounters_obj.clone(),
                             modified: stage_encounters_obj,
@@ -707,7 +719,7 @@ async fn read_map_objects(
             map_color,
             background_file_index: background_object,
             talk_file,
-            stage_encounters: stage_encounters_object,
+            stage_encounters: stage_encounters_objects,
             _stage_id: stage_id,
         });
     }
@@ -1345,7 +1357,7 @@ async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyh
             map_color.write_buf(buf)?;
         }
 
-        if let Some(se_obj) = &mut object.stage_encounters {
+        for se_obj in &mut object.stage_encounters {
             se_obj.stage_encounters_object.write_buf(buf)?;
 
             for opt in &mut se_obj.stage_encounter_areas {
