@@ -4,12 +4,16 @@ use tim::Tim;
 
 use crate::{json::Randomizer, rand::Objects};
 
+use super::ModelObject;
+
 fn hue(
     preset: &Randomizer,
-    objects: &mut Objects,
+    model_objects: &mut Vec<ModelObject>,
     rng: &mut Xoshiro256StarStar,
+    last_n_rows: usize,
+    row_skip: usize,
 ) -> anyhow::Result<()> {
-    for model in &mut objects.model_objects {
+    for model in model_objects {
         let texture_packed = dmw3_pack::Packed::try_from(
             model
                 .packed
@@ -29,10 +33,10 @@ fn hue(
         }
 
         for i in 0..64 {
-            for j in 0..4 {
-                let l1 = (i + (224 + j * 8) * 64) * 2;
+            for j in 0..last_n_rows {
+                let l0 = (i + (256 - last_n_rows * row_skip + j * row_skip) * 64) * 2;
 
-                let color = &texture_tim.image.bytes[l1..l1 + 2];
+                let color = &texture_tim.image.bytes[l0..l0 + 2];
 
                 let raw = u16::from_le_bytes([color[0], color[1]]);
 
@@ -103,7 +107,7 @@ fn hue(
 
                 let new_c_bytes = new_c.to_le_bytes();
 
-                texture_tim.image.bytes[l1..l1 + 2].copy_from_slice(&new_c_bytes);
+                texture_tim.image.bytes[l0..l0 + 2].copy_from_slice(&new_c_bytes);
             }
         }
 
@@ -113,15 +117,21 @@ fn hue(
 
         let padding_needed = 4 - (recoded.len() % 4);
 
-        recoded.extend(vec![0; padding_needed]);
-
         let offset = model
             .packed
             .get_offset(model.header.texture_offset as usize)? as usize;
 
+        recoded.extend(vec![0; padding_needed]);
+        if texture_packed.get_offset(1)? != 0 {
+            recoded.extend(&texture_packed.buffer[texture_packed.get_offset(1)? as usize..]);
+
+            model.packed.buffer[offset + 4..offset + 8]
+                .copy_from_slice(&(12 + recoded.len() as u32).to_le_bytes());
+        }
+
         let assumed_length = model.packed.assumed_length[model.header.texture_offset as usize];
 
-        let recoded_length = recoded.len() + 8;
+        let recoded_length = recoded.len() + 4 * texture_packed.assumed_length.len();
 
         let ending = Vec::from(&model.packed.buffer[offset + assumed_length..]);
 
@@ -129,7 +139,9 @@ fn hue(
 
         model.packed.buffer.resize(new_size, 0);
 
-        model.packed.buffer[(offset + 8)..(offset + recoded_length)].copy_from_slice(&recoded[..]);
+        model.packed.buffer
+            [(offset + 4 * texture_packed.assumed_length.len())..(offset + recoded_length)]
+            .copy_from_slice(&recoded[..]);
 
         model.packed.buffer[(offset + recoded_length)..].copy_from_slice(&ending[..]);
 
@@ -155,7 +167,11 @@ pub fn patch(
     rng: &mut Xoshiro256StarStar,
 ) -> anyhow::Result<()> {
     if preset.models.hue_enabled {
-        hue(preset, objects, rng)?;
+        hue(preset, &mut objects.model_objects, rng, 4, 8)?;
+    }
+
+    if preset.models.stage_hue_enabled {
+        hue(preset, &mut objects.stage_model_objects, rng, 8, 1)?;
     }
 
     Ok(())

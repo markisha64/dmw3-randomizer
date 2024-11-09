@@ -148,6 +148,7 @@ pub struct Objects {
     pub stage_load_data: Vec<StageLoadData>,
     pub map_objects: Vec<MapObject>,
     pub model_objects: Vec<ModelObject>,
+    pub stage_model_objects: Vec<ModelObject>,
 
     pub text_files: BTreeMap<String, TextFileGroup>,
     pub items: TextFileGroup,
@@ -164,6 +165,13 @@ impl Executable {
         match self {
             Executable::USA => "AAA/DAT/MODEL",
             _ => "AAA/DAT/FIGHT/MODEL",
+        }
+    }
+
+    fn to_stage_model_path(&self) -> &'static str {
+        match self {
+            Executable::USA => "AAA/DAT/EFFECT",
+            _ => "AAA/DAT/FIGHT/EFFECT",
         }
     }
 
@@ -766,7 +774,7 @@ async fn read_map_objects(
 async fn write_model_objects(
     path: &PathBuf,
     objects: &Vec<ModelObject>,
-    executable: &Executable,
+    model_path: &str,
 ) -> anyhow::Result<()> {
     let rom_name = path
         .file_name()
@@ -778,14 +786,13 @@ async fn write_model_objects(
         if model.packed.buffer.len()
             > ((model.og_len / 2048) + (model.og_len % 2048 != 0) as usize) * 2048
         {
+            println!("extract/{}/{}/{}", rom_name, model_path, model.file_name,);
             continue;
         }
 
         let mut new_model = File::create(format!(
             "extract/{}/{}/{}",
-            rom_name,
-            executable.to_model_path(),
-            model.file_name,
+            rom_name, model_path, model.file_name,
         ))
         .await?;
 
@@ -797,7 +804,8 @@ async fn write_model_objects(
 
 async fn read_model_objects(
     path: &PathBuf,
-    executable: &Executable,
+    model_path: &str,
+    start_str: &str,
 ) -> anyhow::Result<Vec<ModelObject>> {
     let rom_name = path
         .file_name()
@@ -805,17 +813,20 @@ async fn read_model_objects(
         .to_str()
         .context("Failed to convert to str")?;
 
-    let mut model_itr = fs::read_dir(format!(
-        "extract/{}/{}/",
-        rom_name,
-        executable.to_model_path()
-    ))
-    .await?;
+    let mut model_itr = fs::read_dir(format!("extract/{}/{}/", rom_name, model_path)).await?;
 
     let mut r = Vec::new();
 
     while let Some(modelr) = model_itr.next().await {
         let model = modelr?;
+
+        let f_name = model.file_name();
+
+        let file_name = f_name.to_str().context("Failed to convert file name")?;
+
+        if !file_name.starts_with(start_str) {
+            continue;
+        }
 
         let model_buf = fs::read(model.path()).await?;
 
@@ -1323,13 +1334,16 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     )
     .await?;
 
-    let model_objects = read_model_objects(path, &executable).await?;
+    let model_objects = read_model_objects(path, executable.to_model_path(), "M").await?;
+    let stage_model_objects =
+        read_model_objects(path, executable.to_stage_model_path(), "MEFT1").await?;
 
     Ok(Objects {
         executable,
         file_map,
         stage,
         model_objects,
+        stage_model_objects,
         sector_offsets,
         // overlay_address_pointer: overlay,
         bufs: Bufs {
@@ -1517,7 +1531,18 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
 
     write_map_objects(path, &mut objects.map_objects).await?;
 
-    write_model_objects(path, &objects.model_objects, &objects.executable).await?;
+    write_model_objects(
+        path,
+        &objects.model_objects,
+        objects.executable.to_model_path(),
+    )
+    .await?;
+    write_model_objects(
+        path,
+        &objects.stage_model_objects,
+        objects.executable.to_stage_model_path(),
+    )
+    .await?;
 
     Ok(())
 }

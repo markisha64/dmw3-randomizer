@@ -39,6 +39,8 @@ pub struct Models {
     pub enabled: bool,
     #[serde(default = "default_bool_false")]
     pub hue_enabled: bool,
+    #[serde(default = "default_bool_false")]
+    pub stage_hue_enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

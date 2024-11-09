@@ -11,6 +11,7 @@ pub fn models() -> Element {
     let enabled = read_state.randomizer.models.enabled;
 
     let model_hue = read_state.randomizer.models.hue_enabled;
+    let stage_model_hue = read_state.randomizer.models.stage_hue_enabled;
 
     rsx! {
         div {
@@ -33,12 +34,25 @@ pub fn models() -> Element {
                     class: "left",
                     checkbox::checkbox {
                         label: "Model hue",
-                        id: "models.color",
+                        id: "models.hue",
                         checked: model_hue,
                         disabled: !enabled,
                         tooltip: "Randomize model hue",
                         onchange: move |x: bool| {
                             state.write().randomizer.models.hue_enabled = x;
+                        }
+                    },
+                },
+                div {
+                    class: "left",
+                    checkbox::checkbox {
+                        label: "Stage model hue",
+                        id: "models.stage_hue",
+                        checked: stage_model_hue,
+                        disabled: !enabled,
+                        tooltip: "Randomize stage model hue",
+                        onchange: move |x: bool| {
+                            state.write().randomizer.models.stage_hue_enabled = x;
                         }
                     },
                 },
