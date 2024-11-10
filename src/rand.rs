@@ -725,7 +725,7 @@ async fn read_map_objects(
                         stage_encounters_object: Object {
                             original: stage_encounters_obj.clone(),
                             modified: stage_encounters_obj,
-                            index,
+                            index: index + i * 0x1c,
                             slen: 0x1c,
                         },
                         stage_encounter_areas: areas,
