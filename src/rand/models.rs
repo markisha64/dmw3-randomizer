@@ -111,7 +111,10 @@ fn hue(
 
         let new_tim: Vec<u8> = texture_tim.into();
 
-        let recoded = rlen_encode(&new_tim);
+        let mut recoded = rlen_encode(&new_tim);
+
+        let padding_needed = 4 - (recoded.len() % 4);
+        recoded.extend(vec![0; padding_needed]);
 
         texture_packed.files[0] = recoded;
 
@@ -131,7 +134,7 @@ pub fn patch(
     }
 
     if preset.models.stage_hue_enabled {
-        hue(preset, &mut objects.stage_model_objects, rng, 8, 1)?;
+        hue(preset, &mut objects.stage_model_objects, rng, 16, 1)?;
     }
 
     Ok(())
