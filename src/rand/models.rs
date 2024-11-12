@@ -14,15 +14,13 @@ fn hue(
     row_skip: usize,
 ) -> anyhow::Result<()> {
     for model in model_objects {
-        let texture_packed = dmw3_pack::Packed::try_from(
-            model
-                .packed
-                .get_file(model.header.texture_offset as usize)?,
-        )?;
+        let mut texture_packed = dmw3_pack::Packed::from(
+            model.packed.files[model.header.texture_offset as usize].clone(),
+        );
 
-        let texture_raw = match rlen_decode(&texture_packed.get_file(0)?[..]) {
+        let texture_raw = match rlen_decode(&texture_packed.files[0][..]) {
             Ok(file) => file,
-            Err(_) => texture_packed.get_file(0)?.into(),
+            Err(_) => texture_packed.files[0].clone(),
         };
 
         let mut texture_tim = Tim::from(texture_raw);
@@ -113,49 +111,11 @@ fn hue(
 
         let new_tim: Vec<u8> = texture_tim.into();
 
-        let mut recoded = rlen_encode(&new_tim);
+        let recoded = rlen_encode(&new_tim);
 
-        let padding_needed = 4 - (recoded.len() % 4);
+        texture_packed.files[0] = recoded;
 
-        let offset = model
-            .packed
-            .get_offset(model.header.texture_offset as usize)? as usize;
-
-        recoded.extend(vec![0; padding_needed]);
-        if texture_packed.get_offset(1)? != 0 {
-            recoded.extend(&texture_packed.buffer[texture_packed.get_offset(1)? as usize..]);
-
-            model.packed.buffer[offset + 4..offset + 8]
-                .copy_from_slice(&(12 + recoded.len() as u32).to_le_bytes());
-        }
-
-        let assumed_length = model.packed.assumed_length[model.header.texture_offset as usize];
-
-        let recoded_length = recoded.len() + 4 * texture_packed.assumed_length.len();
-
-        let ending = Vec::from(&model.packed.buffer[offset + assumed_length..]);
-
-        let new_size = model.packed.buffer.len() + recoded_length - assumed_length;
-
-        model.packed.buffer.resize(new_size, 0);
-
-        model.packed.buffer
-            [(offset + 4 * texture_packed.assumed_length.len())..(offset + recoded_length)]
-            .copy_from_slice(&recoded[..]);
-
-        model.packed.buffer[(offset + recoded_length)..].copy_from_slice(&ending[..]);
-
-        for idx in model.packed.iter() {
-            let mut n_offset = model.packed.get_offset(idx)? as usize;
-
-            if n_offset > offset {
-                n_offset += recoded_length;
-                n_offset -= assumed_length;
-
-                model.packed.buffer[idx * 4..(idx + 1) * 4]
-                    .copy_from_slice(&(n_offset as u32).to_le_bytes());
-            }
-        }
+        model.packed.files[model.header.texture_offset as usize] = texture_packed.into();
     }
 
     Ok(())

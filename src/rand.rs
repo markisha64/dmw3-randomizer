@@ -5,6 +5,7 @@ use async_std::prelude::*;
 use binread::BinRead;
 use binwrite::BinWrite;
 use dmw3_model::Header;
+use dmw3_pack::Packed;
 use dmw3_structs::StageEncounter;
 use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
@@ -19,7 +20,6 @@ use crate::json::Preset;
 use crate::lang::Language;
 use crate::mkpsxiso;
 use crate::mkpsxiso::xml_file;
-use crate::pack::Packed;
 pub use dmw3_structs;
 
 mod encounters;
@@ -783,7 +783,7 @@ async fn write_model_objects(
         .context("Failed to convert to str")?;
 
     for model in objects {
-        if model.packed.buffer.len()
+        if model.packed.file_size()
             > ((model.og_len / 2048) + (model.og_len % 2048 != 0) as usize) * 2048
         {
             println!("extract/{}/{}/{}", rom_name, model_path, model.file_name,);
@@ -796,7 +796,9 @@ async fn write_model_objects(
         ))
         .await?;
 
-        new_model.write_all(&model.packed.buffer).await?;
+        let buf: Vec<u8> = model.packed.clone().into();
+
+        new_model.write_all(&buf).await?;
     }
 
     Ok(())
@@ -833,18 +835,15 @@ async fn read_model_objects(
         let packed = dmw3_pack::Packed::try_from(model_buf)?;
 
         let header_buf = match packed.iter().rev().find(|idx| {
-            if packed.assumed_length[*idx] < 8 {
+            if packed.files[*idx].len() < 8 {
                 return false;
             }
 
-            let s = match packed.get_file(*idx) {
-                Ok(f) => f,
-                Err(_) => return false,
-            };
+            let s = &packed.files[*idx];
 
             let len = u32::from_le_bytes([s[4], s[5], s[6], s[7]]) as usize;
 
-            if (8 + len * 12) != packed.assumed_length[*idx] {
+            if (8 + len * 12) != packed.files[*idx].len() {
                 return false;
             }
 
@@ -875,10 +874,10 @@ async fn read_model_objects(
                 .context("Failed to convert to str")?,
         );
 
-        let header = Header::read(&mut Cursor::new(&packed.get_file(header_buf)?))?;
+        let header = Header::read(&mut Cursor::new(&packed.files[header_buf]))?;
 
         r.push(ModelObject {
-            og_len: packed.buffer.len(),
+            og_len: packed.file_size(),
             packed,
             file_name,
             header,
