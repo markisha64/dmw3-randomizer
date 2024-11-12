@@ -1207,7 +1207,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         }
 
         let doesnt_fit = files.iter().find(|(lang, talk_file)| {
-            let csize = talk_file.file.file_size();
+            let csize = talk_file.file.file_size_text();
 
             let generic_text = &lang.to_received_item_generic();
 

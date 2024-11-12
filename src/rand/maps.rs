@@ -242,7 +242,7 @@ fn item_boxes(
                                 [nv as usize]
                                 .clone();
 
-                            let csize = text_file.file.file_size();
+                            let csize = text_file.file.file_size_text();
 
                             let received_item_text = lang.to_received_item(item_name);
 
