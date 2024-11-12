@@ -1504,7 +1504,7 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
             let mut new_file =
                 File::create(format!("extract/{}/{}", rom_name, lang.to_path(sname))).await?;
 
-            let bytes: Vec<u8> = text_file.file.clone().into();
+            let bytes: Vec<u8> = text_file.file.clone().to_bytes_text();
 
             new_file.write_all(&bytes).await?
         }
