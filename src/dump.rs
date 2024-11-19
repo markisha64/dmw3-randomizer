@@ -4,9 +4,67 @@ use anyhow::Context;
 use async_std::fs::{create_dir_all, File};
 use async_std::prelude::*;
 use binwrite::BinWrite;
+use dmw3_structs::{Pointer, StageEncounter, StageEncounterArea};
 use tar::{Builder, Header};
 
 use crate::rand::{read_objects, Objects};
+
+static DEFAULT_AREA: StageEncounterArea = StageEncounterArea {
+    steps_inddex: 0,
+    teams: [
+        Pointer { value: 0 },
+        Pointer { value: 0 },
+        Pointer { value: 0 },
+        Pointer { value: 0 },
+        Pointer { value: 0 },
+        Pointer { value: 0 },
+        Pointer { value: 0 },
+        Pointer { value: 0 },
+    ],
+};
+
+static DEFAULT_ENCOUNTERS: [StageEncounter; 8] = [
+    StageEncounter {
+        team_id: 0,
+        stage: 0,
+        music: 0,
+    },
+    StageEncounter {
+        team_id: 0,
+        stage: 0,
+        music: 0,
+    },
+    StageEncounter {
+        team_id: 0,
+        stage: 0,
+        music: 0,
+    },
+    StageEncounter {
+        team_id: 0,
+        stage: 0,
+        music: 0,
+    },
+    StageEncounter {
+        team_id: 0,
+        stage: 0,
+        music: 0,
+    },
+    StageEncounter {
+        team_id: 0,
+        stage: 0,
+        music: 0,
+    },
+    StageEncounter {
+        team_id: 0,
+        stage: 0,
+        music: 0,
+    },
+    StageEncounter {
+        team_id: 0,
+        stage: 0,
+        music: 0,
+    },
+];
 
 pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let objects = read_objects(path).await?;
@@ -85,6 +143,42 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     fs::write(format!("dump/{rom_name}/shops"), shop_bytes)?;
 
     fs::write(format!("dump/{rom_name}/shop_items"), shop_item_bytes)?;
+
+    for map_obj in &objects.map_objects {
+        let mut areas = Vec::new();
+        let mut encounters = Vec::new();
+
+        fs::create_dir_all(format!("dump/{}/maps/{}", rom_name, &map_obj.file_name))?;
+
+        for stage_encounters_obj in &map_obj.stage_encounters {
+            for area in &stage_encounters_obj.stage_encounter_areas {
+                let warea = match area {
+                    Some(a) => &a.modified,
+                    None => &DEFAULT_AREA.clone(),
+                };
+
+                warea.write(&mut areas)?;
+            }
+
+            for encounter in &stage_encounters_obj.stage_encounters {
+                let wencounter = match encounter {
+                    Some(a) => &a.modified,
+                    None => &Vec::from(DEFAULT_ENCOUNTERS.clone()),
+                };
+
+                wencounter.write(&mut encounters)?;
+            }
+        }
+
+        fs::write(
+            format!("dump/{}/maps/{}/areas", rom_name, &map_obj.file_name),
+            areas,
+        )?;
+        fs::write(
+            format!("dump/{}/maps/{}/encounters", rom_name, &map_obj.file_name),
+            encounters,
+        )?;
+    }
 
     Ok(())
 }
@@ -172,6 +266,42 @@ pub async fn create_spoiler(
 
     append_file(&mut tar_builder, "shops", &shop_bytes)?;
     append_file(&mut tar_builder, "shop_items", &shop_item_bytes)?;
+
+    for map_obj in &objects.map_objects {
+        let mut areas = Vec::new();
+        let mut encounters = Vec::new();
+
+        for stage_encounters_obj in &map_obj.stage_encounters {
+            for area in &stage_encounters_obj.stage_encounter_areas {
+                let warea = match area {
+                    Some(a) => &a.modified,
+                    None => &DEFAULT_AREA.clone(),
+                };
+
+                warea.write(&mut areas)?;
+            }
+
+            for encounter in &stage_encounters_obj.stage_encounters {
+                let wencounter = match encounter {
+                    Some(a) => &a.modified,
+                    None => &Vec::from(DEFAULT_ENCOUNTERS.clone()),
+                };
+
+                wencounter.write(&mut encounters)?;
+            }
+        }
+
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/areas", &map_obj.file_name).as_str(),
+            &areas,
+        )?;
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/encounters", &map_obj.file_name).as_str(),
+            &encounters,
+        )?;
+    }
 
     tar_builder.finish()?;
 

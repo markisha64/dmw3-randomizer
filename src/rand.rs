@@ -97,13 +97,13 @@ struct Bufs {
 }
 
 pub struct StageEncountersObject {
-    stage_encounters_object: Object<StageEncounters>,
-    stage_encounter_areas: Vec<Option<Object<StageEncounterArea>>>,
-    stage_encounters: Vec<Option<ObjectArray<StageEncounter>>>,
+    pub stage_encounters_object: Object<StageEncounters>,
+    pub stage_encounter_areas: Vec<Option<Object<StageEncounterArea>>>,
+    pub stage_encounters: Vec<Option<ObjectArray<StageEncounter>>>,
 }
 
 pub struct MapObject {
-    file_name: String,
+    pub file_name: String,
     buf: Vec<u8>,
     environmentals: Option<ObjectArray<Environmental>>,
     map_color: Option<Object<MapColor>>,
