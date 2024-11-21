@@ -75,7 +75,7 @@ pub fn patch(
             let mut target_power = 40 + min_lv.lv * 10;
 
             if move_data.hit_effect == dmw3_consts::MULTI_HIT && move_data.freq > 1 {
-                target_power = (move_data.power * 6) / (move_data.freq as u16 * 5);
+                target_power /= move_data.freq as u16;
             }
 
             let current_power = move_data.power;
