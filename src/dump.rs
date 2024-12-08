@@ -267,41 +267,41 @@ pub async fn create_spoiler(
     append_file(&mut tar_builder, "shops", &shop_bytes)?;
     append_file(&mut tar_builder, "shop_items", &shop_item_bytes)?;
 
-    for map_obj in &objects.map_objects {
-        let mut areas = Vec::new();
-        let mut encounters = Vec::new();
+    // for map_obj in &objects.map_objects {
+    //     let mut areas = Vec::new();
+    //     let mut encounters = Vec::new();
 
-        for stage_encounters_obj in &map_obj.stage_encounters {
-            for area in &stage_encounters_obj.stage_encounter_areas {
-                let warea = match area {
-                    Some(a) => &a.modified,
-                    None => &DEFAULT_AREA.clone(),
-                };
+    //     for stage_encounters_obj in &map_obj.stage_encounters {
+    //         for area in &stage_encounters_obj.stage_encounter_areas {
+    //             let warea = match area {
+    //                 Some(a) => &a.modified,
+    //                 None => &DEFAULT_AREA.clone(),
+    //             };
 
-                warea.write(&mut areas)?;
-            }
+    //             warea.write(&mut areas)?;
+    //         }
 
-            for encounter in &stage_encounters_obj.stage_encounters {
-                let wencounter = match encounter {
-                    Some(a) => &a.modified,
-                    None => &Vec::from(DEFAULT_ENCOUNTERS.clone()),
-                };
+    //         for encounter in &stage_encounters_obj.stage_encounters {
+    //             let wencounter = match encounter {
+    //                 Some(a) => &a.modified,
+    //                 None => &Vec::from(DEFAULT_ENCOUNTERS.clone()),
+    //             };
 
-                wencounter.write(&mut encounters)?;
-            }
-        }
+    //             wencounter.write(&mut encounters)?;
+    //         }
+    //     }
 
-        append_file(
-            &mut tar_builder,
-            format!("maps/{}/areas", &map_obj.file_name).as_str(),
-            &areas,
-        )?;
-        append_file(
-            &mut tar_builder,
-            format!("maps/{}/encounters", &map_obj.file_name).as_str(),
-            &encounters,
-        )?;
-    }
+    //     append_file(
+    //         &mut tar_builder,
+    //         format!("maps/{}/areas", &map_obj.file_name).as_str(),
+    //         &areas,
+    //     )?;
+    //     append_file(
+    //         &mut tar_builder,
+    //         format!("maps/{}/encounters", &map_obj.file_name).as_str(),
+    //         &encounters,
+    //     )?;
+    // }
 
     tar_builder.finish()?;
 
