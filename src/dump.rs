@@ -80,6 +80,7 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let mut enemy_stats_bytes = Vec::new();
     let mut encounter_bytes = Vec::new();
     let mut enemy_party_bytes = Vec::new();
+    let mut party_exp_bits_bytes = Vec::new();
     let mut digivolution_bytes = Vec::new();
     let mut rookie_bytes = Vec::new();
     let mut item_shop_bytes = Vec::new();
@@ -121,11 +122,21 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     let _ = &objects.shop_items.original.write(&mut shop_item_bytes)?;
 
+    let _ = &objects
+        .party_exp_bits
+        .original
+        .write(&mut party_exp_bits_bytes)?;
+
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
 
     fs::write(format!("dump/{rom_name}/encounters"), encounter_bytes)?;
 
     fs::write(format!("dump/{rom_name}/enemy_parties"), enemy_party_bytes)?;
+
+    fs::write(
+        format!("dump/{rom_name}/party_exp_bits"),
+        party_exp_bits_bytes,
+    )?;
 
     fs::write(format!("dump/{rom_name}/digivolutions"), digivolution_bytes)?;
 
@@ -207,6 +218,7 @@ pub async fn create_spoiler(
     let mut enemy_stats_bytes = Vec::new();
     let mut encounter_bytes = Vec::new();
     let mut enemy_party_bytes = Vec::new();
+    let mut party_exp_bits_bytes = Vec::new();
     let mut digivolution_bytes = Vec::new();
     let mut rookie_bytes = Vec::new();
     let mut item_shop_bytes = Vec::new();
@@ -248,6 +260,11 @@ pub async fn create_spoiler(
 
     let _ = &objects.shop_items.modified.write(&mut shop_item_bytes)?;
 
+    let _ = &objects
+        .party_exp_bits
+        .modified
+        .write(&mut party_exp_bits_bytes)?;
+
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
 
@@ -266,6 +283,7 @@ pub async fn create_spoiler(
 
     append_file(&mut tar_builder, "shops", &shop_bytes)?;
     append_file(&mut tar_builder, "shop_items", &shop_item_bytes)?;
+    append_file(&mut tar_builder, "party_exp_bits", &party_exp_bits_bytes)?;
 
     // for map_obj in &objects.map_objects {
     //     let mut areas = Vec::new();
