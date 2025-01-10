@@ -11,6 +11,8 @@ pub struct Preset {
     pub fixes: Fixes,
     #[serde(default = "default_scaling")]
     pub scaling: Scaling,
+    #[serde(default = "default_party_exp_bits")]
+    pub party_exp_bits: PartyExpBits,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -30,6 +32,19 @@ pub struct Randomizer {
     pub maps: Maps,
     #[serde(default = "default_models")]
     pub models: Models,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PartyExpBits {
+    #[serde(default = "default_bool_true")]
+    pub enabled: bool,
+    #[serde(default = "default_f64")]
+    pub dv_exp_modifier: f64,
+    #[serde(default = "default_f64")]
+    pub exp_modifier: f64,
+    #[serde(default = "default_f64")]
+    pub bits_modifier: f64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -177,7 +192,7 @@ pub struct Scaling {
     pub stat_modifier: i32,
     #[serde(default = "default_res_modifier")]
     pub res_modifier: i32,
-    #[serde(default = "default_hp_modifier")]
+    #[serde(default = "default_f64")]
     pub hp_modifier: f64,
     #[serde(default = "default_bool_true")]
     pub natural_scaling: bool,
@@ -219,6 +234,10 @@ fn default_models() -> Models {
     serde_json::from_str("{}").unwrap()
 }
 
+fn default_party_exp_bits() -> PartyExpBits {
+    serde_json::from_str("{}").unwrap()
+}
+
 fn default_seed() -> u64 {
     Utc::now().timestamp() as u64
 }
@@ -255,7 +274,7 @@ fn default_res_modifier() -> i32 {
     15
 }
 
-fn default_hp_modifier() -> f64 {
+fn default_f64() -> f64 {
     1.0
 }
 

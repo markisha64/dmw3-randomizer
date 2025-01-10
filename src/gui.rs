@@ -20,6 +20,7 @@ mod models;
 mod number_field;
 mod number_field_float;
 mod parties;
+mod party_exp_bits;
 mod preset;
 mod randomize;
 mod scaling;
@@ -188,13 +189,14 @@ fn app() -> Element {
                 class: "column",
                 parties::parties {},
                 scaling::scaling {},
+                models::models {},
             },
             div {
                 class: "column",
                 shops::shops {},
                 encounters::encounters {},
                 maps::maps {},
-                models::models {}
+                party_exp_bits::party_exp_bits {},
             },
         }
     }

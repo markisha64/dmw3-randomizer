@@ -28,8 +28,10 @@ mod fixes;
 mod maps;
 mod models;
 mod parties;
+mod party_exp_bits;
 mod scaling;
 mod shops;
+
 use dmw3_structs::{
     DigivolutionConditions, DigivolutionData, EncounterData, EnemyStats, EntityData, EntityLogic,
     Environmental, ItemShopData, MapColor, MoveData, PartyData, Pointer, Shop, StageLoadData,
@@ -1605,6 +1607,10 @@ pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
 
     if preset.randomizer.models.enabled {
         models::patch(&preset.randomizer, &mut objects, &mut rng)?;
+    }
+
+    if preset.party_exp_bits.enabled {
+        party_exp_bits::patch(&preset.party_exp_bits, &mut objects)?;
     }
 
     write_objects(path, &mut objects).await?;
