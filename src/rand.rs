@@ -6,6 +6,7 @@ use binread::BinRead;
 use binwrite::BinWrite;
 use dmw3_model::Header;
 use dmw3_pack::Packed;
+use dmw3_structs::PartyExpBits;
 use dmw3_structs::StageEncounter;
 use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
@@ -138,6 +139,7 @@ pub struct Objects {
     pub enemy_stats: ObjectArray<EnemyStats>,
     pub encounters: ObjectArray<EncounterData>,
     pub enemy_parties: ObjectArray<PartyData>,
+    pub party_exp_bits: ObjectArray<PartyExpBits>,
     pub rookie_data: ObjectArray<DigivolutionData>,
     pub digivolution_data: ObjectArray<DigivolutionData>,
     pub shops: ObjectArray<Shop>,
@@ -1009,6 +1011,21 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         enemy_party_data_arr.push(PartyData::read(&mut enemy_party_reader)?);
     }
 
+    let mut party_exp_bits_arr = Vec::new();
+    party_exp_bits_arr.reserve(335);
+
+    let party_exp_bits = exp_buf
+        .windows(24)
+        .position(|window| window == dmw3_consts::PARTY_DV_EXP)
+        .context("Can't find exp bits")?;
+
+    let mut party_exp_bits_reader =
+        Cursor::new(&exp_buf[party_exp_bits..party_exp_bits + 0xc * 335]);
+
+    for _ in 0..335 {
+        party_exp_bits_arr.push(PartyExpBits::read(&mut party_exp_bits_reader)?);
+    }
+
     let shops_index = shops_buf
         .windows(8)
         .position(|window| window == b"\x00\x00\x00\x00\x0b\x00\x00\x00")
@@ -1260,6 +1277,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         slen: 0x1c,
     };
 
+    let party_exp_bits_object = ObjectArray {
+        original: party_exp_bits_arr.clone(),
+        modified: party_exp_bits_arr,
+        index: party_exp_bits,
+        slen: 0xc,
+    };
+
     let parties_object: ObjectArray<u8> = ObjectArray {
         original: dmw3_consts::PACKS.into(),
         modified: dmw3_consts::PACKS.into(),
@@ -1357,6 +1381,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
         enemy_parties: enemy_parties_object,
+        party_exp_bits: party_exp_bits_object,
 
         parties: parties_object,
         pack_previews: party_previewes_object,
@@ -1454,6 +1479,9 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     objects
         .pack_previews
         .write_buf(&mut objects.bufs.pack_select_buf)?;
+    objects
+        .party_exp_bits
+        .write_buf(&mut objects.bufs.exp_buf)?;
 
     let rom_name = path
         .file_name()
