@@ -90,8 +90,6 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let mut shop_bytes = Vec::new();
     let mut shop_item_bytes = Vec::new();
 
-    let mut encounters_pointer = Vec::new();
-
     let _ = &objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
 
     let _ = &objects.encounters.original.write(&mut encounter_bytes)?;
@@ -129,13 +127,6 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         .original
         .write(&mut party_exp_bits_bytes)?;
 
-    let encounter_pointer = Pointer::from_index_overlay(
-        objects.encounters.index as u32,
-        objects.overlay_address.value,
-    );
-
-    let _ = encounter_pointer.write(&mut encounters_pointer)?;
-
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
 
     fs::write(format!("dump/{rom_name}/encounters"), encounter_bytes)?;
@@ -163,11 +154,6 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     fs::write(format!("dump/{rom_name}/shops"), shop_bytes)?;
 
     fs::write(format!("dump/{rom_name}/shop_items"), shop_item_bytes)?;
-
-    fs::write(
-        format!("dump/{rom_name}/encounters_pointer"),
-        encounters_pointer,
-    )?;
 
     for map_obj in &objects.map_objects {
         let mut areas = Vec::new();
@@ -248,8 +234,6 @@ pub async fn create_spoiler(
     let mut shop_bytes = Vec::new();
     let mut shop_item_bytes = Vec::new();
 
-    let mut encounters_pointer = Vec::new();
-
     let _ = &objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
 
     let _ = &objects.encounters.modified.write(&mut encounter_bytes)?;
@@ -287,13 +271,6 @@ pub async fn create_spoiler(
         .modified
         .write(&mut party_exp_bits_bytes)?;
 
-    let encounter_pointer = Pointer::from_index_overlay(
-        objects.encounters.index as u32,
-        objects.overlay_address.value,
-    );
-
-    let _ = encounter_pointer.write(&mut encounters_pointer)?;
-
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
 
@@ -313,8 +290,6 @@ pub async fn create_spoiler(
     append_file(&mut tar_builder, "shops", &shop_bytes)?;
     append_file(&mut tar_builder, "shop_items", &shop_item_bytes)?;
     append_file(&mut tar_builder, "party_exp_bits", &party_exp_bits_bytes)?;
-
-    append_file(&mut tar_builder, "encounters_pointer", &encounters_pointer)?;
 
     for map_obj in &objects.map_objects {
         let mut areas = Vec::new();
