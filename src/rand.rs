@@ -40,7 +40,7 @@ use dmw3_structs::{
 pub struct Object<T> {
     pub original: T,
     pub modified: T,
-    index: usize,
+    pub index: usize,
     slen: usize,
 }
 
@@ -58,7 +58,7 @@ pub struct TextFileGroup {
 pub struct ObjectArray<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,
-    index: usize,
+    pub index: usize,
     slen: usize,
 }
 
@@ -156,6 +156,9 @@ pub struct Objects {
 
     pub text_files: BTreeMap<String, TextFileGroup>,
     pub items: TextFileGroup,
+
+    pub overlay_address: Pointer,
+    pub stage_address: Pointer,
 }
 
 enum Executable {
@@ -1400,6 +1403,9 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
         text_files,
         items,
+
+        overlay_address,
+        stage_address,
     })
 }
 

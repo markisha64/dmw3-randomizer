@@ -90,6 +90,8 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let mut shop_bytes = Vec::new();
     let mut shop_item_bytes = Vec::new();
 
+    let mut encounters_pointer = Vec::new();
+
     let _ = &objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
 
     let _ = &objects.encounters.original.write(&mut encounter_bytes)?;
@@ -127,6 +129,13 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         .original
         .write(&mut party_exp_bits_bytes)?;
 
+    let encounter_pointer = Pointer::from_index_overlay(
+        objects.encounters.index as u32,
+        objects.overlay_address.value,
+    );
+
+    let _ = encounter_pointer.write(&mut encounters_pointer)?;
+
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
 
     fs::write(format!("dump/{rom_name}/encounters"), encounter_bytes)?;
@@ -155,6 +164,11 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     fs::write(format!("dump/{rom_name}/shop_items"), shop_item_bytes)?;
 
+    fs::write(
+        format!("dump/{rom_name}/encounters_pointer"),
+        encounters_pointer,
+    )?;
+
     for map_obj in &objects.map_objects {
         let mut areas = Vec::new();
         let mut encounters = Vec::new();
@@ -182,11 +196,17 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         }
 
         fs::write(
-            format!("dump/{}/maps/{}/areas", rom_name, &map_obj.file_name),
+            format!(
+                "dump/{}/maps/{}/stage_encounter_areas",
+                rom_name, &map_obj.file_name
+            ),
             areas,
         )?;
         fs::write(
-            format!("dump/{}/maps/{}/encounters", rom_name, &map_obj.file_name),
+            format!(
+                "dump/{}/maps/{}/stage_encounters",
+                rom_name, &map_obj.file_name
+            ),
             encounters,
         )?;
     }
@@ -228,6 +248,8 @@ pub async fn create_spoiler(
     let mut shop_bytes = Vec::new();
     let mut shop_item_bytes = Vec::new();
 
+    let mut encounters_pointer = Vec::new();
+
     let _ = &objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
 
     let _ = &objects.encounters.modified.write(&mut encounter_bytes)?;
@@ -265,6 +287,13 @@ pub async fn create_spoiler(
         .modified
         .write(&mut party_exp_bits_bytes)?;
 
+    let encounter_pointer = Pointer::from_index_overlay(
+        objects.encounters.index as u32,
+        objects.overlay_address.value,
+    );
+
+    let _ = encounter_pointer.write(&mut encounters_pointer)?;
+
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
 
@@ -285,41 +314,43 @@ pub async fn create_spoiler(
     append_file(&mut tar_builder, "shop_items", &shop_item_bytes)?;
     append_file(&mut tar_builder, "party_exp_bits", &party_exp_bits_bytes)?;
 
-    // for map_obj in &objects.map_objects {
-    //     let mut areas = Vec::new();
-    //     let mut encounters = Vec::new();
+    append_file(&mut tar_builder, "encounters_pointer", &encounters_pointer)?;
 
-    //     for stage_encounters_obj in &map_obj.stage_encounters {
-    //         for area in &stage_encounters_obj.stage_encounter_areas {
-    //             let warea = match area {
-    //                 Some(a) => &a.modified,
-    //                 None => &DEFAULT_AREA.clone(),
-    //             };
+    for map_obj in &objects.map_objects {
+        let mut areas = Vec::new();
+        let mut encounters = Vec::new();
 
-    //             warea.write(&mut areas)?;
-    //         }
+        for stage_encounters_obj in &map_obj.stage_encounters {
+            for area in &stage_encounters_obj.stage_encounter_areas {
+                let warea = match area {
+                    Some(a) => &a.modified,
+                    None => &DEFAULT_AREA.clone(),
+                };
 
-    //         for encounter in &stage_encounters_obj.stage_encounters {
-    //             let wencounter = match encounter {
-    //                 Some(a) => &a.modified,
-    //                 None => &Vec::from(DEFAULT_ENCOUNTERS.clone()),
-    //             };
+                warea.write(&mut areas)?;
+            }
 
-    //             wencounter.write(&mut encounters)?;
-    //         }
-    //     }
+            for encounter in &stage_encounters_obj.stage_encounters {
+                let wencounter = match encounter {
+                    Some(a) => &a.modified,
+                    None => &Vec::from(DEFAULT_ENCOUNTERS.clone()),
+                };
 
-    //     append_file(
-    //         &mut tar_builder,
-    //         format!("maps/{}/areas", &map_obj.file_name).as_str(),
-    //         &areas,
-    //     )?;
-    //     append_file(
-    //         &mut tar_builder,
-    //         format!("maps/{}/encounters", &map_obj.file_name).as_str(),
-    //         &encounters,
-    //     )?;
-    // }
+                wencounter.write(&mut encounters)?;
+            }
+        }
+
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/stage_encounter_areas", &map_obj.file_name).as_str(),
+            &areas,
+        )?;
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/stage_encounters", &map_obj.file_name).as_str(),
+            &encounters,
+        )?;
+    }
 
     tar_builder.finish()?;
 
