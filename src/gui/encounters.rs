@@ -8,7 +8,7 @@ use crate::gui::checkbox;
 
 pub fn encounters() -> Element {
     let mut state = use_context::<Signal<Preset>>();
-    let read_state = state.read();
+    let read_state = state();
 
     let enabled = read_state.randomizer.encounters.enabled;
     let selected = read_state.randomizer.encounters.strategy.clone();

@@ -45,7 +45,7 @@ pub fn history() -> Element {
     let mut args_state = use_context::<Signal<Arguments>>();
     let state = use_context::<Signal<Vec<HistoryMapped>>>();
 
-    let history = state.read().clone();
+    let history = state();
 
     rsx! {
         div {

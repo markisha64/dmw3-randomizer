@@ -6,7 +6,7 @@ use crate::json::Preset;
 #[component]
 pub fn models() -> Element {
     let mut state = use_context::<Signal<Preset>>();
-    let read_state = state.read();
+    let read_state = state();
 
     let enabled = read_state.randomizer.models.enabled;
 

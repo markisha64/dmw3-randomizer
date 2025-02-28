@@ -6,7 +6,7 @@ use dioxus::prelude::*;
 #[component]
 pub fn scaling() -> Element {
     let mut preset_state = use_context::<Signal<Preset>>();
-    let read_state = preset_state.read();
+    let read_state = preset_state();
 
     let enabled = read_state.scaling.enabled;
 

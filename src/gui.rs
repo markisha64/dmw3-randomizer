@@ -65,27 +65,27 @@ fn app() -> Element {
         })
     });
 
-    let mut state = use_context::<Signal<Arguments>>();
+    let mut state_signal = use_context::<Signal<Arguments>>();
     let mut preset_state = use_context::<Signal<Preset>>();
 
-    let mut rng_state = use_signal::<Xoshiro256StarStar>(|| {
-        Xoshiro256StarStar::seed_from_u64(state.read().seed.unwrap())
-    });
+    let state = state_signal();
+    let preset = preset_state();
 
-    let read_state = state.read();
+    let mut rng_state =
+        use_signal::<Xoshiro256StarStar>(|| Xoshiro256StarStar::seed_from_u64(state.seed.unwrap()));
 
-    let file_name = read_state.path.clone();
+    let file_name = state.path.clone();
 
     let file_name_cl: String = match &file_name {
         Some(file) => String::from(file.file_name().unwrap().to_str().unwrap()),
         None => String::from("Rom file"),
     };
 
-    let shuffles = preset_state.read().randomizer.shuffles;
+    let shuffles = preset.randomizer.shuffles;
 
-    let seed = read_state.seed.unwrap_or(64);
+    let seed = state.seed.unwrap_or(64);
 
-    let output_file = match &read_state.output {
+    let output_file = match &state.output {
         Some(x) => x.clone(),
         None => format!("{}", seed),
     };
@@ -107,7 +107,7 @@ fn app() -> Element {
                                 let files = file_engine.files();
 
                                 match files.first() {
-                                    Some(file) => state.write().path = Some(PathBuf::from(file)),
+                                    Some(file) => state_signal.write().path = Some(PathBuf::from(file)),
                                     None => {}
                                 }
                             }
@@ -139,7 +139,7 @@ fn app() -> Element {
                                     _ => seed
                                 };
 
-                                state.write().seed = Some(seed);
+                                state_signal.write().seed = Some(seed);
                             }
                         },
                         label {
@@ -151,7 +151,7 @@ fn app() -> Element {
                             r#type: "button",
                             id: "new",
                             onclick: move |_| {
-                                state.write().seed = Some(rng_state.write().next_u64());
+                                state_signal.write().seed = Some(rng_state.write().next_u64());
                             }
                         }
                     },
@@ -176,7 +176,7 @@ fn app() -> Element {
                                     return;
                                 }
 
-                                state.write().output = Some(x.value().clone());
+                                state_signal.write().output = Some(x.value().clone());
                             }
                         }
                     },

@@ -9,7 +9,7 @@ use crate::gui::checkbox;
 pub fn shops() -> Element {
     let mut preset_state = use_context::<Signal<Preset>>();
 
-    let read_preset_state = preset_state.read();
+    let read_preset_state = preset_state();
 
     let enabled = read_preset_state.randomizer.shops.enabled;
     let limit_enabled = read_preset_state.randomizer.shops.limit_shop_items_enabled;

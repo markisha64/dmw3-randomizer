@@ -39,13 +39,13 @@ pub fn randomize() -> Element {
     let mut preset_state = use_context::<Signal<Preset>>();
     let mut history_state = use_context::<Signal<Vec<HistoryMapped>>>();
 
-    let percent = state.read().to_percent();
+    let percent = state().to_percent();
 
     rsx! {
         label {
             r#for: "randomize",
             class: "randomize",
-            if state.read().randomizing()  {
+            if state().randomizing()  {
                 div {
                     r#style: "height: 100%; width:{percent}%;",
                     div {
@@ -60,7 +60,7 @@ pub fn randomize() -> Element {
             r#type: "button",
             id: "randomize",
             onclick: move |_| {
-                let current_state = *state.read();
+                let current_state = state();
 
                 if !current_state.randomizing() {
                     state.set(Steps::Extracting);

@@ -7,7 +7,7 @@ use crate::gui::{checkbox, number_field};
 #[component]
 pub fn parties() -> Element {
     let mut state = use_context::<Signal<Preset>>();
-    let read_state = state.read();
+    let read_state = state();
 
     let enabled = read_state.randomizer.parties.enabled;
     let random_parties = read_state.randomizer.parties.parties;
