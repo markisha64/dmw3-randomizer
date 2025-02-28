@@ -238,16 +238,21 @@ fn item_boxes(
                         .files
                         .iter()
                         .find(|(lang, text_file)| {
-                            let item_name = objects.items.files.get(lang).unwrap().file.files
-                                [nv as usize]
-                                .clone();
+                            objects
+                                .items
+                                .files
+                                .get(lang)
+                                .map(|l| {
+                                    let item_name = l.file.files[nv as usize].clone();
 
-                            let csize = text_file.file.file_size_text();
+                                    let csize = text_file.file.file_size_text();
 
-                            let received_item_text = lang.to_received_item(item_name);
+                                    let received_item_text = lang.to_received_item(item_name);
 
-                            csize + 4 + received_item_text.len()
-                                > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
+                                    csize + 4 + received_item_text.len()
+                                        > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
+                                })
+                                .unwrap_or(false)
                         })
                         .is_some();
 

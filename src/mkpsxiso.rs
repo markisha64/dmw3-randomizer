@@ -1,3 +1,4 @@
+use anyhow::Context;
 use async_std::fs;
 use quick_xml::de::from_str;
 use serde::Deserialize;
@@ -108,12 +109,15 @@ async fn find_bin(name: &str) -> anyhow::Result<String> {
 pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<bool> {
     let bin = find_bin("dumpsxiso").await?;
 
+    let file_name = path
+        .file_name()
+        .context("failed to get file_name")?
+        .to_str()
+        .context("failed to convert file name to string")?;
+
     Ok(Command::new(bin)
         .arg("-x")
-        .arg(format!(
-            "extract/{}/",
-            path.file_name().unwrap().to_str().unwrap()
-        ))
+        .arg(format!("extract/{}/", file_name))
         .arg("-s")
         .arg("extract/out.xml")
         .arg("-pt")

@@ -2,7 +2,7 @@ use crate::dump::create_spoiler;
 use crate::gui::preset::history::{get_mapped, HistoryMapped};
 use crate::{cli::Arguments, db, json::Preset, mkpsxiso, patch};
 
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use dioxus::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Default)]
@@ -65,51 +65,49 @@ pub fn randomize() -> Element {
                 if !current_state.randomizing() {
                     state.set(Steps::Extracting);
 
-                    let args = args_state.read().clone();
+                    let args = args_state();
+                    let preset = preset_state();
 
                     spawn(async move {
-                        match &args.path {
-                            Some(path) => {
-                                preset_state.write().randomizer.seed = match args.seed {
-                                    Some(seed) => seed,
-                                    None => preset_state.read().randomizer.seed,
-                                };
+                        let r: anyhow::Result<()> = async move {
+                            let path = &args.path.as_ref().context("missing path")?;
 
-                                let preset = preset_state.read().clone();
+                            preset_state.write().randomizer.seed = args.seed.unwrap_or(preset.randomizer.seed);
 
-                                db::insert(&preset, &args).unwrap();
-                                history_state.set(get_mapped());
+                            db::insert(&preset, &args).map_err(|_| anyhow!("failed to insert to db"))?;
+                            history_state.set(get_mapped());
 
-                                let file_name = match &args.output {
-                                    Some(name) => name.clone(),
-                                    None => format!("{}", preset.randomizer.seed)
-                                };
+                            let file_name = args.output.unwrap_or(format!("{}", preset.randomizer.seed));
 
-                                if !mkpsxiso::extract(path).await.unwrap() {
-                                    panic!("Error extracting");
-                                }
+                            if !mkpsxiso::extract(path).await? {
+                                panic!("Error extracting");
+                            }
 
-                                state.set(Steps::Randomizing);
+                            state.set(Steps::Randomizing);
 
-                                let rom_name = path
-                                    .file_name()
-                                    .context("Failed file name get").unwrap()
-                                    .to_str()
-                                    .context("Failed to_str conversion").unwrap();
+                            let rom_name = path
+                                .file_name()
+                                .context("Failed file name get")?
+                                .to_str()
+                                .context("Failed to_str conversion")?;
 
-                                let objects = patch(path, &preset).await.unwrap();
+                            let objects = patch(path, &preset).await?;
 
-                                create_spoiler(&objects, path, file_name.as_str()).await.unwrap();
+                            create_spoiler(&objects, path, file_name.as_str()).await?;
 
-                                state.set(Steps::Packaging);
+                            state.set(Steps::Packaging);
 
-                                if !mkpsxiso::build(rom_name, &file_name).await.unwrap() {
-                                    panic!("Error repacking")
-                                }
+                            if !mkpsxiso::build(rom_name, &file_name).await? {
+                                panic!("Error repacking")
+                            }
 
-                                state.set(Steps::Input);
-                            },
-                            None => {}
+                            state.set(Steps::Input);
+
+                            Ok(())
+                        }.await;
+
+                        if let Err(err) = r {
+                            println!("encountered err {}", err);
                         }
 
                         state.set(Steps::Input);

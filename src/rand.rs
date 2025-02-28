@@ -1,9 +1,11 @@
+use anyhow::anyhow;
 use anyhow::Context;
 use async_std::fs;
 use async_std::fs::File;
 use async_std::prelude::*;
 use binread::BinRead;
 use binwrite::BinWrite;
+use boolinator::Boolinator;
 use dmw3_model::Header;
 use dmw3_pack::Packed;
 use dmw3_structs::PartyExpBits;
@@ -280,499 +282,481 @@ async fn read_map_objects(
     while let Some(file_res) = pro_folder.next().await {
         let file = file_res?;
 
-        if let Ok(file_type) = file.file_type().await {
-            if file_type.is_dir() {
-                continue;
-            }
-        }
+        let opt: Option<MapObject> = async move {
+            file.file_type().await.ok()?.is_file().as_option()?;
 
-        let file_name = file.file_name().into_string().unwrap();
-        if !file_name.starts_with("WSTAG") || file_name.starts_with("WSTAG9") {
-            continue;
-        }
+            let file_name = file.file_name().into_string().ok()?;
+            (file_name.starts_with("WSTAG") && !file_name.starts_with("WSTAG9")).as_option()?;
 
-        let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name)).await?;
+            let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name))
+                .await
+                .ok()?;
 
-        let mut offset: usize = 0x4;
-        let mut idx = buf.len() - offset;
-        let mut sstart_idx = buf.len() - offset - 0x10;
-        let mut sstart = buf[sstart_idx..sstart_idx + 8]
-            .iter()
-            .fold(0, |a, b| a + *b as u32);
-        let mut init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
-
-        while !(init_stage_pointers.is_valid() && sstart == 0) && (offset + 0x24) <= buf.len() {
-            offset += 0x14;
-
-            idx = buf.len() - offset;
-            sstart_idx = buf.len() - offset - 0x10;
-
-            sstart = buf[sstart_idx..sstart_idx + 8]
+            let mut offset: usize = 0x4;
+            let mut idx = buf.len() - offset;
+            let mut sstart_idx = buf.len() - offset - 0x10;
+            let mut sstart = buf[sstart_idx..sstart_idx + 8]
                 .iter()
                 .fold(0, |a, b| a + *b as u32);
+            let mut init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
 
-            init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
-        }
+            while !(init_stage_pointers.is_valid() && sstart == 0) && (offset + 0x24) <= buf.len() {
+                offset += 0x14;
 
-        if init_stage_pointers.is_valid() {
-            let mut pptr = Pointer::from(&buf[idx - 4..idx]);
-            while pptr.is_valid() {
-                idx -= 4;
+                idx = buf.len() - offset;
+                sstart_idx = buf.len() - offset - 0x10;
+
+                sstart = buf[sstart_idx..sstart_idx + 8]
+                    .iter()
+                    .fold(0, |a, b| a + *b as u32);
 
                 init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
-                pptr = Pointer::from(&buf[idx - 4..idx]);
             }
-        }
 
-        if !init_stage_pointers.is_valid() {
-            continue;
-        }
+            if init_stage_pointers.is_valid() {
+                let mut pptr = Pointer::from(&buf[idx - 4..idx]);
+                while pptr.is_valid() {
+                    idx -= 4;
 
-        let idx = init_stage_pointers.to_index_overlay(stage.value) as usize;
+                    init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
+                    pptr = Pointer::from(&buf[idx - 4..idx]);
+                }
+            }
 
-        let jr_ra_instruction_index = buf[idx..]
-            .windows(4)
-            .position(|x| x == dmw3_consts::JR_RA_INSTRUCTION);
+            init_stage_pointers.is_valid().as_option()?;
 
-        if jr_ra_instruction_index.is_none() {
-            continue;
-        }
+            let idx = init_stage_pointers.to_index_overlay(stage.value) as usize;
 
-        let jump_return = Pointer {
-            value: init_stage_pointers.value + jr_ra_instruction_index.unwrap() as u32,
-        };
-
-        let initsp_index = init_stage_pointers.to_index_overlay(stage.value) as usize;
-        let initp_end_index = jump_return.to_index_overlay(stage.value) as usize;
-
-        let bg_set_offset_result = buf[initsp_index..initp_end_index]
-            .windows(2)
-            .position(|x| x == b"\x08\x00");
-
-        if bg_set_offset_result.is_none() {
-            continue;
-        }
-
-        let bg_set_offset = bg_set_offset_result.unwrap();
-        let bg_set_idx = initsp_index + bg_set_offset;
-
-        let sw = &buf[bg_set_idx + 2..bg_set_idx + 4];
-
-        let res = buf[initsp_index..bg_set_idx]
-            .windows(2)
-            .rev()
-            .position(|x| x == dmw3_consts::LI_INSTRUCTION);
-
-        if res.is_none() {
-            continue;
-        }
-
-        let li_instruction = bg_set_idx - res.unwrap() - 2;
-
-        let sector_offset = file_map
-            .iter()
-            .find(|file| file.name == file_name)
-            .context("Failed to find sector offset")?
-            .offs;
-
-        let sector_offsets_index = sector_offsets
-            .iter()
-            .position(|off| *off == sector_offset)
-            .context("Failed to get idx")? as u32;
-
-        let stage_load_data_row = stage_load_data
-            .iter()
-            .find(|sldr| sldr.file_index == sector_offsets_index)
-            .context("Failed to get stage load data")?;
-
-        let bg_file_index = u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
-
-        let background_file_index_index = li_instruction - 2;
-        let background_file_index = bg_file_index;
-
-        let stage_id = stage_load_data_row.stage_id as u16;
-
-        let background_object = Object {
-            original: background_file_index,
-            modified: background_file_index,
-            slen: 0x2,
-            index: background_file_index_index as usize,
-        };
-
-        let mut map_color: Option<Object<MapColor>> = None;
-
-        if let Some(map_color_offset) = buf[initsp_index..initp_end_index].chunks(4).position(|x| {
-            x[0] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[0]
-                && x[1] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[1]
-                && x[2] != dmw3_consts::LI_INSTRUCTION[0]
-                && x[3] != dmw3_consts::LI_INSTRUCTION[1]
-        }) {
-            if let Some(map_color_addiu) = buf[initsp_index..initsp_index + map_color_offset * 4]
+            let jr_ra_instruction_index = buf[idx..]
                 .windows(4)
-                .rev()
-                .position(|x| x[3] == dmw3_consts::ADDIU)
-            {
-                let aidx = initsp_index + map_color_offset * 4 - map_color_addiu - 4;
-                let addiu_first_half = i16::from_le_bytes([buf[aidx], buf[aidx + 1]]);
+                .position(|x| x == dmw3_consts::JR_RA_INSTRUCTION)?;
 
-                let address = (0x800a0000 + addiu_first_half as i64) as u32;
-
-                let map_color_address = Pointer { value: address };
-
-                let idx = map_color_address.to_index_overlay(stage.value) as usize;
-
-                let mut map_color_reader = Cursor::new(&buf[idx..idx + 4]);
-                let color = MapColor::read(&mut map_color_reader)?;
-
-                map_color = Some(Object {
-                    original: color.clone(),
-                    modified: color.clone(),
-                    index: idx,
-                    slen: 0x4,
-                });
-            }
-        }
-
-        let mut environmentals: Vec<Environmental> = Vec::new();
-        let mut environmentals_index: Option<u32> = None;
-
-        let mut entities: Vec<EntityData> = Vec::new();
-        let mut entities_index: Option<u32> = None;
-
-        let mut entity_logics = Vec::new();
-        let mut scripts = Vec::new();
-
-        let mut talk_file = None;
-
-        // we need to assemble full sw instruction
-        let environmental_instruction = [
-            dmw3_consts::ENVIRONMENTAL_INSTRUCTION[0],
-            dmw3_consts::ENVIRONMENTAL_INSTRUCTION[1],
-            sw[0],
-            sw[1],
-        ];
-
-        let entities_instruction = [
-            dmw3_consts::ENTITIES_INSTRUCTION[0],
-            dmw3_consts::ENTITIES_INSTRUCTION[1],
-            sw[0],
-            sw[1],
-        ];
-
-        let talk_file_instruction = [
-            dmw3_consts::TALK_FILE_INSTRUCTION[0],
-            dmw3_consts::TALK_FILE_INSTRUCTION[1],
-            sw[0],
-            sw[1],
-        ];
-
-        let stage_encounters_instruction = [
-            dmw3_consts::STAGE_ENCOUNTERS_INSTRUCTION[0],
-            dmw3_consts::STAGE_ENCOUNTERS_INSTRUCTION[1],
-            sw[0],
-            sw[1],
-        ];
-
-        if let Some(talk_file_set) = buf[initsp_index..initp_end_index]
-            .windows(4)
-            .position(|x| x == talk_file_instruction)
-        {
-            let instr = match executable {
-                Executable::PAL => dmw3_consts::TALK_FILE_ADDIU,
-                _ => dmw3_consts::LI_INSTRUCTION,
+            let jump_return = Pointer {
+                value: init_stage_pointers.value + jr_ra_instruction_index as u32,
             };
 
-            let res = buf[initsp_index..initsp_index + talk_file_set]
+            let initsp_index = init_stage_pointers.to_index_overlay(stage.value) as usize;
+            let initp_end_index = jump_return.to_index_overlay(stage.value) as usize;
+
+            let bg_set_offset_result = buf[initsp_index..initp_end_index]
+                .windows(2)
+                .position(|x| x == b"\x08\x00")?;
+
+            let bg_set_offset = bg_set_offset_result;
+            let bg_set_idx = initsp_index + bg_set_offset;
+
+            let sw = &buf[bg_set_idx + 2..bg_set_idx + 4];
+
+            let res = buf[initsp_index..bg_set_idx]
                 .windows(2)
                 .rev()
-                .position(|x| x == instr)
-                .context("Failed to find instruction")?;
+                .position(|x| x == dmw3_consts::LI_INSTRUCTION)?;
 
-            let instruction = initsp_index + talk_file_set - res - 2;
+            let li_instruction = bg_set_idx - res - 2;
 
-            talk_file = Some(u16::from_le_bytes([
-                buf[instruction - 2],
-                buf[instruction - 1],
-            ]));
-        }
+            let sector_offset = file_map.iter().find(|file| file.name == file_name)?.offs;
 
-        if let Some(environmental_set) = buf[initsp_index..initp_end_index]
-            .chunks(4)
-            .position(|x| x == environmental_instruction)
-        {
-            let environmental_address =
-                Pointer::from_instruction(&buf[initsp_index..initsp_index + environmental_set * 4]);
+            let sector_offsets_index = sector_offsets
+                .iter()
+                .position(|off| *off == sector_offset)?
+                as u32;
 
-            let env_index = environmental_address.to_index_overlay(stage.value);
-            environmentals_index = Some(env_index);
+            let stage_load_data_row = stage_load_data
+                .iter()
+                .find(|sldr| sldr.file_index == sector_offsets_index)?;
 
-            let mut environmentals_reader = Cursor::new(&buf[(env_index as usize)..]);
+            let bg_file_index =
+                u16::from_le_bytes([buf[li_instruction - 2], buf[li_instruction - 1]]);
 
-            loop {
-                let environmental = Environmental::read(&mut environmentals_reader)?;
+            let background_file_index_index = li_instruction - 2;
+            let background_file_index = bg_file_index;
 
-                if environmental.conditions[0] == 0x0000ffff
-                    && environmental.conditions[1] == 0x0000ffff
-                    && environmental.next_stage_id == 0
+            let stage_id = stage_load_data_row.stage_id as u16;
+
+            let background_object = Object {
+                original: background_file_index,
+                modified: background_file_index,
+                slen: 0x2,
+                index: background_file_index_index as usize,
+            };
+
+            let mut map_color: Option<Object<MapColor>> = None;
+
+            if let Some(map_color_offset) =
+                buf[initsp_index..initp_end_index].chunks(4).position(|x| {
+                    x[0] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[0]
+                        && x[1] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[1]
+                        && x[2] != dmw3_consts::LI_INSTRUCTION[0]
+                        && x[3] != dmw3_consts::LI_INSTRUCTION[1]
+                })
+            {
+                if let Some(map_color_addiu) = buf
+                    [initsp_index..initsp_index + map_color_offset * 4]
+                    .windows(4)
+                    .rev()
+                    .position(|x| x[3] == dmw3_consts::ADDIU)
                 {
-                    break;
+                    let aidx = initsp_index + map_color_offset * 4 - map_color_addiu - 4;
+                    let addiu_first_half = i16::from_le_bytes([buf[aidx], buf[aidx + 1]]);
+
+                    let address = (0x800a0000 + addiu_first_half as i64) as u32;
+
+                    let map_color_address = Pointer { value: address };
+
+                    let idx = map_color_address.to_index_overlay(stage.value) as usize;
+
+                    let mut map_color_reader = Cursor::new(&buf[idx..idx + 4]);
+                    let color = MapColor::read(&mut map_color_reader).ok()?;
+
+                    map_color = Some(Object {
+                        original: color.clone(),
+                        modified: color.clone(),
+                        index: idx,
+                        slen: 0x4,
+                    });
+                }
+            }
+
+            let mut environmentals: Vec<Environmental> = Vec::new();
+            let mut environmentals_index: Option<u32> = None;
+
+            let mut entities: Vec<EntityData> = Vec::new();
+            let mut entities_index: Option<u32> = None;
+
+            let mut entity_logics = Vec::new();
+            let mut scripts = Vec::new();
+
+            let mut talk_file = None;
+
+            // we need to assemble full sw instruction
+            let environmental_instruction = [
+                dmw3_consts::ENVIRONMENTAL_INSTRUCTION[0],
+                dmw3_consts::ENVIRONMENTAL_INSTRUCTION[1],
+                sw[0],
+                sw[1],
+            ];
+
+            let entities_instruction = [
+                dmw3_consts::ENTITIES_INSTRUCTION[0],
+                dmw3_consts::ENTITIES_INSTRUCTION[1],
+                sw[0],
+                sw[1],
+            ];
+
+            let talk_file_instruction = [
+                dmw3_consts::TALK_FILE_INSTRUCTION[0],
+                dmw3_consts::TALK_FILE_INSTRUCTION[1],
+                sw[0],
+                sw[1],
+            ];
+
+            let stage_encounters_instruction = [
+                dmw3_consts::STAGE_ENCOUNTERS_INSTRUCTION[0],
+                dmw3_consts::STAGE_ENCOUNTERS_INSTRUCTION[1],
+                sw[0],
+                sw[1],
+            ];
+
+            if let Some(talk_file_set) = buf[initsp_index..initp_end_index]
+                .windows(4)
+                .position(|x| x == talk_file_instruction)
+            {
+                let instr = match executable {
+                    Executable::PAL => dmw3_consts::TALK_FILE_ADDIU,
+                    _ => dmw3_consts::LI_INSTRUCTION,
+                };
+
+                let res = buf[initsp_index..initsp_index + talk_file_set]
+                    .windows(2)
+                    .rev()
+                    .position(|x| x == instr)?;
+
+                let instruction = initsp_index + talk_file_set - res - 2;
+
+                talk_file = Some(u16::from_le_bytes([
+                    buf[instruction - 2],
+                    buf[instruction - 1],
+                ]));
+            }
+
+            if let Some(environmental_set) = buf[initsp_index..initp_end_index]
+                .chunks(4)
+                .position(|x| x == environmental_instruction)
+            {
+                let environmental_address = Pointer::from_instruction(
+                    &buf[initsp_index..initsp_index + environmental_set * 4],
+                );
+
+                let env_index = environmental_address.to_index_overlay(stage.value);
+                environmentals_index = Some(env_index);
+
+                let mut environmentals_reader = Cursor::new(&buf[(env_index as usize)..]);
+
+                loop {
+                    let environmental = Environmental::read(&mut environmentals_reader).ok()?;
+
+                    if environmental.conditions[0] == 0x0000ffff
+                        && environmental.conditions[1] == 0x0000ffff
+                        && environmental.next_stage_id == 0
+                    {
+                        break;
+                    }
+
+                    environmentals.push(environmental);
+                }
+            }
+
+            if let Some(entities_set) = buf[initsp_index..initp_end_index]
+                .chunks(4)
+                .position(|x| x == entities_instruction)
+            {
+                let entities_address =
+                    Pointer::from_instruction(&buf[initsp_index..initsp_index + entities_set * 4]);
+
+                if entities_address.is_valid() {
+                    let ent_index = entities_address.to_index_overlay(stage.value) as usize;
+
+                    let mut i = 0;
+                    loop {
+                        let ptr = Pointer::from(&buf[ent_index + i * 4..ent_index + (i + 1) * 4]);
+
+                        if ptr.null() {
+                            break;
+                        }
+
+                        i += 1;
+                    }
+
+                    let real_pointer = Pointer::from(&buf[ent_index..ent_index + 4]);
+
+                    let real_idx = real_pointer.to_index_overlay(stage.value);
+                    entities_index = Some(real_idx);
+
+                    let mut entities_reader =
+                        Cursor::new(&buf[(real_idx as usize)..(real_idx as usize) + 0x14 * i]);
+
+                    for _ in 0..i {
+                        let entity = EntityData::read(&mut entities_reader).ok()?;
+
+                        if !entity.logic.null() {
+                            let logic_idx = entity.logic.to_index_overlay(stage.value);
+
+                            let mut logic_reader =
+                                Cursor::new(&buf[logic_idx as usize..logic_idx as usize + 0xa]);
+
+                            if let Ok(logic) = EntityLogic::read(&mut logic_reader) {
+                                entity_logics.push(Object {
+                                    original: logic.clone(),
+                                    modified: logic.clone(),
+                                    slen: 0xa,
+                                    index: logic_idx as usize,
+                                });
+
+                                let mut full_script = Vec::new();
+                                if !logic.script.null() {
+                                    let script_idx = logic.script.to_index_overlay(stage.value);
+
+                                    let mut script_reader =
+                                        Cursor::new(&buf[script_idx as usize..]);
+
+                                    loop {
+                                        let script_result = u32::read(&mut script_reader);
+
+                                        match script_result {
+                                            Ok(script) => {
+                                                if script == 0x0000ffff {
+                                                    break;
+                                                }
+
+                                                full_script.push(script);
+                                            }
+                                            Err(_) => panic!("binread error"),
+                                        }
+                                    }
+
+                                    if !full_script.is_empty() {
+                                        scripts.push(ObjectArray {
+                                            original: full_script.clone(),
+                                            modified: full_script.clone(),
+                                            slen: 0x4,
+                                            index: script_idx as usize,
+                                        })
+                                    }
+                                }
+                            }
+                        }
+
+                        entities.push(entity);
+                    }
+                }
+            }
+
+            let stage_encounter_sets: Vec<_> = buf[initsp_index..initp_end_index]
+                .chunks(4)
+                .enumerate()
+                .filter(|(_idx, v)| {
+                    v[0] == stage_encounters_instruction[0]
+                        && v[1] == stage_encounters_instruction[1]
+                        && v[3] == stage_encounters_instruction[3]
+                })
+                .collect();
+
+            let stage_encounters_f = stage_encounter_sets.iter().find(|(idx, _)| {
+                let stage_encounters_address =
+                    Pointer::from_instruction(&buf[initsp_index..initsp_index + idx * 4]);
+
+                if stage_encounters_address.is_valid()
+                    && stage_encounters_address.value >= stage.value
+                {
+                    let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
+
+                    if index <= buf.len() {
+                        let mut reader = Cursor::new(&buf[index..]);
+
+                        let stage_encounters_obj = StageEncounters::read(&mut reader);
+
+                        if let Ok(se) = stage_encounters_obj {
+                            return se.unk2 == 0
+                                && se.areas[0].null()
+                                && se.areas[1].is_valid()
+                                && se.areas[2].is_valid()
+                                && se.areas[3].is_valid()
+                                && se.areas[4].is_valid();
+                        }
+                    }
                 }
 
-                environmentals.push(environmental);
-            }
-        }
+                false
+            });
 
-        if let Some(entities_set) = buf[initsp_index..initp_end_index]
-            .chunks(4)
-            .position(|x| x == entities_instruction)
-        {
-            let entities_address =
-                Pointer::from_instruction(&buf[initsp_index..initsp_index + entities_set * 4]);
-
-            if entities_address.is_valid() {
-                let ent_index = entities_address.to_index_overlay(stage.value) as usize;
-
+            let mut stage_encounters_objects = Vec::new();
+            if let Some((idx, _)) = stage_encounters_f {
                 let mut i = 0;
-                loop {
-                    let ptr = Pointer::from(&buf[ent_index + i * 4..ent_index + (i + 1) * 4]);
 
-                    if ptr.null() {
-                        break;
+                let stage_encounters_address =
+                    Pointer::from_instruction(&buf[initsp_index..initsp_index + idx * 4]);
+
+                let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
+
+                loop {
+                    let mut reader = Cursor::new(&buf[index + i * 0x1c..]);
+
+                    let stage_encounters_opt = StageEncounters::read(&mut reader);
+
+                    let stage_encounters_obj = match stage_encounters_opt {
+                        Ok(se) => se,
+                        Err(_) => break,
+                    };
+
+                    if stage_encounters_obj.unk2 == i as i32
+                        && stage_encounters_obj.areas[0].null()
+                        && stage_encounters_obj.areas[1].is_valid()
+                        && stage_encounters_obj.areas[2].is_valid()
+                        && stage_encounters_obj.areas[3].is_valid()
+                        && stage_encounters_obj.areas[4].is_valid()
+                    {
+                        let areas: Vec<_> = stage_encounters_obj
+                            .areas
+                            .iter()
+                            .map(|p| {
+                                p.is_valid().as_option()?;
+
+                                let index = p.to_index_overlay(stage.value) as usize;
+
+                                let mut reader = Cursor::new(&buf[index..]);
+
+                                let area = StageEncounterArea::read(&mut reader).ok()?;
+
+                                Some(Object {
+                                    original: area.clone(),
+                                    modified: area,
+                                    index,
+                                    slen: 0x24,
+                                })
+                            })
+                            .collect();
+
+                        let encounters: Vec<_> = areas
+                            .iter()
+                            .map(|area_opt| {
+                                let area = area_opt.as_ref()?;
+
+                                let ptr = area.original.teams[0];
+
+                                ptr.is_valid().as_option()?;
+
+                                let index = ptr.to_index_overlay(stage.value) as usize;
+
+                                let mut reader = Cursor::new(&buf[index..]);
+
+                                let mut stage_encounters = Vec::new();
+
+                                for _ in 0..8 {
+                                    let enc = StageEncounter::read(&mut reader).ok()?;
+
+                                    stage_encounters.push(enc);
+                                }
+
+                                Some(ObjectArray {
+                                    original: stage_encounters.clone(),
+                                    modified: stage_encounters,
+                                    index,
+                                    slen: 0xc,
+                                })
+                            })
+                            .collect();
+
+                        stage_encounters_objects.push(StageEncountersObject {
+                            stage_encounters_object: Object {
+                                original: stage_encounters_obj.clone(),
+                                modified: stage_encounters_obj,
+                                index: index + i * 0x1c,
+                                slen: 0x1c,
+                            },
+                            stage_encounter_areas: areas,
+                            stage_encounters: encounters,
+                        });
                     }
 
                     i += 1;
                 }
-
-                let real_pointer = Pointer::from(&buf[ent_index..ent_index + 4]);
-
-                let real_idx = real_pointer.to_index_overlay(stage.value);
-                entities_index = Some(real_idx);
-
-                let mut entities_reader =
-                    Cursor::new(&buf[(real_idx as usize)..(real_idx as usize) + 0x14 * i]);
-
-                for _ in 0..i {
-                    let entity = EntityData::read(&mut entities_reader)?;
-
-                    if !entity.logic.null() {
-                        let logic_idx = entity.logic.to_index_overlay(stage.value);
-
-                        let mut logic_reader =
-                            Cursor::new(&buf[logic_idx as usize..logic_idx as usize + 0xa]);
-
-                        if let Ok(logic) = EntityLogic::read(&mut logic_reader) {
-                            entity_logics.push(Object {
-                                original: logic.clone(),
-                                modified: logic.clone(),
-                                slen: 0xa,
-                                index: logic_idx as usize,
-                            });
-
-                            let mut full_script = Vec::new();
-                            if !logic.script.null() {
-                                let script_idx = logic.script.to_index_overlay(stage.value);
-
-                                let mut script_reader = Cursor::new(&buf[script_idx as usize..]);
-
-                                loop {
-                                    let script_result = u32::read(&mut script_reader);
-
-                                    match script_result {
-                                        Ok(script) => {
-                                            if script == 0x0000ffff {
-                                                break;
-                                            }
-
-                                            full_script.push(script);
-                                        }
-                                        Err(_) => panic!("binread error"),
-                                    }
-                                }
-
-                                if !full_script.is_empty() {
-                                    scripts.push(ObjectArray {
-                                        original: full_script.clone(),
-                                        modified: full_script.clone(),
-                                        slen: 0x4,
-                                        index: script_idx as usize,
-                                    })
-                                }
-                            }
-                        }
-                    }
-
-                    entities.push(entity);
-                }
             }
-        }
 
-        let stage_encounter_sets: Vec<_> = buf[initsp_index..initp_end_index]
-            .chunks(4)
-            .enumerate()
-            .filter(|(_idx, v)| {
-                v[0] == stage_encounters_instruction[0]
-                    && v[1] == stage_encounters_instruction[1]
-                    && v[3] == stage_encounters_instruction[3]
+            let environmental_object = environmentals_index.map(|idx| ObjectArray {
+                original: environmentals.clone(),
+                modified: environmentals.clone(),
+                index: idx as usize,
+                slen: 0x18,
+            });
+
+            let entities_object = entities_index.map(|idx| ObjectArray {
+                original: entities.clone(),
+                modified: entities.clone(),
+                index: idx as usize,
+                slen: 0x14,
+            });
+
+            // TODO: instead of always checking first 2 instructions before
+            // I need to find the first lui (which is considerably suckier)
+            Some(MapObject {
+                file_name,
+                buf: buf.clone(),
+                environmentals: environmental_object,
+                entities: entities_object,
+                entity_logics,
+                scripts,
+                map_color,
+                background_file_index: background_object,
+                talk_file,
+                stage_encounters: stage_encounters_objects,
+                _stage_id: stage_id,
             })
-            .collect();
-
-        let stage_encounters_f = stage_encounter_sets.iter().find(|(idx, _)| {
-            let stage_encounters_address =
-                Pointer::from_instruction(&buf[initsp_index..initsp_index + idx * 4]);
-
-            if stage_encounters_address.is_valid() && stage_encounters_address.value >= stage.value
-            {
-                let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
-
-                if index <= buf.len() {
-                    let mut reader = Cursor::new(&buf[index..]);
-
-                    let stage_encounters_obj = StageEncounters::read(&mut reader);
-
-                    if let Ok(se) = stage_encounters_obj {
-                        return se.unk2 == 0
-                            && se.areas[0].null()
-                            && se.areas[1].is_valid()
-                            && se.areas[2].is_valid()
-                            && se.areas[3].is_valid()
-                            && se.areas[4].is_valid();
-                    }
-                }
-            }
-
-            false
-        });
-
-        let mut stage_encounters_objects = Vec::new();
-        if let Some((idx, _)) = stage_encounters_f {
-            let mut i = 0;
-
-            let stage_encounters_address =
-                Pointer::from_instruction(&buf[initsp_index..initsp_index + idx * 4]);
-
-            let index = stage_encounters_address.to_index_overlay(stage.value) as usize;
-
-            loop {
-                let mut reader = Cursor::new(&buf[index + i * 0x1c..]);
-
-                let stage_encounters_opt = StageEncounters::read(&mut reader);
-
-                let stage_encounters_obj = match stage_encounters_opt {
-                    Ok(se) => se,
-                    Err(_) => break,
-                };
-
-                if stage_encounters_obj.unk2 == i as i32
-                    && stage_encounters_obj.areas[0].null()
-                    && stage_encounters_obj.areas[1].is_valid()
-                    && stage_encounters_obj.areas[2].is_valid()
-                    && stage_encounters_obj.areas[3].is_valid()
-                    && stage_encounters_obj.areas[4].is_valid()
-                {
-                    let areas: Vec<_> = stage_encounters_obj
-                        .areas
-                        .iter()
-                        .map(|p| {
-                            if !p.is_valid() {
-                                return None;
-                            }
-
-                            let index = p.to_index_overlay(stage.value) as usize;
-
-                            let mut reader = Cursor::new(&buf[index..]);
-
-                            let area = StageEncounterArea::read(&mut reader).unwrap();
-
-                            Some(Object {
-                                original: area.clone(),
-                                modified: area,
-                                index,
-                                slen: 0x24,
-                            })
-                        })
-                        .collect();
-
-                    let encounters: Vec<_> = areas
-                        .iter()
-                        .map(|area_opt| {
-                            if area_opt.is_none() {
-                                return None;
-                            }
-
-                            let area = area_opt.as_ref().unwrap();
-
-                            let ptr = area.original.teams[0];
-
-                            if !ptr.is_valid() {
-                                return None;
-                            }
-
-                            let index = ptr.to_index_overlay(stage.value) as usize;
-
-                            let mut reader = Cursor::new(&buf[index..]);
-
-                            let mut stage_encounters = Vec::new();
-
-                            for _ in 0..8 {
-                                let enc = StageEncounter::read(&mut reader).unwrap();
-
-                                stage_encounters.push(enc);
-                            }
-
-                            Some(ObjectArray {
-                                original: stage_encounters.clone(),
-                                modified: stage_encounters,
-                                index,
-                                slen: 0xc,
-                            })
-                        })
-                        .collect();
-
-                    stage_encounters_objects.push(StageEncountersObject {
-                        stage_encounters_object: Object {
-                            original: stage_encounters_obj.clone(),
-                            modified: stage_encounters_obj,
-                            index: index + i * 0x1c,
-                            slen: 0x1c,
-                        },
-                        stage_encounter_areas: areas,
-                        stage_encounters: encounters,
-                    });
-                }
-
-                i += 1;
-            }
         }
+        .await;
 
-        let environmental_object = environmentals_index.map(|idx| ObjectArray {
-            original: environmentals.clone(),
-            modified: environmentals.clone(),
-            index: idx as usize,
-            slen: 0x18,
-        });
-
-        let entities_object = entities_index.map(|idx| ObjectArray {
-            original: entities.clone(),
-            modified: entities.clone(),
-            index: idx as usize,
-            slen: 0x14,
-        });
-
-        // TODO: instead of always checking first 2 instructions before
-        // I need to find the first lui (which is considerably suckier)
-        result.push(MapObject {
-            file_name,
-            buf: buf.clone(),
-            environmentals: environmental_object,
-            entities: entities_object,
-            entity_logics,
-            scripts,
-            map_color,
-            background_file_index: background_object,
-            talk_file,
-            stage_encounters: stage_encounters_objects,
-            _stage_id: stage_id,
-        });
+        if let Some(map_object) = opt {
+            result.push(map_object)
+        }
     }
 
     Ok(result)
@@ -908,7 +892,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     while let Some(x) = itr.next().await {
         let dir_entry = x?;
 
-        match Executable::from_str(dir_entry.file_name().into_string().unwrap().as_str()) {
+        match Executable::from_str(
+            dir_entry
+                .file_name()
+                .into_string()
+                .map_err(|_| anyhow!("failed to convert to string"))?
+                .as_str(),
+        ) {
             Some(exec) => {
                 executable_opt = Some(exec);
                 break;
@@ -987,7 +977,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .position(|window| {
             window == b"\x66\x01\x00\x00\x0c\x00\x30\x03\x0f\x27\x10\x00\x7c\x00\x00\x00"
         })
-        .unwrap();
+        .context("failed to find encounter data index")?;
 
     let mut encounter_data_reader = Cursor::new(&encounter_buf[encounter_data_index..]);
 
@@ -1583,7 +1573,7 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
 }
 
 pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
-    let mut objects = read_objects(path).await.unwrap();
+    let mut objects = read_objects(path).await?;
 
     let mut rng = Xoshiro256StarStar::seed_from_u64(preset.randomizer.seed);
 
