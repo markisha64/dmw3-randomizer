@@ -1046,8 +1046,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     let back_shop = shops_arr.last().context("No shops found")?;
 
-    let back_index =
-        (back_shop.item_count + back_shop.items.to_index_overlay(overlay.value as u32)) as usize;
+    let back_index = (back_shop.item_count * 2
+        + back_shop.items.to_index_overlay(overlay.value as u32)) as usize;
 
     let shop_items_arr: Vec<u16> = shops_buf[front_index..back_index]
         .to_vec()
