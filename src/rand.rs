@@ -120,7 +120,7 @@ pub struct MapObject {
     scripts: Vec<ObjectArray<u32>>,
     talk_file: Option<u16>,
     pub stage_encounters: Vec<StageEncountersObject>,
-    _stage_id: u16,
+    pub stage_id: u16,
 }
 
 pub struct ModelObject {
@@ -753,7 +753,7 @@ async fn read_map_objects(
                 background_file_index: background_object,
                 talk_file,
                 stage_encounters: stage_encounters_objects,
-                _stage_id: stage_id,
+                stage_id,
             })
         }
         .await;
