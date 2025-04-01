@@ -6,9 +6,11 @@ use async_std::prelude::*;
 use binread::BinRead;
 use binwrite::BinWrite;
 use boolinator::Boolinator;
+use dmw3_consts::SCREEN_NAME_MAPPING;
 use dmw3_model::Header;
 use dmw3_pack::Packed;
 use dmw3_structs::PartyExpBits;
+use dmw3_structs::ScreenNameMapping;
 use dmw3_structs::StageEncounter;
 use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
@@ -155,6 +157,8 @@ pub struct Objects {
     pub map_objects: Vec<MapObject>,
     pub model_objects: Vec<ModelObject>,
     pub stage_model_objects: Vec<ModelObject>,
+
+    pub screen_name_mapping: Vec<ScreenNameMapping>,
 
     pub text_files: BTreeMap<String, TextFileGroup>,
     pub items: TextFileGroup,
@@ -1244,6 +1248,21 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         text_files.insert(String::from(*sname), group);
     }
 
+    let screen_name_mapping_index = map_buf
+        .chunks(4)
+        .position(|chunk| chunk == SCREEN_NAME_MAPPING)
+        .context("failed to find screen name mapping")?;
+
+    let mut screen_name_mapping_reader = Cursor::new(&map_buf[(screen_name_mapping_index * 4)..]);
+
+    let mut screen_name_mapping: Vec<ScreenNameMapping> = Vec::new();
+
+    for _ in 0..240 {
+        let mapping = ScreenNameMapping::read(&mut screen_name_mapping_reader)?;
+
+        screen_name_mapping.push(mapping);
+    }
+
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let enemy_party_data_arr_copy = enemy_party_data_arr.clone();
@@ -1390,6 +1409,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         dv_cond: dv_cond_object,
         stage_load_data: stage_load_data_arr,
         map_objects,
+
+        screen_name_mapping,
 
         text_files,
         items,
