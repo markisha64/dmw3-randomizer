@@ -36,10 +36,13 @@ impl Steps {
 pub fn randomize() -> Element {
     let mut state = use_signal::<Steps>(Steps::default);
     let args_state = use_context::<Signal<Arguments>>();
-    let mut preset_state = use_context::<Signal<Preset>>();
+    let preset_state = use_context::<Signal<Preset>>();
     let mut history_state = use_context::<Signal<Vec<HistoryMapped>>>();
 
     let percent = state().to_percent();
+
+    let args = args_state();
+    let preset = preset_state();
 
     rsx! {
         label {
@@ -60,19 +63,15 @@ pub fn randomize() -> Element {
             r#type: "button",
             id: "randomize",
             onclick: move |_| {
+                to_owned!(preset, args);
                 let current_state = state();
 
                 if !current_state.randomizing() {
                     state.set(Steps::Extracting);
 
-                    let args = args_state();
-                    let preset = preset_state();
-
                     spawn(async move {
                         let r: anyhow::Result<()> = async move {
                             let path = &args.path.as_ref().context("missing path")?;
-
-                            preset_state.write().randomizer.seed = args.seed.unwrap_or(preset.randomizer.seed);
 
                             db::insert(&preset, &args).map_err(|_| anyhow!("failed to insert to db"))?;
                             history_state.set(get_mapped());

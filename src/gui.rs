@@ -140,6 +140,7 @@ fn app() -> Element {
                                 };
 
                                 state_signal.write().seed = Some(seed);
+                                preset_state.write().randomizer.seed = seed;
                             }
                         },
                         label {
