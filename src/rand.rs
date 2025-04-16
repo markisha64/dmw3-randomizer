@@ -113,6 +113,7 @@ pub struct MapEntities {
     pub entities: ObjectArray<EntityData>,
     pub entity_logics: ObjectArray<EntityLogic>,
     pub scripts_conditions: ObjectArray<u32>,
+    pub entity_conditions: ObjectArray<u32>,
 }
 
 pub struct MapObject {
@@ -511,6 +512,7 @@ async fn read_map_objects(
             let mut entities_raw: Vec<EntityData> = Vec::new();
             let mut entity_logics_raw = Vec::new();
             let mut scripts_condition_raw = Vec::new();
+            let mut entity_conditions_raw = Vec::new();
             let mut entities = None;
 
             if let Some(entities_set) = buf[initsp_index..initp_end_index]
@@ -545,6 +547,27 @@ async fn read_map_objects(
 
                     for _ in 0..i {
                         let entity = EntityData::read(&mut entities_reader).ok()?;
+
+                        if !entity.conditions.null() {
+                            let condition_idx = entity.conditions.to_index_overlay(stage.value);
+
+                            let mut condition_reader = Cursor::new(&buf[condition_idx as usize..]);
+
+                            loop {
+                                let condition_result = u32::read(&mut condition_reader);
+
+                                match condition_result {
+                                    Ok(condition) => {
+                                        entity_conditions_raw.push(condition);
+
+                                        if condition == 0x0000ffff {
+                                            break;
+                                        }
+                                    }
+                                    Err(_) => panic!("binread error"),
+                                }
+                            }
+                        }
 
                         if entity.logic.null() {
                             entities_raw.push(entity);
@@ -665,10 +688,23 @@ async fn read_map_objects(
                         slen: 0x4,
                     };
 
+                    let entity_conditions = ObjectArray {
+                        original: entity_conditions_raw.clone(),
+                        modified: entity_conditions_raw.clone(),
+                        index: entities_raw
+                            .iter()
+                            .filter(|x| !x.conditions.null())
+                            .min_by(|a, b| a.conditions.value.cmp(&b.conditions.value))
+                            .map(|x| x.conditions.to_index_overlay(stage.value) as usize)
+                            .unwrap_or(0),
+                        slen: 0x4,
+                    };
+
                     entities = Some(MapEntities {
                         entities: entities_obj,
                         entity_logics,
                         scripts_conditions,
+                        entity_conditions,
                     })
                 }
             }
@@ -1507,6 +1543,7 @@ async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyh
             map_entities.entities.write_buf(buf)?;
             map_entities.entity_logics.write_buf(buf)?;
             map_entities.scripts_conditions.write_buf(buf)?;
+            map_entities.entity_conditions.write_buf(buf)?;
         }
 
         if let Some(map_color) = &mut object.map_color {
