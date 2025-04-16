@@ -111,8 +111,8 @@ pub struct StageEncountersObject {
 
 pub struct MapEntities {
     pub entities: ObjectArray<EntityData>,
-    pub entity_logics: Object<Vec<EntityLogic>>,
-    pub scripts_conditions: Object<Vec<u32>>,
+    pub entity_logics: ObjectArray<EntityLogic>,
+    pub scripts_conditions: ObjectArray<u32>,
 }
 
 pub struct MapObject {
@@ -645,7 +645,7 @@ async fn read_map_objects(
                         slen: 0x14,
                     };
 
-                    let entity_logics = Object {
+                    let entity_logics = ObjectArray {
                         original: entity_logics_raw.clone(),
                         modified: entity_logics_raw.clone(),
                         index: entities_raw
@@ -653,16 +653,16 @@ async fn read_map_objects(
                             .find(|x| !x.logic.null())
                             .map(|x| x.logic.to_index_overlay(stage.value) as usize)
                             .unwrap_or(0),
-                        slen: 0xc * entity_logics_raw.len(),
+                        slen: 0xc,
                     };
 
-                    let scripts_conditions = Object {
+                    let scripts_conditions = ObjectArray {
                         original: scripts_condition_raw.clone(),
                         modified: scripts_condition_raw.clone(),
                         index: min_script_cond
                             .map(|x| x.to_index_overlay(stage.value) as usize)
                             .unwrap_or(0),
-                        slen: 0x4 * scripts_condition_raw.len(),
+                        slen: 0x4,
                     };
 
                     entities = Some(MapEntities {
