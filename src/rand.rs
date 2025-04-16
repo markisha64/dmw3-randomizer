@@ -641,7 +641,7 @@ async fn read_map_objects(
                     let entities_obj = ObjectArray {
                         original: entities_raw.clone(),
                         modified: entities_raw.clone(),
-                        index: idx as usize,
+                        index: real_idx as usize,
                         slen: 0x14,
                     };
 
