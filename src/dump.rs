@@ -170,10 +170,25 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         let mut areas = Vec::new();
         let mut encounters = Vec::new();
         let mut stage_id = Vec::new();
+        let mut entities = Vec::new();
+        let mut entity_logics = Vec::new();
+        let mut scripts_conditions = Vec::new();
 
         map_obj.stage_id.write(&mut stage_id)?;
 
         fs::create_dir_all(format!("dump/{}/maps/{}", rom_name, &map_obj.file_name))?;
+
+        if let Some(map_entities) = &map_obj.entities {
+            map_entities.entities.original.write(&mut entities)?;
+            map_entities
+                .entity_logics
+                .original
+                .write(&mut entity_logics)?;
+            map_entities
+                .scripts_conditions
+                .original
+                .write(&mut scripts_conditions)?;
+        }
 
         for stage_encounters_obj in &map_obj.stage_encounters {
             for area in &stage_encounters_obj.stage_encounter_areas {
@@ -212,6 +227,24 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         fs::write(
             format!("dump/{}/maps/{}/stage_id", rom_name, &map_obj.file_name),
             stage_id,
+        )?;
+        fs::write(
+            format!("dump/{}/maps/{}/entities", rom_name, &map_obj.file_name),
+            entities,
+        )?;
+        fs::write(
+            format!(
+                "dump/{}/maps/{}/entity_logics",
+                rom_name, &map_obj.file_name
+            ),
+            entity_logics,
+        )?;
+        fs::write(
+            format!(
+                "dump/{}/maps/{}/scripts_conditions",
+                rom_name, &map_obj.file_name
+            ),
+            scripts_conditions,
         )?;
     }
 
@@ -325,8 +358,23 @@ pub async fn create_spoiler(
         let mut areas = Vec::new();
         let mut encounters = Vec::new();
         let mut stage_id = Vec::new();
+        let mut entities = Vec::new();
+        let mut entity_logics = Vec::new();
+        let mut scripts_conditions = Vec::new();
 
         map_obj.stage_id.write(&mut stage_id)?;
+
+        if let Some(map_entities) = &map_obj.entities {
+            map_entities.entities.modified.write(&mut entities)?;
+            map_entities
+                .entity_logics
+                .modified
+                .write(&mut entity_logics)?;
+            map_entities
+                .scripts_conditions
+                .modified
+                .write(&mut scripts_conditions)?;
+        }
 
         for stage_encounters_obj in &map_obj.stage_encounters {
             for area in &stage_encounters_obj.stage_encounter_areas {
@@ -362,6 +410,21 @@ pub async fn create_spoiler(
             &mut tar_builder,
             format!("maps/{}/stage_id", &map_obj.file_name).as_str(),
             &stage_id,
+        )?;
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/entities", &map_obj.file_name).as_str(),
+            &entities,
+        )?;
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/entity_logics", &map_obj.file_name).as_str(),
+            &entity_logics,
+        )?;
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/scripts_conditions", &map_obj.file_name).as_str(),
+            &scripts_conditions,
         )?;
     }
 

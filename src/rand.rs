@@ -66,7 +66,7 @@ pub struct ObjectArray<T> {
     slen: usize,
 }
 
-trait WriteObjects {
+pub trait WriteObjects {
     fn write_buf(&self, source_buf: &mut Vec<u8>) -> anyhow::Result<()>;
 }
 
