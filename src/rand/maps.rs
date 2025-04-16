@@ -7,8 +7,6 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::{Maps, Randomizer, ShopItems};
 
-use super::dmw3_structs::Pointer;
-
 fn type_script_add_item(value: u32) -> bool {
     (value >= 0x80) && (value - 0x80) < 0xf
 }
@@ -167,125 +165,160 @@ fn item_boxes(
 
     for map in &mut objects.map_objects {
         if let Some(entities) = &mut map.entities {
-            for entity in &mut entities.modified {
-                if !dmw3_consts::ITEM_BOX_SPRITES.contains(&entity.sprite) || entity.logic.null() {
-                    continue;
-                }
+            // println!("name {}", map.file_name);
+            let logic_min = entities
+                .entities
+                .modified
+                .iter()
+                .find(|x| !x.logic.null())
+                .map(|x| x.logic);
 
-                let logic = map
-                    .entity_logics
-                    .iter_mut()
-                    .find(|x| {
-                        Pointer::from_index_overlay(x.index as u32, objects.stage.value)
-                            == entity.logic
-                    })
-                    .context("failed to find logic")?;
+            let scripts = entities
+                .entity_logics
+                .modified
+                .iter()
+                .filter(|x| !x.script.null())
+                .map(|x| x.script);
 
-                if logic.original.script.null() {
-                    continue;
-                }
+            let conditions = entities
+                .entity_logics
+                .modified
+                .iter()
+                .filter(|x| !x.conditions.null())
+                .map(|x| x.conditions);
 
-                let script = map
-                    .scripts
-                    .iter_mut()
-                    .find(|x| {
-                        Pointer::from_index_overlay(x.index as u32, objects.stage.value)
-                            == logic.original.script
-                    })
-                    .context("failed to find script")?;
+            let mut script_cond = Vec::from_iter(scripts);
+            script_cond.extend(conditions);
 
-                for i in 0..script.original.len() {
-                    let t = (script.original[i] & 0xfffe) >> 8;
+            let script_cond_min = script_cond.iter().min_by(|a, b| a.value.cmp(&b.value));
 
-                    if !type_script_add_item(t) {
+            let minn = logic_min.zip(script_cond_min);
+
+            if let Some((min_logic, min_script_cond)) = minn {
+                for entity in &mut entities.entities.modified {
+                    if !dmw3_consts::ITEM_BOX_SPRITES.contains(&entity.sprite)
+                        || entity.logic.null()
+                    {
                         continue;
                     }
 
-                    let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
+                    let logic_idx = ((entity.logic.value - min_logic.value) / 0xc) as usize;
 
-                    script.modified[i] = nv | ((script.original[i] >> 9) << 9);
-
-                    if map.talk_file.is_none() {
-                        break;
-                    }
-
-                    let talk_file_index = map.talk_file.context("failed to find talk file")?;
-
-                    let real_file = objects
-                        .file_map
-                        .iter()
-                        .find(|x| x.offs == objects.sector_offsets[talk_file_index as usize])
-                        .context("failed to find real file")?;
-
-                    let sname = &real_file.name[1..];
-
-                    let group = objects
-                        .text_files
-                        .get_mut(sname)
-                        .context("failed to get mut")?;
-
-                    for (_lang, text_file) in &mut group.files {
-                        text_file.file.files[talk_file_index as usize] = vec![0, 0, 0, 0];
-                    }
-
-                    if let Some(idx) = group.mapped_items.get(&nv) {
-                        logic.modified.text_index = *idx;
-
-                        break;
-                    }
-
-                    let doesnt_fit = group
-                        .files
-                        .iter()
-                        .find(|(lang, text_file)| {
-                            objects
-                                .items
-                                .files
-                                .get(lang)
-                                .map(|l| {
-                                    let item_name = l.file.files[nv as usize].clone();
-
-                                    let csize = text_file.file.file_size_text();
-
-                                    let received_item_text = lang.to_received_item(item_name);
-
-                                    csize + 4 + received_item_text.len()
-                                        > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
-                                })
-                                .unwrap_or(false)
-                        })
-                        .is_some();
-
-                    if doesnt_fit {
-                        if let Some(idx) = group.generic_item {
-                            logic.modified.text_index = idx;
+                    for logic in &mut entities.entity_logics.modified[logic_idx..] {
+                        if logic.text_index == 0 {
+                            break;
                         }
 
-                        break;
+                        if logic.script.null() {
+                            continue;
+                        }
+
+                        let script_idx =
+                            ((logic.script.value - min_script_cond.value) / 0x4) as usize;
+
+                        for script in &mut entities.scripts_conditions.modified[script_idx..] {
+                            if *script == 0x0000ffff {
+                                break;
+                            }
+
+                            let t = (*script & 0xfffe) >> 8;
+
+                            if !type_script_add_item(t) {
+                                continue;
+                            }
+
+                            let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
+
+                            *script = nv | ((*script >> 9) << 9);
+
+                            if map.talk_file.is_none() {
+                                break;
+                            }
+
+                            let talk_file_index =
+                                map.talk_file.context("failed to find talk file")?;
+
+                            let real_file = objects
+                                .file_map
+                                .iter()
+                                .find(|x| {
+                                    x.offs == objects.sector_offsets[talk_file_index as usize]
+                                })
+                                .context("failed to find real file")?;
+
+                            let sname = &real_file.name[1..];
+
+                            let group = objects
+                                .text_files
+                                .get_mut(sname)
+                                .context("failed to get mut")?;
+
+                            for (_lang, text_file) in &mut group.files {
+                                text_file.file.files[talk_file_index as usize] = vec![0, 0, 0, 0];
+                            }
+
+                            if let Some(idx) = group.mapped_items.get(&nv) {
+                                logic.text_index = (*idx) as u32;
+
+                                break;
+                            }
+
+                            let doesnt_fit = group
+                                .files
+                                .iter()
+                                .find(|(lang, text_file)| {
+                                    objects
+                                        .items
+                                        .files
+                                        .get(lang)
+                                        .map(|l| {
+                                            let item_name = l.file.files[nv as usize].clone();
+
+                                            let csize = text_file.file.file_size_text();
+
+                                            let received_item_text =
+                                                lang.to_received_item(item_name);
+
+                                            csize + 4 + received_item_text.len()
+                                                > ((csize / 2048) + (csize % 2048 != 0) as usize)
+                                                    * 2048
+                                        })
+                                        .unwrap_or(false)
+                                })
+                                .is_some();
+
+                            if doesnt_fit {
+                                if let Some(idx) = group.generic_item {
+                                    logic.text_index = idx as u32;
+                                }
+
+                                break;
+                            }
+
+                            let mut idx = 0;
+                            for (lang, talk_file) in &mut group.files {
+                                let item_name = objects
+                                    .items
+                                    .files
+                                    .get(lang)
+                                    .context("failed to get by lang")?
+                                    .file
+                                    .files[nv as usize]
+                                    .clone();
+
+                                let received_item_text = lang.to_received_item(item_name);
+                                idx = talk_file.file.files.len();
+
+                                logic.text_index = idx as u32;
+
+                                talk_file.file.files.push(received_item_text);
+                            }
+
+                            group.mapped_items.insert(nv, idx as u16);
+
+                            break;
+                        }
                     }
-
-                    let mut idx = 0;
-                    for (lang, talk_file) in &mut group.files {
-                        let item_name = objects
-                            .items
-                            .files
-                            .get(lang)
-                            .context("failed to get by lang")?
-                            .file
-                            .files[nv as usize]
-                            .clone();
-
-                        let received_item_text = lang.to_received_item(item_name);
-                        idx = talk_file.file.files.len() as u16;
-
-                        logic.modified.text_index = idx;
-
-                        talk_file.file.files.push(received_item_text);
-                    }
-
-                    group.mapped_items.insert(nv, idx);
-
-                    break;
                 }
             }
         }

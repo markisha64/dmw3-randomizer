@@ -1330,12 +1330,12 @@ dependencies = [
 [[package]]
 name = "dmw3_consts"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#5fc70e09de23c6797315f674bedd415eb2f71559"
+source = "git+https://github.com/markisha64/dmw3-util#531cc672fb98e6d429b532a22617a3e4cd4473e2"
 
 [[package]]
 name = "dmw3_model"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#5fc70e09de23c6797315f674bedd415eb2f71559"
+source = "git+https://github.com/markisha64/dmw3-util#531cc672fb98e6d429b532a22617a3e4cd4473e2"
 dependencies = [
  "binread",
  "binwrite",
@@ -1344,7 +1344,7 @@ dependencies = [
 [[package]]
 name = "dmw3_pack"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#5fc70e09de23c6797315f674bedd415eb2f71559"
+source = "git+https://github.com/markisha64/dmw3-util#531cc672fb98e6d429b532a22617a3e4cd4473e2"
 dependencies = [
  "anyhow",
  "binread",
@@ -1383,7 +1383,7 @@ dependencies = [
 [[package]]
 name = "dmw3_structs"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#5fc70e09de23c6797315f674bedd415eb2f71559"
+source = "git+https://github.com/markisha64/dmw3-util#531cc672fb98e6d429b532a22617a3e4cd4473e2"
 dependencies = [
  "binread",
  "binwrite",
@@ -3528,7 +3528,7 @@ dependencies = [
 [[package]]
 name = "rlen"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#5fc70e09de23c6797315f674bedd415eb2f71559"
+source = "git+https://github.com/markisha64/dmw3-util#531cc672fb98e6d429b532a22617a3e4cd4473e2"
 dependencies = [
  "clap",
 ]
@@ -4202,7 +4202,7 @@ dependencies = [
 [[package]]
 name = "tim"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#5fc70e09de23c6797315f674bedd415eb2f71559"
+source = "git+https://github.com/markisha64/dmw3-util#531cc672fb98e6d429b532a22617a3e4cd4473e2"
 dependencies = [
  "clap",
 ]

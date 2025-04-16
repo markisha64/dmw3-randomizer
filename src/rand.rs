@@ -109,15 +109,19 @@ pub struct StageEncountersObject {
     pub stage_encounters: Vec<Option<ObjectArray<StageEncounter>>>,
 }
 
+pub struct MapEntities {
+    pub entities: ObjectArray<EntityData>,
+    pub entity_logics: Object<Vec<EntityLogic>>,
+    pub scripts_conditions: Object<Vec<u32>>,
+}
+
 pub struct MapObject {
     pub file_name: String,
     buf: Vec<u8>,
     environmentals: Option<ObjectArray<Environmental>>,
     map_color: Option<Object<MapColor>>,
     background_file_index: Object<u16>,
-    entities: Option<ObjectArray<EntityData>>,
-    entity_logics: Vec<Object<EntityLogic>>,
-    scripts: Vec<ObjectArray<u32>>,
+    pub entities: Option<MapEntities>,
     talk_file: Option<u16>,
     pub stage_encounters: Vec<StageEncountersObject>,
     pub stage_id: u16,
@@ -424,12 +428,6 @@ async fn read_map_objects(
             let mut environmentals: Vec<Environmental> = Vec::new();
             let mut environmentals_index: Option<u32> = None;
 
-            let mut entities: Vec<EntityData> = Vec::new();
-            let mut entities_index: Option<u32> = None;
-
-            let mut entity_logics = Vec::new();
-            let mut scripts = Vec::new();
-
             let mut talk_file = None;
 
             // we need to assemble full sw instruction
@@ -510,6 +508,11 @@ async fn read_map_objects(
                 }
             }
 
+            let mut entities_raw: Vec<EntityData> = Vec::new();
+            let mut entity_logics_raw = Vec::new();
+            let mut scripts_condition_raw = Vec::new();
+            let mut entities = None;
+
             if let Some(entities_set) = buf[initsp_index..initp_end_index]
                 .chunks(4)
                 .position(|x| x == entities_instruction)
@@ -534,64 +537,139 @@ async fn read_map_objects(
                     let real_pointer = Pointer::from(&buf[ent_index..ent_index + 4]);
 
                     let real_idx = real_pointer.to_index_overlay(stage.value);
-                    entities_index = Some(real_idx);
 
                     let mut entities_reader =
                         Cursor::new(&buf[(real_idx as usize)..(real_idx as usize) + 0x14 * i]);
 
+                    let mut min_script_cond: Option<Pointer> = None;
+
                     for _ in 0..i {
                         let entity = EntityData::read(&mut entities_reader).ok()?;
 
-                        if !entity.logic.null() {
-                            let logic_idx = entity.logic.to_index_overlay(stage.value);
+                        if entity.logic.null() {
+                            entities_raw.push(entity);
 
-                            let mut logic_reader =
-                                Cursor::new(&buf[logic_idx as usize..logic_idx as usize + 0xa]);
+                            continue;
+                        }
 
-                            if let Ok(logic) = EntityLogic::read(&mut logic_reader) {
-                                entity_logics.push(Object {
-                                    original: logic.clone(),
-                                    modified: logic.clone(),
-                                    slen: 0xa,
-                                    index: logic_idx as usize,
-                                });
+                        let logic_idx = entity.logic.to_index_overlay(stage.value);
 
-                                let mut full_script = Vec::new();
-                                if !logic.script.null() {
-                                    let script_idx = logic.script.to_index_overlay(stage.value);
+                        let mut logic_reader = Cursor::new(&buf[logic_idx as usize..]);
 
-                                    let mut script_reader =
-                                        Cursor::new(&buf[script_idx as usize..]);
+                        let mut logics = Vec::new();
+                        loop {
+                            let logic = match EntityLogic::read(&mut logic_reader) {
+                                Ok(x) => x,
+                                Err(_) => break,
+                            };
 
-                                    loop {
-                                        let script_result = u32::read(&mut script_reader);
+                            let textbox_idx = logic.text_index;
 
-                                        match script_result {
-                                            Ok(script) => {
-                                                if script == 0x0000ffff {
-                                                    break;
-                                                }
+                            logics.push(logic);
 
-                                                full_script.push(script);
+                            if textbox_idx == 0 {
+                                break;
+                            }
+                        }
+
+                        for logic in &logics {
+                            if !logic.conditions.null() {
+                                if min_script_cond.is_none() {
+                                    min_script_cond = Some(logic.conditions);
+                                }
+
+                                if logic.conditions.value < min_script_cond.unwrap().value {
+                                    min_script_cond = Some(logic.conditions);
+                                }
+
+                                let condition_idx = logic.conditions.to_index_overlay(stage.value);
+
+                                let mut condition_reader =
+                                    Cursor::new(&buf[condition_idx as usize..]);
+
+                                loop {
+                                    let condition_result = u32::read(&mut condition_reader);
+
+                                    match condition_result {
+                                        Ok(condition) => {
+                                            scripts_condition_raw.push(condition);
+
+                                            if condition == 0x0000ffff {
+                                                break;
                                             }
-                                            Err(_) => panic!("binread error"),
                                         }
+                                        Err(_) => panic!("binread error"),
                                     }
+                                }
+                            }
 
-                                    if !full_script.is_empty() {
-                                        scripts.push(ObjectArray {
-                                            original: full_script.clone(),
-                                            modified: full_script.clone(),
-                                            slen: 0x4,
-                                            index: script_idx as usize,
-                                        })
+                            if !logic.script.null() {
+                                if min_script_cond.is_none() {
+                                    min_script_cond = Some(logic.script);
+                                }
+
+                                if logic.script.value < min_script_cond.unwrap().value {
+                                    min_script_cond = Some(logic.script);
+                                }
+
+                                let script_idx = logic.script.to_index_overlay(stage.value);
+
+                                let mut script_reader = Cursor::new(&buf[script_idx as usize..]);
+
+                                loop {
+                                    let script_result = u32::read(&mut script_reader);
+
+                                    match script_result {
+                                        Ok(script) => {
+                                            scripts_condition_raw.push(script);
+
+                                            if script == 0x0000ffff {
+                                                break;
+                                            }
+                                        }
+                                        Err(_) => panic!("binread error"),
                                     }
                                 }
                             }
                         }
 
-                        entities.push(entity);
+                        entity_logics_raw.extend(logics.into_iter());
+
+                        entities_raw.push(entity);
                     }
+
+                    let entities_obj = ObjectArray {
+                        original: entities_raw.clone(),
+                        modified: entities_raw.clone(),
+                        index: idx as usize,
+                        slen: 0x14,
+                    };
+
+                    let entity_logics = Object {
+                        original: entity_logics_raw.clone(),
+                        modified: entity_logics_raw.clone(),
+                        index: entities_raw
+                            .iter()
+                            .find(|x| !x.logic.null())
+                            .map(|x| x.logic.to_index_overlay(stage.value) as usize)
+                            .unwrap_or(0),
+                        slen: 0xc * entity_logics_raw.len(),
+                    };
+
+                    let scripts_conditions = Object {
+                        original: scripts_condition_raw.clone(),
+                        modified: scripts_condition_raw.clone(),
+                        index: min_script_cond
+                            .map(|x| x.to_index_overlay(stage.value) as usize)
+                            .unwrap_or(0),
+                        slen: 0x4 * scripts_condition_raw.len(),
+                    };
+
+                    entities = Some(MapEntities {
+                        entities: entities_obj,
+                        entity_logics,
+                        scripts_conditions,
+                    })
                 }
             }
 
@@ -733,22 +811,13 @@ async fn read_map_objects(
                 slen: 0x18,
             });
 
-            let entities_object = entities_index.map(|idx| ObjectArray {
-                original: entities.clone(),
-                modified: entities.clone(),
-                index: idx as usize,
-                slen: 0x14,
-            });
-
             // TODO: instead of always checking first 2 instructions before
             // I need to find the first lui (which is considerably suckier)
             Some(MapObject {
                 file_name,
                 buf: buf.clone(),
                 environmentals: environmental_object,
-                entities: entities_object,
-                entity_logics,
-                scripts,
+                entities,
                 map_color,
                 background_file_index: background_object,
                 talk_file,
@@ -1434,16 +1503,10 @@ async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyh
             environmentals.write_buf(buf)?;
         }
 
-        if let Some(entities) = &mut object.entities {
-            entities.write_buf(buf)?;
-        }
-
-        for logic in &mut object.entity_logics {
-            logic.write_buf(buf)?;
-        }
-
-        for script in &mut object.scripts {
-            script.write_buf(buf)?;
+        if let Some(map_entities) = &mut object.entities {
+            map_entities.entities.write_buf(buf)?;
+            map_entities.entity_logics.write_buf(buf)?;
+            map_entities.scripts_conditions.write_buf(buf)?;
         }
 
         if let Some(map_color) = &mut object.map_color {
