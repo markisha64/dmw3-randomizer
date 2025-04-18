@@ -173,6 +173,7 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         let mut entities = Vec::new();
         let mut entity_logics = Vec::new();
         let mut scripts_conditions = Vec::new();
+        let mut entity_conditions = Vec::new();
 
         map_obj.stage_id.write(&mut stage_id)?;
 
@@ -188,6 +189,10 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
                 .scripts_conditions
                 .original
                 .write(&mut scripts_conditions)?;
+            map_entities
+                .entity_conditions
+                .original
+                .write(&mut entity_conditions)?;
         }
 
         for stage_encounters_obj in &map_obj.stage_encounters {
@@ -245,6 +250,13 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
                 rom_name, &map_obj.file_name
             ),
             scripts_conditions,
+        )?;
+        fs::write(
+            format!(
+                "dump/{}/maps/{}/entity_conditions",
+                rom_name, &map_obj.file_name
+            ),
+            entity_conditions,
         )?;
     }
 
@@ -361,6 +373,7 @@ pub async fn create_spoiler(
         let mut entities = Vec::new();
         let mut entity_logics = Vec::new();
         let mut scripts_conditions = Vec::new();
+        let mut entity_conditions = Vec::new();
 
         map_obj.stage_id.write(&mut stage_id)?;
 
@@ -374,6 +387,10 @@ pub async fn create_spoiler(
                 .scripts_conditions
                 .modified
                 .write(&mut scripts_conditions)?;
+            map_entities
+                .entity_conditions
+                .modified
+                .write(&mut entity_conditions)?;
         }
 
         for stage_encounters_obj in &map_obj.stage_encounters {
@@ -425,6 +442,11 @@ pub async fn create_spoiler(
             &mut tar_builder,
             format!("maps/{}/scripts_conditions", &map_obj.file_name).as_str(),
             &scripts_conditions,
+        )?;
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/entity_conditions", &map_obj.file_name).as_str(),
+            &entity_conditions,
         )?;
     }
 
