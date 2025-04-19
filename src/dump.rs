@@ -170,12 +170,14 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         let mut areas = Vec::new();
         let mut encounters = Vec::new();
         let mut stage_id = Vec::new();
+        let mut talk_file = Vec::new();
         let mut entities = Vec::new();
         let mut entity_logics = Vec::new();
         let mut scripts_conditions = Vec::new();
         let mut entity_conditions = Vec::new();
 
         map_obj.stage_id.write(&mut stage_id)?;
+        map_obj.talk_file.write(&mut talk_file)?;
 
         fs::create_dir_all(format!("dump/{}/maps/{}", rom_name, &map_obj.file_name))?;
 
@@ -232,6 +234,10 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         fs::write(
             format!("dump/{}/maps/{}/stage_id", rom_name, &map_obj.file_name),
             stage_id,
+        )?;
+        fs::write(
+            format!("dump/{}/maps/{}/talk_file", rom_name, &map_obj.file_name),
+            talk_file,
         )?;
         fs::write(
             format!("dump/{}/maps/{}/entities", rom_name, &map_obj.file_name),
@@ -370,12 +376,14 @@ pub async fn create_spoiler(
         let mut areas = Vec::new();
         let mut encounters = Vec::new();
         let mut stage_id = Vec::new();
+        let mut talk_file = Vec::new();
         let mut entities = Vec::new();
         let mut entity_logics = Vec::new();
         let mut scripts_conditions = Vec::new();
         let mut entity_conditions = Vec::new();
 
         map_obj.stage_id.write(&mut stage_id)?;
+        map_obj.talk_file.write(&mut talk_file)?;
 
         if let Some(map_entities) = &map_obj.entities {
             map_entities.entities.modified.write(&mut entities)?;
@@ -427,6 +435,11 @@ pub async fn create_spoiler(
             &mut tar_builder,
             format!("maps/{}/stage_id", &map_obj.file_name).as_str(),
             &stage_id,
+        )?;
+        append_file(
+            &mut tar_builder,
+            format!("maps/{}/talk_file", &map_obj.file_name).as_str(),
+            &talk_file,
         )?;
         append_file(
             &mut tar_builder,

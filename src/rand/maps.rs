@@ -231,19 +231,10 @@ fn item_boxes(
 
                             script.bitfield = nv | ((script.bitfield >> 9) << 9);
 
-                            if map.talk_file.is_none() {
-                                break;
-                            }
-
-                            let talk_file_index =
-                                map.talk_file.context("failed to find talk file")?;
-
                             let real_file = objects
                                 .file_map
                                 .iter()
-                                .find(|x| {
-                                    x.offs == objects.sector_offsets[talk_file_index as usize]
-                                })
+                                .find(|x| x.offs == objects.sector_offsets[map.talk_file as usize])
                                 .context("failed to find real file")?;
 
                             let sname = &real_file.name[1..];
@@ -254,7 +245,7 @@ fn item_boxes(
                                 .context("failed to get mut")?;
 
                             for (_lang, text_file) in &mut group.files {
-                                text_file.file.files[talk_file_index as usize] = vec![0, 0, 0, 0];
+                                text_file.file.files[map.talk_file as usize] = vec![0, 0, 0, 0];
                             }
 
                             if let Some(idx) = group.mapped_items.get(&nv) {

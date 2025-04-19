@@ -124,7 +124,7 @@ pub struct MapObject {
     map_color: Option<Object<MapColor>>,
     background_file_index: Object<u16>,
     pub entities: Option<MapEntities>,
-    talk_file: Option<u16>,
+    pub talk_file: u16,
     pub stage_encounters: Vec<StageEncountersObject>,
     pub stage_id: u16,
 }
@@ -430,8 +430,6 @@ async fn read_map_objects(
             let mut environmentals: Vec<Environmental> = Vec::new();
             let mut environmentals_index: Option<u32> = None;
 
-            let mut talk_file = None;
-
             // we need to assemble full sw instruction
             let environmental_instruction = [
                 dmw3_consts::ENVIRONMENTAL_INSTRUCTION[0],
@@ -461,27 +459,23 @@ async fn read_map_objects(
                 sw[1],
             ];
 
-            if let Some(talk_file_set) = buf[initsp_index..initp_end_index]
+            let talk_file_set = buf[initsp_index..initp_end_index]
                 .windows(4)
-                .position(|x| x == talk_file_instruction)
-            {
-                let instr = match executable {
-                    Executable::PAL => dmw3_consts::TALK_FILE_ADDIU,
-                    _ => dmw3_consts::LI_INSTRUCTION,
-                };
+                .position(|x| x == talk_file_instruction)?;
 
-                let res = buf[initsp_index..initsp_index + talk_file_set]
-                    .windows(2)
-                    .rev()
-                    .position(|x| x == instr)?;
+            let instr = match executable {
+                Executable::PAL => dmw3_consts::TALK_FILE_ADDIU,
+                _ => dmw3_consts::LI_INSTRUCTION,
+            };
 
-                let instruction = initsp_index + talk_file_set - res - 2;
+            let res = buf[initsp_index..initsp_index + talk_file_set]
+                .windows(2)
+                .rev()
+                .position(|x| x == instr)?;
 
-                talk_file = Some(u16::from_le_bytes([
-                    buf[instruction - 2],
-                    buf[instruction - 1],
-                ]));
-            }
+            let instruction = initsp_index + talk_file_set - res - 2;
+
+            let talk_file = u16::from_le_bytes([buf[instruction - 2], buf[instruction - 1]]);
 
             if let Some(environmental_set) = buf[initsp_index..initp_end_index]
                 .chunks(4)
