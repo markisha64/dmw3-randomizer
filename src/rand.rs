@@ -11,6 +11,7 @@ use dmw3_model::Header;
 use dmw3_pack::Packed;
 use dmw3_structs::PartyExpBits;
 use dmw3_structs::ScreenNameMapping;
+use dmw3_structs::ScriptConditionStep;
 use dmw3_structs::StageEncounter;
 use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
@@ -112,8 +113,8 @@ pub struct StageEncountersObject {
 pub struct MapEntities {
     pub entities: ObjectArray<EntityData>,
     pub entity_logics: ObjectArray<EntityLogic>,
-    pub scripts_conditions: ObjectArray<u32>,
-    pub entity_conditions: ObjectArray<u32>,
+    pub scripts_conditions: ObjectArray<ScriptConditionStep>,
+    pub entity_conditions: ObjectArray<ScriptConditionStep>,
 }
 
 pub struct MapObject {
@@ -554,13 +555,14 @@ async fn read_map_objects(
                             let mut condition_reader = Cursor::new(&buf[condition_idx as usize..]);
 
                             loop {
-                                let condition_result = u32::read(&mut condition_reader);
+                                let condition_result =
+                                    ScriptConditionStep::read(&mut condition_reader);
 
                                 match condition_result {
                                     Ok(condition) => {
-                                        entity_conditions_raw.push(condition);
+                                        entity_conditions_raw.push(condition.clone());
 
-                                        if condition == 0x0000ffff {
+                                        if condition.is_last_step() {
                                             break;
                                         }
                                     }
@@ -611,13 +613,14 @@ async fn read_map_objects(
                                     Cursor::new(&buf[condition_idx as usize..]);
 
                                 loop {
-                                    let condition_result = u32::read(&mut condition_reader);
+                                    let condition_result =
+                                        ScriptConditionStep::read(&mut condition_reader);
 
                                     match condition_result {
                                         Ok(condition) => {
-                                            scripts_condition_raw.push(condition);
+                                            scripts_condition_raw.push(condition.clone());
 
-                                            if condition == 0x0000ffff {
+                                            if condition.is_last_step() {
                                                 break;
                                             }
                                         }
@@ -640,13 +643,14 @@ async fn read_map_objects(
                                 let mut script_reader = Cursor::new(&buf[script_idx as usize..]);
 
                                 loop {
-                                    let script_result = u32::read(&mut script_reader);
+                                    let script_result =
+                                        ScriptConditionStep::read(&mut script_reader);
 
                                     match script_result {
                                         Ok(script) => {
-                                            scripts_condition_raw.push(script);
+                                            scripts_condition_raw.push(script.clone());
 
-                                            if script == 0x0000ffff {
+                                            if script.is_last_step() {
                                                 break;
                                             }
                                         }
