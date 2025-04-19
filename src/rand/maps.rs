@@ -7,7 +7,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::{Maps, Randomizer, ShopItems};
 
-fn type_script_add_item(value: u32) -> bool {
+fn type_script_add_item(value: u16) -> bool {
     (value >= 0x80) && (value - 0x80) < 0xf
 }
 
@@ -217,19 +217,19 @@ fn item_boxes(
                             ((logic.script.value - min_script_cond.value) / 0x4) as usize;
 
                         for script in &mut entities.scripts_conditions.modified[script_idx..] {
-                            if *script == 0x0000ffff {
+                            if script.is_last_step() {
                                 break;
                             }
 
-                            let t = (*script & 0xfffe) >> 8;
+                            let t = (script.bitfield & 0xfffe) >> 8;
 
                             if !type_script_add_item(t) {
                                 continue;
                             }
 
-                            let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
+                            let nv = pool[(rng.next_u64() % pool.len() as u64) as usize] as u16;
 
-                            *script = nv | ((*script >> 9) << 9);
+                            script.bitfield = nv | ((script.bitfield >> 9) << 9);
 
                             if map.talk_file.is_none() {
                                 break;

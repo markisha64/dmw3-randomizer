@@ -56,7 +56,7 @@ pub struct TextFile {
 
 pub struct TextFileGroup {
     files: HashMap<Language, TextFile>,
-    mapped_items: HashMap<u32, u16>,
+    mapped_items: HashMap<u16, u16>,
     generic_item: Option<u16>,
 }
 
