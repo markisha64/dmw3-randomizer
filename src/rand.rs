@@ -9,6 +9,7 @@ use boolinator::Boolinator;
 use dmw3_consts::SCREEN_NAME_MAPPING;
 use dmw3_model::Header;
 use dmw3_pack::Packed;
+use dmw3_structs::CardShopData;
 use dmw3_structs::PartyExpBits;
 use dmw3_structs::ScreenNameMapping;
 use dmw3_structs::ScriptConditionStep;
@@ -99,6 +100,7 @@ struct Bufs {
     encounter_buf: Vec<u8>,
     main_buf: Vec<u8>,
     shops_buf: Vec<u8>,
+    card_shops_buf: Vec<u8>,
     exp_buf: Vec<u8>,
     pack_select_buf: Vec<u8>,
     _map_buf: Vec<u8>,
@@ -154,8 +156,13 @@ pub struct Objects {
     pub party_exp_bits: ObjectArray<PartyExpBits>,
     pub rookie_data: ObjectArray<DigivolutionData>,
     pub digivolution_data: ObjectArray<DigivolutionData>,
+
     pub shops: ObjectArray<Shop>,
     pub shop_items: ObjectArray<u16>,
+
+    pub card_shops: ObjectArray<CardShopData>,
+    pub card_shop_items: ObjectArray<u16>,
+
     pub item_shop_data: ObjectArray<ItemShopData>,
     pub move_data: ObjectArray<MoveData>,
     pub dv_cond: ObjectArray<DigivolutionConditions>,
@@ -1027,6 +1034,12 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str())).await?;
     let shops_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).await?;
+    let card_shops_buf = fs::read(format!(
+        "extract/{}/{}",
+        rom_name,
+        dmw3_consts::CARD_SHOPS_FILE
+    ))
+    .await?;
     let exp_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).await?;
     let map_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE)).await?;
     let pack_select_buf = fs::read(format!(
@@ -1179,6 +1192,37 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
         item_shop_data_arr.push(item_shop_data);
     }
+
+    let card_shops_index = card_shops_buf
+        .windows(8)
+        .position(|window| window == b"\x31\x00\x00\x00\x00\x00\x00\x00")
+        .context("Can't find card shops beginning")?;
+
+    let mut card_shops_reader = Cursor::new(&card_shops_buf[card_shops_index..]);
+
+    let mut card_shops_arr: Vec<CardShopData> = Vec::new();
+
+    loop {
+        let shop = CardShopData::read(&mut card_shops_reader)?;
+        if shop.shop_id == -1 {
+            break;
+        }
+
+        card_shops_arr.push(shop);
+    }
+
+    let front_index = card_shops_arr
+        .first()
+        .context("No card shops found")?
+        .items
+        .to_index_overlay(overlay.value as u32) as usize;
+
+    let card_shop_items_arr: Vec<u16> = card_shops_buf
+        [front_index..front_index + 8 * 2 * card_shops_arr.len()]
+        .to_vec()
+        .chunks_exact(2)
+        .map(|a| u16::from_ne_bytes([a[0], a[1]]))
+        .collect();
 
     let digivolution_data_index = main_buf
         .windows(16)
@@ -1443,6 +1487,20 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         slen: 0x2,
     };
 
+    let card_shops_object: ObjectArray<CardShopData> = ObjectArray {
+        original: card_shops_arr.clone(),
+        modified: card_shops_arr.clone(),
+        index: card_shops_index,
+        slen: 0x12,
+    };
+
+    let card_shop_items_object: ObjectArray<u16> = ObjectArray {
+        original: card_shop_items_arr.clone(),
+        modified: card_shop_items_arr.clone(),
+        index: front_index,
+        slen: 0x2,
+    };
+
     let item_shop_data_object: ObjectArray<ItemShopData> = ObjectArray {
         original: item_shop_data_arr.clone(),
         modified: item_shop_data_arr.clone(),
@@ -1491,6 +1549,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
             stats_buf,
             main_buf,
             shops_buf,
+            card_shops_buf,
             exp_buf,
             pack_select_buf,
             _map_buf: map_buf,
@@ -1505,8 +1564,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
         rookie_data: rookie_data_object,
         digivolution_data: digivolution_data_object,
+
         shops: shops_object,
         shop_items: shop_items_object,
+
+        card_shops: card_shops_object,
+        card_shop_items: card_shop_items_object,
+
         item_shop_data: item_shop_data_object,
         move_data: move_data_object,
         dv_cond: dv_cond_object,
