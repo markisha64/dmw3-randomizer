@@ -69,7 +69,6 @@ fn app() -> Element {
     let mut preset_state = use_context::<Signal<Preset>>();
 
     let state = state_signal();
-    let preset = preset_state();
 
     let mut rng_state =
         use_signal::<Xoshiro256StarStar>(|| Xoshiro256StarStar::seed_from_u64(state.seed.unwrap()));
@@ -80,8 +79,6 @@ fn app() -> Element {
         Some(file) => String::from(file.file_name().unwrap().to_str().unwrap()),
         None => String::from("Rom file"),
     };
-
-    let shuffles = preset.randomizer.shuffles;
 
     let seed = state.seed.unwrap_or(64);
 
@@ -111,16 +108,6 @@ fn app() -> Element {
                                     None => {}
                                 }
                             }
-                        }
-                    },
-                    number_field::number_field {
-                        id: "shuffles",
-                        value: shuffles as i64,
-                        label: "Shuffles",
-                        min: 1,
-                        max: 255,
-                        onchange: move |x: i64| {
-                            preset_state.write().randomizer.shuffles = x as u8;
                         }
                     },
                     div {
