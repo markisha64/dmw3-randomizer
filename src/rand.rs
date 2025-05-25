@@ -9,6 +9,7 @@ use boolinator::Boolinator;
 use dmw3_consts::SCREEN_NAME_MAPPING;
 use dmw3_model::Header;
 use dmw3_pack::Packed;
+use dmw3_structs::CardPricing;
 use dmw3_structs::CardShopData;
 use dmw3_structs::PartyExpBits;
 use dmw3_structs::ScreenNameMapping;
@@ -162,6 +163,7 @@ pub struct Objects {
 
     pub card_shops: ObjectArray<CardShopData>,
     pub card_shop_items: ObjectArray<u16>,
+    pub card_pricing: ObjectArray<CardPricing>,
 
     pub item_shop_data: ObjectArray<ItemShopData>,
     pub move_data: ObjectArray<MoveData>,
@@ -1224,6 +1226,26 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .map(|a| u16::from_ne_bytes([a[0], a[1]]))
         .collect();
 
+    let card_pricing_index = card_shops_buf
+        .chunks(4)
+        .position(|window| window == b"\x0a\x00\x98\x08")
+        .context("Can't find card pricing")?
+        * 4;
+
+    let mut card_pricing_reader = Cursor::new(&card_shops_buf[card_pricing_index..]);
+
+    let mut card_pricing_arr: Vec<CardPricing> = Vec::new();
+
+    loop {
+        let pricing = CardPricing::read(&mut card_pricing_reader)?;
+
+        if pricing.card_id == 0 {
+            break;
+        }
+
+        card_pricing_arr.push(pricing);
+    }
+
     let digivolution_data_index = main_buf
         .windows(16)
         .position(|window| -> bool {
@@ -1501,6 +1523,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         slen: 0x2,
     };
 
+    let card_pricing_object: ObjectArray<CardPricing> = ObjectArray {
+        original: card_pricing_arr.clone(),
+        modified: card_pricing_arr.clone(),
+        index: card_pricing_index,
+        slen: 0x4,
+    };
+
     let item_shop_data_object: ObjectArray<ItemShopData> = ObjectArray {
         original: item_shop_data_arr.clone(),
         modified: item_shop_data_arr.clone(),
@@ -1570,6 +1599,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
         card_shops: card_shops_object,
         card_shop_items: card_shop_items_object,
+        card_pricing: card_pricing_object,
 
         item_shop_data: item_shop_data_object,
         move_data: move_data_object,
