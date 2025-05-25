@@ -1,4 +1,5 @@
 use chrono::Utc;
+use dioxus::desktop::tao::dpi::PhysicalSize;
 use dioxus::desktop::{Config, WindowBuilder};
 use dioxus::prelude::*;
 use rand_xoshiro::rand_core::RngCore;
@@ -29,7 +30,13 @@ mod slider;
 
 pub fn launch_app() {
     LaunchBuilder::desktop()
-        .with_cfg(Config::default().with_window(WindowBuilder::new().with_resizable(false)))
+        .with_cfg(
+            Config::default().with_window(
+                WindowBuilder::new()
+                    .with_resizable(true)
+                    .with_inner_size(PhysicalSize::new(1000, 1000)),
+            ),
+        )
         .launch(app);
 }
 
