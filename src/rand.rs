@@ -9,6 +9,7 @@ use boolinator::Boolinator;
 use dmw3_consts::SCREEN_NAME_MAPPING;
 use dmw3_model::Header;
 use dmw3_pack::Packed;
+use dmw3_structs::BoosterData;
 use dmw3_structs::CardPricing;
 use dmw3_structs::CardShopData;
 use dmw3_structs::PartyExpBits;
@@ -164,6 +165,8 @@ pub struct Objects {
     pub card_shops: ObjectArray<CardShopData>,
     pub card_shop_items: ObjectArray<u16>,
     pub card_pricing: ObjectArray<CardPricing>,
+    pub booster_data: ObjectArray<BoosterData>,
+    pub booster_data_items: ObjectArray<u32>,
 
     pub item_shop_data: ObjectArray<ItemShopData>,
     pub move_data: ObjectArray<MoveData>,
@@ -1213,14 +1216,14 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         card_shops_arr.push(shop);
     }
 
-    let front_index = card_shops_arr
+    let card_shops_items_index = card_shops_arr
         .first()
         .context("No card shops found")?
         .items
         .to_index_overlay(overlay.value as u32) as usize;
 
     let card_shop_items_arr: Vec<u16> = card_shops_buf
-        [front_index..front_index + 8 * 2 * card_shops_arr.len()]
+        [card_shops_items_index..card_shops_items_index + 8 * 2 * card_shops_arr.len()]
         .to_vec()
         .chunks_exact(2)
         .map(|a| u16::from_ne_bytes([a[0], a[1]]))
@@ -1245,6 +1248,38 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
         card_pricing_arr.push(pricing);
     }
+
+    let booster_data_index = card_shops_buf
+        .windows(8)
+        .position(|window| window == b"\x19\x01\x00\x00\x5b\x00\x00\x00")
+        .context("Can't find booster data")?
+        + 4;
+
+    let mut booster_data_reader = Cursor::new(&card_shops_buf[booster_data_index..]);
+
+    let mut booster_data_arr = Vec::new();
+
+    loop {
+        let booster = BoosterData::read(&mut booster_data_reader)?;
+        if booster.booster_item_id == 0 {
+            break;
+        }
+
+        booster_data_arr.push(booster);
+    }
+
+    let booster_data_items_index = booster_data_arr
+        .first()
+        .context("No booster data found")?
+        .slots[0]
+        .to_index_overlay(overlay.value as u32) as usize;
+
+    let booster_data_items: Vec<u32> = card_shops_buf
+        [booster_data_items_index..booster_data_items_index + 16 * 6 * 4 * booster_data_arr.len()]
+        .to_vec()
+        .chunks_exact(4)
+        .map(|a| u32::from_ne_bytes([a[0], a[1], a[2], a[3]]))
+        .collect();
 
     let digivolution_data_index = main_buf
         .windows(16)
@@ -1505,7 +1540,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let shop_items_object: ObjectArray<u16> = ObjectArray {
         original: shop_items_arr.clone(),
         modified: shop_items_arr.clone(),
-        index: front_index,
+        index: booster_data_items_index,
         slen: 0x2,
     };
 
@@ -1513,13 +1548,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         original: card_shops_arr.clone(),
         modified: card_shops_arr.clone(),
         index: card_shops_index,
-        slen: 0x12,
+        slen: 0xc,
     };
 
     let card_shop_items_object: ObjectArray<u16> = ObjectArray {
         original: card_shop_items_arr.clone(),
         modified: card_shop_items_arr.clone(),
-        index: front_index,
+        index: card_shops_items_index,
         slen: 0x2,
     };
 
@@ -1527,6 +1562,20 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         original: card_pricing_arr.clone(),
         modified: card_pricing_arr.clone(),
         index: card_pricing_index,
+        slen: 0x4,
+    };
+
+    let booster_data_object: ObjectArray<BoosterData> = ObjectArray {
+        original: booster_data_arr.clone(),
+        modified: booster_data_arr.clone(),
+        index: booster_data_index,
+        slen: 0x1c,
+    };
+
+    let booster_data_items_object: ObjectArray<u32> = ObjectArray {
+        original: booster_data_items.clone(),
+        modified: booster_data_items.clone(),
+        index: booster_data_items_index,
         slen: 0x4,
     };
 
@@ -1600,6 +1649,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         card_shops: card_shops_object,
         card_shop_items: card_shop_items_object,
         card_pricing: card_pricing_object,
+        booster_data: booster_data_object,
+        booster_data_items: booster_data_items_object,
 
         item_shop_data: item_shop_data_object,
         move_data: move_data_object,
@@ -1685,6 +1736,21 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     objects
         .item_shop_data
         .write_buf(&mut objects.bufs.main_buf)?;
+    objects
+        .card_shops
+        .write_buf(&mut objects.bufs.card_shops_buf)?;
+    objects
+        .card_shop_items
+        .write_buf(&mut objects.bufs.card_shops_buf)?;
+    objects
+        .card_pricing
+        .write_buf(&mut objects.bufs.card_shops_buf)?;
+    objects
+        .booster_data
+        .write_buf(&mut objects.bufs.card_shops_buf)?;
+    objects
+        .booster_data_items
+        .write_buf(&mut objects.bufs.card_shops_buf)?;
     objects.move_data.write_buf(&mut objects.bufs.main_buf)?;
     objects.dv_cond.write_buf(&mut objects.bufs.exp_buf)?;
     objects
