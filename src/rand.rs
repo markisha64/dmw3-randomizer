@@ -31,6 +31,7 @@ use crate::mkpsxiso;
 use crate::mkpsxiso::xml_file;
 pub use dmw3_structs;
 
+mod card_game;
 mod encounters;
 mod fixes;
 mod maps;
@@ -1786,6 +1787,13 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     let mut new_shops =
         File::create(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).await?;
 
+    let mut new_card_shops = File::create(format!(
+        "extract/{}/{}",
+        rom_name,
+        dmw3_consts::CARD_SHOPS_FILE
+    ))
+    .await?;
+
     let mut new_exp =
         File::create(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).await?;
 
@@ -1826,6 +1834,10 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
         .await?;
 
     new_shops.write_all(&objects.bufs.shops_buf).await?;
+
+    new_card_shops
+        .write_all(&objects.bufs.card_shops_buf)
+        .await?;
 
     new_exp.write_all(&objects.bufs.exp_buf).await?;
 
@@ -1874,6 +1886,10 @@ pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
 
     if preset.randomizer.shops.enabled {
         shops::patch(&preset.randomizer.shops, &mut objects, &mut rng)?;
+    }
+
+    if preset.randomizer.card_game.enabled {
+        card_game::patch(&preset.randomizer, &mut objects, &mut rng)?;
     }
 
     if preset.randomizer.maps.enabled {
