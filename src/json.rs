@@ -28,6 +28,8 @@ pub struct Randomizer {
     pub parties: Parties,
     #[serde(default = "default_shops")]
     pub shops: Shops,
+    #[serde(default = "default_card_game")]
+    pub card_game: CardGame,
     #[serde(default = "default_map")]
     pub maps: Maps,
     #[serde(default = "default_models")]
@@ -170,6 +172,23 @@ pub struct Shops {
     pub keep_tnt: bool,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct CardGame {
+    #[serde(default = "default_bool_true")]
+    pub enabled: bool,
+    #[serde(default = "default_bool_true")]
+    pub shop_items: bool,
+    #[serde(default = "default_bool_true")]
+    pub buy_price: bool,
+    #[serde(default = "default_min_card_buy_price")]
+    pub min_card_buy_price: i64,
+    #[serde(default = "default_max_card_buy_price")]
+    pub max_card_buy_price: i64,
+    #[serde(default = "default_bool_true")]
+    pub boosters: bool,
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 pub struct Fixes {
@@ -223,6 +242,10 @@ fn default_parties() -> Parties {
 }
 
 fn default_shops() -> Shops {
+    serde_json::from_str("{}").unwrap()
+}
+
+fn default_card_game() -> CardGame {
     serde_json::from_str("{}").unwrap()
 }
 
@@ -284,6 +307,14 @@ fn default_min_sell_price() -> i64 {
 
 fn default_max_sell_price() -> i64 {
     6000
+}
+
+fn default_min_card_buy_price() -> i64 {
+    500
+}
+
+fn default_max_card_buy_price() -> i64 {
+    11000
 }
 
 fn default_total_starting_stats() -> u16 {
