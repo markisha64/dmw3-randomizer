@@ -30,13 +30,7 @@ mod slider;
 
 pub fn launch_app() {
     LaunchBuilder::desktop()
-        .with_cfg(
-            Config::default().with_window(
-                WindowBuilder::new()
-                    .with_resizable(true)
-                    .with_inner_size(PhysicalSize::new(1000, 1000)),
-            ),
-        )
+        .with_cfg(Config::default().with_window(WindowBuilder::new().with_resizable(true)))
         .launch(app);
 }
 
