@@ -73,6 +73,11 @@ pub fn randomize() -> Element {
                         let r: anyhow::Result<()> = async move {
                             let path = &args.path.as_ref().context("missing path")?;
 
+                            preset.randomizer.seed = match &args.seed {
+                                Some(seed) => *seed,
+                                None => preset.randomizer.seed,
+                            };
+
                             db::insert(&preset, &args).map_err(|_| anyhow!("failed to insert to db"))?;
                             history_state.set(get_mapped());
 
