@@ -1541,7 +1541,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let shop_items_object: ObjectArray<u16> = ObjectArray {
         original: shop_items_arr.clone(),
         modified: shop_items_arr.clone(),
-        index: booster_data_items_index,
+        index: front_index,
         slen: 0x2,
     };
 
