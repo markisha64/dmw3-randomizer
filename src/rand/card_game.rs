@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     json::{CardGame, Randomizer},
     rand::Objects,
@@ -17,6 +19,10 @@ pub fn patch(
 
     if preset.card_game.shop_items {
         shop_items(preset, objects, rng);
+    }
+
+    if preset.card_game.boosters {
+        boosters(objects, rng);
     }
 
     Ok(())
@@ -58,5 +64,32 @@ fn shop_items(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256St
         }
 
         j += 6;
+    }
+}
+
+fn boosters(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let pool = Vec::from_iter(1..315);
+    for i in 0..objects.booster_data.modified.len() {
+        for j in 0..6 {
+            let mut mapped: HashMap<u32, i32> = HashMap::new();
+            let mut pool_cloned = pool.clone();
+
+            for k in 0..16 {
+                mapped
+                    .entry(objects.booster_data_items.original[i * 16 * 6 + j * 16 + k])
+                    .and_modify(|counter| *counter += 1)
+                    .or_insert(1);
+            }
+
+            for key in mapped.keys() {
+                let new_card =
+                    pool_cloned.remove((rng.next_u64() % pool_cloned.len() as u64) as usize);
+                for k in 0..16 {
+                    if objects.booster_data_items.modified[i * 16 * 6 + j * 16 + k] == *key {
+                        objects.booster_data_items.modified[i * 16 * 6 + j * 16 + k] = new_card;
+                    }
+                }
+            }
+        }
     }
 }
