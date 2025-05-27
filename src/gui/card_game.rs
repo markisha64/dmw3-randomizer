@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::gui::number_field;
-use crate::json::{Preset, ShopItems};
+use crate::json::Preset;
 
 use crate::gui::checkbox;
 
