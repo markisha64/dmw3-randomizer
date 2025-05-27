@@ -168,6 +168,7 @@ pub struct Objects {
     pub card_pricing: ObjectArray<CardPricing>,
     pub booster_data: ObjectArray<BoosterData>,
     pub booster_data_items: ObjectArray<u32>,
+    pub starting_folder: ObjectArray<u32>,
 
     pub item_shop_data: ObjectArray<ItemShopData>,
     pub move_data: ObjectArray<MoveData>,
@@ -1346,6 +1347,16 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .position(|window| window == default_pack_preview)
         .context("Can't find parties preview")?;
 
+    // dword aligned
+    let starting_folder_index = parties_index + 12;
+    let mut starting_folder_reader =
+        Cursor::new(&main_buf[starting_folder_index..starting_folder_index + 4 * 40]);
+    let mut starting_folder = Vec::new();
+    for _ in 0..40 {
+        let card = u32::read(&mut starting_folder_reader)?;
+        starting_folder.push(card);
+    }
+
     let mut dv_cond_arr: Vec<DigivolutionConditions> = Vec::new();
     dv_cond_arr.reserve(dmw3_consts::ROOKIE_COUNT);
 
@@ -1517,6 +1528,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         slen: 0x4,
     };
 
+    let starting_folder_object = ObjectArray {
+        original: starting_folder.clone(),
+        modified: starting_folder.clone(),
+        index: starting_folder_index,
+        slen: 0x4,
+    };
+
     let rookie_data_object: ObjectArray<DigivolutionData> = ObjectArray {
         original: rookie_data_arr,
         modified: rookie_data_copy,
@@ -1652,6 +1670,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         card_pricing: card_pricing_object,
         booster_data: booster_data_object,
         booster_data_items: booster_data_items_object,
+        starting_folder: starting_folder_object,
 
         item_shop_data: item_shop_data_object,
         move_data: move_data_object,
@@ -1752,6 +1771,9 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     objects
         .booster_data_items
         .write_buf(&mut objects.bufs.card_shops_buf)?;
+    objects
+        .starting_folder
+        .write_buf(&mut objects.bufs.main_buf)?;
     objects.move_data.write_buf(&mut objects.bufs.main_buf)?;
     objects.dv_cond.write_buf(&mut objects.bufs.exp_buf)?;
     objects

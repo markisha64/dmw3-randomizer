@@ -187,6 +187,8 @@ pub struct CardGame {
     pub max_card_buy_price: i64,
     #[serde(default = "default_bool_true")]
     pub boosters: bool,
+    #[serde(default = "default_bool_true")]
+    pub starting_folder: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
