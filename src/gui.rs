@@ -12,6 +12,7 @@ use crate::db;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::PathBuf;
 
+mod card_game;
 mod checkbox;
 mod encounters;
 mod file_upload;
@@ -185,6 +186,7 @@ fn app() -> Element {
                 encounters::encounters {},
                 maps::maps {},
                 party_exp_bits::party_exp_bits {},
+                card_game::card_game {}
             },
         }
     }
