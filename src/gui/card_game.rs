@@ -16,6 +16,7 @@ pub fn card_game() -> Element {
     let min_card_buy_price = read_preset_state.randomizer.card_game.min_card_buy_price;
     let max_card_buy_price = read_preset_state.randomizer.card_game.max_card_buy_price;
     let boosters = read_preset_state.randomizer.card_game.boosters;
+    let starting_folder = read_preset_state.randomizer.card_game.starting_folder;
 
     rsx! {
         div {
@@ -76,7 +77,19 @@ pub fn card_game() -> Element {
                     min: min_card_buy_price,
                     max: dmw3_consts::MAX_SELL_PRICE
                 },
-            }
-        }
+            },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    id: "card_game.starting_folder",
+                    label: "Starting folder",
+                    disabled: !enabled,
+                    checked: starting_folder,
+                    onchange: move |x: bool| {
+                        preset_state.write().randomizer.card_game.starting_folder = x;
+                    },
+                },
+            },
+        },
     }
 }

@@ -25,7 +25,22 @@ pub fn patch(
         boosters(objects, rng);
     }
 
+    if preset.card_game.starting_folder {
+        starting_folder(&preset, objects, rng);
+    }
+
     Ok(())
+}
+
+fn starting_folder(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let mut pool = Vec::from_iter((1..314).cycle().take((314 - 1) * 4));
+    shuffle(&mut pool, preset.shuffles, rng);
+
+    for (i, card) in &mut objects.starting_folder.modified.iter_mut().enumerate() {
+        *card = pool[i];
+    }
+
+    objects.starting_folder.modified.sort();
 }
 
 fn pricing(preset: &CardGame, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
