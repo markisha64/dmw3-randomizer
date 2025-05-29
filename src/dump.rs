@@ -90,48 +90,84 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let mut shop_bytes = Vec::new();
     let mut shop_item_bytes = Vec::new();
 
+    let mut card_shops_bytes = Vec::new();
+    let mut card_shop_items_bytes = Vec::new();
+    let mut card_pricing_bytes = Vec::new();
+    let mut booster_data_bytes = Vec::new();
+    let mut booster_data_items_bytes = Vec::new();
+    let mut starting_folder_bytes = Vec::new();
+
     let mut screen_name_mapping_bytes = Vec::new();
 
-    let _ = &objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
+    objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
 
-    let _ = &objects.encounters.original.write(&mut encounter_bytes)?;
+    objects.encounters.original.write(&mut encounter_bytes)?;
 
-    let _ = &objects
+    objects
         .enemy_parties
         .original
         .write(&mut enemy_party_bytes)?;
 
-    let _ = &objects
+    objects
         .digivolution_data
         .original
         .write(&mut digivolution_bytes)?;
 
-    let _ = &objects.rookie_data.original.write(&mut rookie_bytes)?;
+    objects.rookie_data.original.write(&mut rookie_bytes)?;
 
-    let _ = &objects
+    objects
         .item_shop_data
         .original
         .write(&mut item_shop_bytes)?;
 
-    let _ = &objects
+    objects
         .dv_cond
         .original
         .write(&mut digivolution_condition_bytes)?;
 
-    let _ = &objects.move_data.original.write(&mut move_data_bytes)?;
+    objects.move_data.original.write(&mut move_data_bytes)?;
 
-    let _ = &objects.shops.original.write(&mut shop_bytes)?;
+    objects.shops.original.write(&mut shop_bytes)?;
 
-    let _ = &objects.shop_items.original.write(&mut shop_item_bytes)?;
+    objects.shop_items.original.write(&mut shop_item_bytes)?;
 
-    let _ = &objects
+    objects
         .party_exp_bits
         .original
         .write(&mut party_exp_bits_bytes)?;
 
-    let _ = &objects
+    objects
+        .card_shop_items
+        .original
+        .write(&mut card_shop_items_bytes)?;
+
+    objects
+        .card_pricing
+        .original
+        .write(&mut card_pricing_bytes)?;
+
+    objects
+        .booster_data
+        .original
+        .write(&mut booster_data_bytes)?;
+
+    objects
+        .booster_data_items
+        .original
+        .write(&mut booster_data_items_bytes)?;
+
+    objects
+        .starting_folder
+        .original
+        .write(&mut starting_folder_bytes)?;
+
+    objects.card_shops.original.write(&mut card_shops_bytes)?;
+
+    objects.card_shops.original.write(&mut card_shops_bytes)?;
+
+    objects
         .screen_name_mapping
-        .write(&mut screen_name_mapping_bytes);
+        .write(&mut screen_name_mapping_bytes)?;
 
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
 
@@ -156,10 +192,25 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     )?;
 
     fs::write(format!("dump/{rom_name}/move_data"), move_data_bytes)?;
-
     fs::write(format!("dump/{rom_name}/shops"), shop_bytes)?;
-
     fs::write(format!("dump/{rom_name}/shop_items"), shop_item_bytes)?;
+
+    // card shop things
+    fs::write(format!("dump/{rom_name}/card_shops"), card_shops_bytes)?;
+    fs::write(
+        format!("dump/{rom_name}/card_shop_items"),
+        card_shop_items_bytes,
+    )?;
+    fs::write(format!("dump/{rom_name}/card_pricing"), card_pricing_bytes)?;
+    fs::write(format!("dump/{rom_name}/booster_data"), booster_data_bytes)?;
+    fs::write(
+        format!("dump/{rom_name}/booster_data_items"),
+        booster_data_items_bytes,
+    )?;
+    fs::write(
+        format!("dump/{rom_name}/starting_folder"),
+        starting_folder_bytes,
+    )?;
 
     fs::write(
         format!("dump/{rom_name}/screen_name_mapping"),
@@ -300,51 +351,58 @@ pub async fn create_spoiler(
     let mut digivolution_condition_bytes = Vec::new();
     let mut move_data_bytes = Vec::new();
 
+    let mut card_shops_bytes = Vec::new();
+    let mut card_shop_items_bytes = Vec::new();
+    let mut card_pricing_bytes = Vec::new();
+    let mut booster_data_bytes = Vec::new();
+    let mut booster_data_items_bytes = Vec::new();
+    let mut starting_folder_bytes = Vec::new();
+
     let mut shop_bytes = Vec::new();
     let mut shop_item_bytes = Vec::new();
 
     let mut screen_name_mapping_bytes = Vec::new();
 
-    let _ = &objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
+    objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
 
-    let _ = &objects.encounters.modified.write(&mut encounter_bytes)?;
+    objects.encounters.modified.write(&mut encounter_bytes)?;
 
-    let _ = &objects
+    objects
         .enemy_parties
         .modified
         .write(&mut enemy_party_bytes)?;
 
-    let _ = &objects
+    objects
         .digivolution_data
         .modified
         .write(&mut digivolution_bytes)?;
 
-    let _ = &objects.rookie_data.modified.write(&mut rookie_bytes)?;
+    objects.rookie_data.modified.write(&mut rookie_bytes)?;
 
-    let _ = &objects
+    objects
         .item_shop_data
         .modified
         .write(&mut item_shop_bytes)?;
 
-    let _ = &objects
+    objects
         .dv_cond
         .modified
         .write(&mut digivolution_condition_bytes)?;
 
-    let _ = &objects.move_data.modified.write(&mut move_data_bytes)?;
+    objects.move_data.modified.write(&mut move_data_bytes)?;
 
-    let _ = &objects.shops.modified.write(&mut shop_bytes)?;
+    objects.shops.modified.write(&mut shop_bytes)?;
 
-    let _ = &objects.shop_items.modified.write(&mut shop_item_bytes)?;
+    objects.shop_items.modified.write(&mut shop_item_bytes)?;
 
-    let _ = &objects
+    objects
         .party_exp_bits
         .modified
         .write(&mut party_exp_bits_bytes)?;
 
-    let _ = &objects
+    objects
         .screen_name_mapping
-        .write(&mut screen_name_mapping_bytes);
+        .write(&mut screen_name_mapping_bytes)?;
 
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
@@ -365,6 +423,18 @@ pub async fn create_spoiler(
     append_file(&mut tar_builder, "shops", &shop_bytes)?;
     append_file(&mut tar_builder, "shop_items", &shop_item_bytes)?;
     append_file(&mut tar_builder, "party_exp_bits", &party_exp_bits_bytes)?;
+
+    // card shop things
+    append_file(&mut tar_builder, "card_shops", &card_shops_bytes)?;
+    append_file(&mut tar_builder, "card_shop_items", &card_shop_items_bytes)?;
+    append_file(&mut tar_builder, "card_pricing", &card_pricing_bytes)?;
+    append_file(&mut tar_builder, "booster_data", &booster_data_bytes)?;
+    append_file(
+        &mut tar_builder,
+        "booster_data_items",
+        &booster_data_items_bytes,
+    )?;
+    append_file(&mut tar_builder, "starting_folder", &starting_folder_bytes)?;
 
     append_file(
         &mut tar_builder,
