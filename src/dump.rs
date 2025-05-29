@@ -131,6 +131,8 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     objects.shop_items.original.write(&mut shop_item_bytes)?;
 
+    objects.card_shops.original.write(&mut card_shops_bytes)?;
+
     objects
         .party_exp_bits
         .original
@@ -160,10 +162,6 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         .starting_folder
         .original
         .write(&mut starting_folder_bytes)?;
-
-    objects.card_shops.original.write(&mut card_shops_bytes)?;
-
-    objects.card_shops.original.write(&mut card_shops_bytes)?;
 
     objects
         .screen_name_mapping
@@ -399,6 +397,38 @@ pub async fn create_spoiler(
         .party_exp_bits
         .modified
         .write(&mut party_exp_bits_bytes)?;
+
+    objects.card_shops.modified.write(&mut card_shops_bytes)?;
+
+    objects
+        .party_exp_bits
+        .modified
+        .write(&mut party_exp_bits_bytes)?;
+
+    objects
+        .card_shop_items
+        .modified
+        .write(&mut card_shop_items_bytes)?;
+
+    objects
+        .card_pricing
+        .modified
+        .write(&mut card_pricing_bytes)?;
+
+    objects
+        .booster_data
+        .modified
+        .write(&mut booster_data_bytes)?;
+
+    objects
+        .booster_data_items
+        .modified
+        .write(&mut booster_data_items_bytes)?;
+
+    objects
+        .starting_folder
+        .modified
+        .write(&mut starting_folder_bytes)?;
 
     objects
         .screen_name_mapping
