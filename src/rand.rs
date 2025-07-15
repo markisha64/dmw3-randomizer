@@ -153,6 +153,8 @@ pub struct Objects {
     pub parties: ObjectArray<u8>,
     pub pack_previews: ObjectArray<u32>,
 
+    pub charisma_reqs: ObjectArray<u32>,
+
     pub enemy_stats: ObjectArray<EnemyStats>,
     pub encounters: ObjectArray<EncounterData>,
     pub enemy_parties: ObjectArray<PartyData>,
@@ -1479,6 +1481,20 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         screen_name_mapping.push(mapping);
     }
 
+    let charisma_reqs_index = main_buf
+        .windows(16)
+        .position(|x| x == b"\x3c\x00\x00\x00\x96\x00\x00\x00\xd2\x00\x00\x00\x1d\x01\x00\x00")
+        .context("missing charisma reqs")?;
+
+    let mut charisma_reqs_reader =
+        Cursor::new(&main_buf[charisma_reqs_index..(charisma_reqs_index + 4 * 15)]);
+
+    let mut charisma_reqs = Vec::new();
+
+    for _ in 0..15 {
+        charisma_reqs.push(u32::read(&mut charisma_reqs_reader)?);
+    }
+
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let enemy_party_data_arr_copy = enemy_party_data_arr.clone();
@@ -1525,6 +1541,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         original: default_packs.clone(),
         modified: default_packs.clone(),
         index: pack_select_preview_index,
+        slen: 0x4,
+    };
+
+    let charisma_reqs_object: ObjectArray<u32> = ObjectArray {
+        original: charisma_reqs.clone(),
+        modified: charisma_reqs,
+        index: charisma_reqs_index,
         slen: 0x4,
     };
 
@@ -1659,6 +1682,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         parties: parties_object,
         pack_previews: party_previewes_object,
 
+        charisma_reqs: charisma_reqs_object,
+
         rookie_data: rookie_data_object,
         digivolution_data: digivolution_data_object,
 
@@ -1779,6 +1804,9 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     objects
         .pack_previews
         .write_buf(&mut objects.bufs.pack_select_buf)?;
+    objects
+        .charisma_reqs
+        .write_buf(&mut objects.bufs.main_buf)?;
     objects
         .party_exp_bits
         .write_buf(&mut objects.bufs.exp_buf)?;
