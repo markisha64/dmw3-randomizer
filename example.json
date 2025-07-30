@@ -67,5 +67,8 @@
 	},
 	"fixes": {
 		"scaling": true
+	},
+	"archipelago": {
+		"enabled": true
 	}
 }

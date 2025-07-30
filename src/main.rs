@@ -5,6 +5,7 @@ mod cli;
 mod json;
 mod mkpsxiso;
 
+mod archipelago;
 mod db;
 mod dump;
 mod lang;
@@ -65,6 +66,10 @@ fn main() -> anyhow::Result<()> {
             let objects = patch(path, &preset).await?;
 
             create_spoiler(&objects, path, file_name.as_str()).await?;
+
+            if preset.archipelago.enabled {
+                archipelago::create_archipelago_yaml(&objects, path, &file_name).await?;
+            }
 
             if !mkpsxiso::build(rom_name, &file_name).await? {
                 return Err(anyhow::anyhow!("Error repacking"));

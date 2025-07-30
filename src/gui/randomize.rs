@@ -1,3 +1,4 @@
+use crate::archipelago::create_archipelago_yaml;
 use crate::dump::create_spoiler;
 use crate::gui::preset::history::{get_mapped, HistoryMapped};
 use crate::{cli::Arguments, db, json::Preset, mkpsxiso, patch};
@@ -98,6 +99,10 @@ pub fn randomize() -> Element {
                             let objects = patch(path, &preset).await?;
 
                             create_spoiler(&objects, path, file_name.as_str()).await?;
+
+                            if preset.archipelago.enabled {
+                                create_archipelago_yaml(&objects, path, &file_name).await?;
+                            }
 
                             state.set(Steps::Packaging);
 
