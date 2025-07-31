@@ -53,7 +53,7 @@ struct Accessibility {
 impl Default for Accessibility {
     fn default() -> Self {
         Self {
-            full: 0,
+            full: 50,
             minimal: 0,
         }
     }
