@@ -158,7 +158,7 @@ pub fn maps() -> Element {
                     id: "maps.ironmon_charisma",
                     checked: ironmon_charisma,
                     disabled: !enabled,
-                    tooltip: "Custom charisma values mean't for ironmon",
+                    tooltip: "Custom charisma values meant for ironmon",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.ironmon_charisma = x;
                     }
