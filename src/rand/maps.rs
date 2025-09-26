@@ -59,6 +59,10 @@ pub fn patch(
         random_fight_backgrounds(preset, objects, rng);
     }
 
+    if maps.ironmon_charisma {
+        ironmon_charisma(objects);
+    }
+
     Ok(())
 }
 
@@ -316,4 +320,11 @@ fn item_boxes(
     }
 
     Ok(())
+}
+
+fn ironmon_charisma(objects: &mut Objects) {
+    // TODO: choose charisma values
+    objects.charisma_reqs.modified = vec![
+        60, 150, 210, 285, 378, 492, 630, 795, 990, 1218, 1482, 1785, 2049, 2277, 2472,
+    ];
 }

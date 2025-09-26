@@ -103,6 +103,8 @@ pub struct Maps {
     pub fight_backgrounds: bool,
     #[serde(default = "GroupStrategy::default")]
     pub group_strategy: GroupStrategy,
+    #[serde(default = "default_bool_false")]
+    pub ironmon_charisma: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
