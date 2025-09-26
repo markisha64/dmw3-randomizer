@@ -1526,7 +1526,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     loop {
         let step = ComplexScriptConditionStep::read(&mut complex_steps_reader)?;
 
-        if step.id == 0 {
+        if step.id == 0xff {
             break;
         }
 
