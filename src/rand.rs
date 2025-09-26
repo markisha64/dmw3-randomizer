@@ -14,6 +14,7 @@ use dmw3_structs::CardPricing;
 use dmw3_structs::CardShopData;
 use dmw3_structs::ComplexScriptConditionStep;
 use dmw3_structs::PartyExpBits;
+use dmw3_structs::QuestRange;
 use dmw3_structs::ScreenNameMapping;
 use dmw3_structs::ScriptConditionStep;
 use dmw3_structs::StageEncounter;
@@ -155,6 +156,7 @@ pub struct Objects {
     pub parties: ObjectArray<u8>,
     pub pack_previews: ObjectArray<u32>,
 
+    pub quest_ranges: ObjectArray<QuestRange>,
     pub charisma_reqs: ObjectArray<u32>,
     pub complex_steps: ObjectArray<ComplexScriptConditionStep>,
 
@@ -1484,6 +1486,20 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         screen_name_mapping.push(mapping);
     }
 
+    let quest_ranges_index = main_buf
+        .windows(12)
+        .position(|x| x == b"\x02\x12\x04\x17\x04\x2c\x14\x17\x18\x25\x27\x2a")
+        .context("missing quest ranges")?;
+
+    let mut quest_ranges_reader =
+        Cursor::new(&main_buf[quest_ranges_index..(quest_ranges_index + 33 * 2)]);
+
+    let mut quest_ranges = Vec::new();
+
+    for _ in 0..33 {
+        quest_ranges.push(QuestRange::read(&mut quest_ranges_reader)?);
+    }
+
     let charisma_reqs_index = main_buf
         .windows(16)
         .position(|x| x == b"\x3c\x00\x00\x00\x96\x00\x00\x00\xd2\x00\x00\x00\x1d\x01\x00\x00")
@@ -1564,6 +1580,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         modified: default_packs.clone(),
         index: pack_select_preview_index,
         slen: 0x4,
+    };
+
+    let quest_ranges_object: ObjectArray<_> = ObjectArray {
+        original: quest_ranges.clone(),
+        modified: quest_ranges,
+        index: quest_ranges_index,
+        slen: 0x2,
     };
 
     let charisma_reqs_object: ObjectArray<u32> = ObjectArray {
@@ -1711,6 +1734,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         parties: parties_object,
         pack_previews: party_previewes_object,
 
+        quest_ranges: quest_ranges_object,
         charisma_reqs: charisma_reqs_object,
         complex_steps: complex_steps_object,
 
@@ -1834,6 +1858,7 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     objects
         .pack_previews
         .write_buf(&mut objects.bufs.pack_select_buf)?;
+    objects.quest_ranges.write_buf(&mut objects.bufs.main_buf)?;
     objects
         .charisma_reqs
         .write_buf(&mut objects.bufs.main_buf)?;

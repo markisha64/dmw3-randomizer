@@ -99,6 +99,7 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     let mut screen_name_mapping_bytes = Vec::new();
 
+    let mut quest_ranges_bytes = Vec::new();
     let mut complex_steps_bytes = Vec::new();
 
     objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
@@ -170,8 +171,13 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         .write(&mut screen_name_mapping_bytes)?;
 
     objects
+        .quest_ranges
+        .original
+        .write(&mut quest_ranges_bytes)?;
+
+    objects
         .complex_steps
-        .modified
+        .original
         .write(&mut complex_steps_bytes)?;
 
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
@@ -221,6 +227,8 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         format!("dump/{rom_name}/screen_name_mapping"),
         screen_name_mapping_bytes,
     )?;
+
+    fs::write(format!("dump/{rom_name}/quest_ranges"), quest_ranges_bytes)?;
 
     fs::write(
         format!("dump/{rom_name}/complex_steps"),
@@ -373,6 +381,7 @@ pub async fn create_spoiler(
 
     let mut screen_name_mapping_bytes = Vec::new();
 
+    let mut quest_ranges_bytes = Vec::new();
     let mut charisma_reqs_bytes = Vec::new();
     let mut complex_steps_bytes = Vec::new();
 
@@ -448,6 +457,11 @@ pub async fn create_spoiler(
     objects
         .screen_name_mapping
         .write(&mut screen_name_mapping_bytes)?;
+
+    objects
+        .quest_ranges
+        .modified
+        .write(&mut quest_ranges_bytes)?;
 
     objects
         .charisma_reqs
