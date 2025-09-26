@@ -323,8 +323,10 @@ fn item_boxes(
 }
 
 fn ironmon_charisma(objects: &mut Objects) {
-    // TODO: choose charisma values
+    // objects.charisma_reqs.modified = vec![
+    // 1, 150, 210, 285, 378, 492, 630, 795, 990, 1218, 1482, 1785, 2049, 2277, 2472,
+    // ];
     objects.charisma_reqs.modified = vec![
-        60, 150, 210, 285, 378, 492, 630, 795, 990, 1218, 1482, 1785, 2049, 2277, 2472,
+        1, 1, 1, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400, 440, 480,
     ];
 }
