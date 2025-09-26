@@ -65,6 +65,11 @@ pub fn shops() -> Element {
                             selected: selected == ShopItems::Sellable,
                             "Sellable"
                         },
+                        option {
+                            value: "2",
+                            selected: selected == ShopItems::Ironmon,
+                            "Ironmon"
+                        },
                     }
                 },
             },

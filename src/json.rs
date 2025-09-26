@@ -439,13 +439,15 @@ pub enum ShopItems {
     Buyable,
     #[default]
     Sellable,
+    Ironmon,
 }
 
 impl From<u8> for ShopItems {
     fn from(value: u8) -> Self {
         match value {
             0 => ShopItems::Buyable,
-            _ => ShopItems::Sellable,
+            1 => ShopItems::Sellable,
+            _ => ShopItems::Ironmon,
         }
     }
 }

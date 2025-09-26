@@ -17,6 +17,16 @@ pub fn tnt_ironmon(objects: &mut Objects) {
     objects.item_shop_data.modified[0x5a].sell_price = 500;
 }
 
+pub fn item_in_ironmon(value: usize) -> bool {
+    // TODO: Sober disk?
+    // remove TNT Ball and Life Disk
+    if value == 0x5A || value == 0x46 {
+        return false;
+    }
+
+    true
+}
+
 pub fn patch(
     preset: &Shops,
     objects: &mut Objects,
@@ -76,6 +86,13 @@ fn shoppable(objects: &mut Objects, preset: &Shops) -> BTreeSet<u16> {
         ShopItems::Sellable => {
             for i in 1..len {
                 if objects.item_shop_data.original[i].sell_price > 0 {
+                    shoppable.insert(i as u16);
+                }
+            }
+        }
+        ShopItems::Ironmon => {
+            for i in 1..len {
+                if objects.item_shop_data.original[i].sell_price > 0 && item_in_ironmon(i) {
                     shoppable.insert(i as u16);
                 }
             }
