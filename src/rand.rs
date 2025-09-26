@@ -34,7 +34,7 @@ pub use dmw3_structs;
 mod card_game;
 mod encounters;
 mod fixes;
-mod maps;
+pub mod maps;
 mod models;
 mod parties;
 mod party_exp_bits;

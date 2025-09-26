@@ -13,6 +13,8 @@ pub struct Preset {
     pub scaling: Scaling,
     #[serde(default = "default_party_exp_bits")]
     pub party_exp_bits: PartyExpBits,
+    #[serde(default = "default_archipelago")]
+    pub archipelago: Archipelago,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -34,6 +36,13 @@ pub struct Randomizer {
     pub maps: Maps,
     #[serde(default = "default_models")]
     pub models: Models,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Archipelago {
+    #[serde(default = "default_bool_false")]
+    pub enabled: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -228,6 +237,10 @@ fn default_randomizer() -> Randomizer {
 }
 
 fn default_fixes() -> Fixes {
+    serde_json::from_str("{}").unwrap()
+}
+
+fn default_archipelago() -> Archipelago {
     serde_json::from_str("{}").unwrap()
 }
 

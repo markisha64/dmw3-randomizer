@@ -7,7 +7,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::{Maps, Randomizer, ShopItems};
 
-fn type_script_add_item(value: u16) -> bool {
+pub fn type_script_add_item(value: u16) -> bool {
     (value >= 0x80) && (value - 0x80) < 0xf
 }
 

@@ -86,16 +86,19 @@ fn randomize_limited(
         let shop = &mut objects.shops.modified[i];
         let limit_deref = *limit;
 
+        // limit + 1 (because of blank item)
+        let lp1 = (limit_deref + 1) as usize;
+
         shop.items = ptr;
         shop.item_count = limit_deref as u32;
 
         for j in 0..limit_deref as usize {
-            objects.shop_items.modified[i * 9 + j] =
+            objects.shop_items.modified[i * lp1 + j] =
                 shoppable_arr.remove((rng.next_u64() % shoppable_arr.len() as u64) as usize);
         }
 
-        objects.shop_items.modified[i * 9 + limit_deref as usize] = 0;
-        ptr.value += (limit_deref as u32 + 1) * 2;
+        objects.shop_items.modified[i * lp1 + limit_deref as usize] = 0;
+        ptr.value += lp1 as u32 * 2;
     }
 
     Ok(())
