@@ -26,6 +26,7 @@ use std::io::Cursor;
 use std::path::PathBuf;
 
 use crate::json::Preset;
+use crate::json::TNTStrategy;
 use crate::lang::Language;
 use crate::mkpsxiso;
 use crate::mkpsxiso::xml_file;
@@ -1936,6 +1937,10 @@ pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
 
     if preset.randomizer.shops.enabled {
         shops::patch(&preset.randomizer.shops, &mut objects, &mut rng)?;
+    }
+
+    if preset.randomizer.encounters.strategy == TNTStrategy::Ironmon {
+        shops::tnt_ironmon(&mut objects);
     }
 
     if preset.randomizer.card_game.enabled {

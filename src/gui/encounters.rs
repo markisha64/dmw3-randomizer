@@ -70,6 +70,8 @@ pub fn encounters() -> Element {
                         "Keep -> don't move Triceramon",
                         br {},
                         "Shuffle -> fully random"
+                        br {},
+                        "Ironmon -> guarantees its in a shop in Suzaku city at 1k bits"
                     },
                     label {
                         r#for: "encounters.tnt",
@@ -95,6 +97,11 @@ pub fn encounters() -> Element {
                             value: "0",
                             selected: selected == TNTStrategy::Shuffle,
                             "Shuffle"
+                        },
+                        option {
+                            value: "3",
+                            selected: selected == TNTStrategy::Ironmon,
+                            "Ironmon"
                         },
                     }
                 }

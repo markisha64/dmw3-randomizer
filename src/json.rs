@@ -396,6 +396,7 @@ pub enum TNTStrategy {
     Keep,
     #[default]
     Swap,
+    Ironmon,
 }
 
 impl From<u8> for TNTStrategy {
@@ -403,7 +404,8 @@ impl From<u8> for TNTStrategy {
         match value {
             0 => TNTStrategy::Shuffle,
             1 => TNTStrategy::Keep,
-            _ => TNTStrategy::Swap,
+            2 => TNTStrategy::Swap,
+            _ => TNTStrategy::Ironmon,
         }
     }
 }
