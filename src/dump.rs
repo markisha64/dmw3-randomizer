@@ -361,6 +361,8 @@ pub async fn create_spoiler(
 
     let mut screen_name_mapping_bytes = Vec::new();
 
+    let mut charisma_reqs_bytes = Vec::new();
+
     objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
 
     objects.encounters.modified.write(&mut encounter_bytes)?;
@@ -434,6 +436,11 @@ pub async fn create_spoiler(
         .screen_name_mapping
         .write(&mut screen_name_mapping_bytes)?;
 
+    objects
+        .charisma_reqs
+        .modified
+        .write(&mut charisma_reqs_bytes)?;
+
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
 
@@ -471,6 +478,7 @@ pub async fn create_spoiler(
         "screen_name_mapping",
         &screen_name_mapping_bytes,
     )?;
+    append_file(&mut tar_builder, "charisma_reqs", &charisma_reqs_bytes)?;
 
     for map_obj in &objects.map_objects {
         let mut areas = Vec::new();
