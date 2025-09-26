@@ -13,7 +13,7 @@ challange run inspired by [The Pokemon IronMON Challange](https://gist.github.co
 | Single rookie      | You are to use a single rookie throughout the run, put the rest into storage after Tamer Genji, select it randomly at the start of the run |
 | Game Over          | If you game over, the run ends, and you must restart with a newly randomized game                                                          |
 
-## Changes made by the preset/patches
+## Specific changes made by the preset/patches compared to normal randomizer
 
 | Change              | Details                                                                               |
 |---------------------|---------------------------------------------------------------------------------------|
