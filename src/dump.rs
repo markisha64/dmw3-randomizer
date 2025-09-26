@@ -99,6 +99,8 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     let mut screen_name_mapping_bytes = Vec::new();
 
+    let mut complex_steps_bytes = Vec::new();
+
     objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
 
     objects.encounters.original.write(&mut encounter_bytes)?;
@@ -167,6 +169,11 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         .screen_name_mapping
         .write(&mut screen_name_mapping_bytes)?;
 
+    objects
+        .complex_steps
+        .modified
+        .write(&mut complex_steps_bytes)?;
+
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
 
     fs::write(format!("dump/{rom_name}/encounters"), encounter_bytes)?;
@@ -213,6 +220,11 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     fs::write(
         format!("dump/{rom_name}/screen_name_mapping"),
         screen_name_mapping_bytes,
+    )?;
+
+    fs::write(
+        format!("dump/{rom_name}/complex_steps"),
+        complex_steps_bytes,
     )?;
 
     for map_obj in &objects.map_objects {
@@ -362,6 +374,7 @@ pub async fn create_spoiler(
     let mut screen_name_mapping_bytes = Vec::new();
 
     let mut charisma_reqs_bytes = Vec::new();
+    let mut complex_steps_bytes = Vec::new();
 
     objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
 
@@ -441,6 +454,11 @@ pub async fn create_spoiler(
         .modified
         .write(&mut charisma_reqs_bytes)?;
 
+    objects
+        .complex_steps
+        .modified
+        .write(&mut complex_steps_bytes)?;
+
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
 
@@ -479,6 +497,7 @@ pub async fn create_spoiler(
         &screen_name_mapping_bytes,
     )?;
     append_file(&mut tar_builder, "charisma_reqs", &charisma_reqs_bytes)?;
+    append_file(&mut tar_builder, "complex_steps", &complex_steps_bytes)?;
 
     for map_obj in &objects.map_objects {
         let mut areas = Vec::new();
