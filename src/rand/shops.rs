@@ -18,9 +18,8 @@ pub fn tnt_ironmon(objects: &mut Objects) {
 }
 
 pub fn item_in_ironmon(value: usize) -> bool {
-    // TODO: Sober disk?
-    // remove TNT Ball and Life Disk
-    if value == 0x5A || value == 0x46 {
+    // remove TNT Ball, Life Disk, Sober Disk and CC
+    if value == 0x5A || value == 0x46 || value == 0x13e || value == 0x44 {
         return false;
     }
 
