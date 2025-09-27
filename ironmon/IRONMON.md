@@ -21,9 +21,10 @@ challange run inspired by [The Pokemon IronMON Challange](https://gist.github.co
 | Uncapped DV Exp       | The vanilla game caps your digivolution exp gains to 1 level at a time                |
 | Encounters Disabled   | Includes random encounters, forced encounters, fishing and kicking                    |
 | Card Battles Disabled | Disabled Card Battles                                                                 |
-| Custom Item Pool      | Shops and Item boxes don't have TNT Ball or Life Disk                                 |
+| Custom Item Pool      | Shops and Item boxes don't have TNT Ball, Life Disk, Counter Crest or Sober Disk      |
 | TNT Ball              | TNT Ball is available in the Suzaku Item Shop as a 1000bit item                       |
 | Charisma              | Charisma Requirements have been reduced so tamer fights are more available            |
 | Modifiers             | DV Exp gained is 200%, EXP gained is 300% and Bits gained is 200%                     |
 | Shops                 | Shops are limited to 2 items per shop, other than that there are no other limitations |
+| No Counter Crest      | Removed Tuskmons Counter Crest drop                                                   |
 
