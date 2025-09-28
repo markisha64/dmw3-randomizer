@@ -27,4 +27,6 @@ challange run inspired by [The Pokemon IronMON Challange](https://gist.github.co
 | Modifiers             | DV Exp gained is 200%, EXP gained is 300% and Bits gained is 200%                     |
 | Shops                 | Shops are limited to 2 items per shop, other than that there are no other limitations |
 | No Counter Crest      | Removed Tuskmons Counter Crest drop                                                   |
+| Fast Start            | Makes the intro very fast                                                             |
+| Fast Folder Bag       | Skips the Folder Bag cutscene (you still need to talk to divermon)                    |
 
