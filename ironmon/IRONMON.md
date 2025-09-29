@@ -30,4 +30,5 @@ challange run inspired by [The Pokemon IronMON Challange](https://gist.github.co
 | No Counter Crest      | Removed Tuskmons Counter Crest drop                                                         |
 | Fast Start            | Makes the intro very fast                                                                   |
 | Fast Folder Bag       | Skips the Folder Bag cutscene (you still need to talk to divermon)                          |
+| No Running Away       | No running away, be it from your or enemy digimon, doesn't include Zanbamon                 |
 
