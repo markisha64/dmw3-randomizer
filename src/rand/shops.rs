@@ -18,12 +18,11 @@ pub fn tnt_ironmon(objects: &mut Objects) {
 }
 
 pub fn item_in_ironmon(value: usize) -> bool {
-    // remove TNT Ball, Life Disk, Sober Disk and CC
-    if value == 0x5A || value == 0x46 || value == 0x13e || value == 0x44 {
-        return false;
+    // remove TNT Ball, Life Disk, Sober Disk, CC and Train Chips
+    match value {
+        0x5a | 0x46 | 0x13e | 0x44 | 0x3e..0x42 => false,
+        _ => true,
     }
-
-    true
 }
 
 pub fn patch(

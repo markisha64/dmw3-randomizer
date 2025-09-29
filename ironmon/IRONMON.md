@@ -12,21 +12,22 @@ challange run inspired by [The Pokemon IronMON Challange](https://gist.github.co
 | Randomize the game | Randomize using this [Preset](https://github.com/markisha64/dmw3-randomizer/blob/ironmon/ironmon/preset.json)                              |
 | Single rookie      | You are to use a single rookie throughout the run, put the rest into storage after Tamer Genji, select it randomly at the start of the run |
 | Game Over          | If you game over, the run ends, and you must restart with a newly randomized game                                                          |
+| No Auctions        | Auctions give 11k bits with no real risk and as such are banned                                                                            |
 
 ## Specific changes made by the preset/patches compared to normal randomizer
 
-| Change                | Details                                                                               |
-|-----------------------|---------------------------------------------------------------------------------------|
-| Fixed Fields          | Fixes field moves, in vanilla they all essentially do Thunder Field                   |
-| Uncapped DV Exp       | The vanilla game caps your digivolution exp gains to 1 level at a time                |
-| Encounters Disabled   | Includes random encounters, forced encounters, fishing and kicking                    |
-| Card Battles Disabled | Disabled Card Battles                                                                 |
-| Custom Item Pool      | Shops and Item boxes don't have TNT Ball, Life Disk, Counter Crest or Sober Disk      |
-| TNT Ball              | TNT Ball is available in the Suzaku Item Shop as a 1000bit item                       |
-| Charisma              | Charisma Requirements have been reduced so tamer fights are more available            |
-| Modifiers             | DV Exp gained is 200%, EXP gained is 300% and Bits gained is 200%                     |
-| Shops                 | Shops are limited to 2 items per shop, other than that there are no other limitations |
-| No Counter Crest      | Removed Tuskmons Counter Crest drop                                                   |
-| Fast Start            | Makes the intro very fast                                                             |
-| Fast Folder Bag       | Skips the Folder Bag cutscene (you still need to talk to divermon)                    |
+| Change                | Details                                                                                     |
+|-----------------------|---------------------------------------------------------------------------------------------|
+| Fixed Fields          | Fixes field moves, in vanilla they all essentially do Thunder Field                         |
+| Uncapped DV Exp       | The vanilla game caps your digivolution exp gains to 1 level at a time                      |
+| Encounters Disabled   | Includes random encounters, forced encounters, fishing and kicking                          |
+| Card Battles Disabled | Disabled Card Battles                                                                       |
+| Custom Item Pool      | Shops and Item boxes don't have TNT Ball, Life Disk, Counter Crest, Sober Disk and TP chips |
+| TNT Ball              | TNT Ball is available in the Suzaku Item Shop as a 1000bit item                             |
+| Charisma              | Charisma Requirements have been reduced so tamer fights are more available                  |
+| Modifiers             | DV Exp gained is 200%, EXP gained is 300% and Bits gained is 200%                           |
+| Shops                 | Shops are limited to 2 items per shop, other than that there are no other limitations       |
+| No Counter Crest      | Removed Tuskmons Counter Crest drop                                                         |
+| Fast Start            | Makes the intro very fast                                                                   |
+| Fast Folder Bag       | Skips the Folder Bag cutscene (you still need to talk to divermon)                          |
 
