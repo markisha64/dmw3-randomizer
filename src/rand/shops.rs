@@ -18,9 +18,9 @@ pub fn tnt_ironmon(objects: &mut Objects) {
 }
 
 pub fn item_in_ironmon(value: usize) -> bool {
-    // remove TNT Ball, Life Disk, Sober Disk, CC and Train Chips
+    // remove TNT Ball, Life Disk, Sober Disk, CC, Train Chips, Charisma Chips and Runner Shoes/Sandals
     match value {
-        0x5a | 0x46 | 0x13e | 0x44 | 0x3e..0x42 => false,
+        0x5a | 0x46 | 0x13e | 0x44 | 0x3e..0x42 | 0x14f..0x151 | 0x36 => false,
         _ => true,
     }
 }
