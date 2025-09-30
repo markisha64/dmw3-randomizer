@@ -14,6 +14,8 @@ pub fn party_exp_bits() -> Element {
     let exp_modifier = read_state.party_exp_bits.exp_modifier;
     let bits_modifier = read_state.party_exp_bits.bits_modifier;
 
+    let ironmon_genji = read_state.party_exp_bits.ironmon_genji;
+
     rsx! {
         div {
             class: "segment",
@@ -73,6 +75,19 @@ pub fn party_exp_bits() -> Element {
                     },
                     value: bits_modifier
                 }
+            }
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Ironmon Genji",
+                    tooltip: "Increases Genji Exp and Bits",
+                    id: "party_exp_bits.ironmon_genji",
+                    checked: ironmon_genji,
+                    disabled: !enabled,
+                    onchange: move |x: bool| {
+                        preset_state.write().party_exp_bits.ironmon_genji = x;
+                    }
+                },
             }
        }
     }

@@ -56,6 +56,8 @@ pub struct PartyExpBits {
     pub exp_modifier: f64,
     #[serde(default = "default_f64")]
     pub bits_modifier: f64,
+    #[serde(default = "default_bool_false")]
+    pub ironmon_genji: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
