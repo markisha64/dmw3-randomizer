@@ -2,7 +2,7 @@ use crate::{json::PartyExpBits, rand::Objects};
 
 pub fn patch(preset: &PartyExpBits, objects: &mut Objects) -> anyhow::Result<()> {
     if preset.ironmon_genji {
-        objects.party_exp_bits.modified[200].exp = 11;
+        objects.party_exp_bits.modified[200].exp = 14;
         objects.party_exp_bits.modified[200].bits = 300;
     }
 

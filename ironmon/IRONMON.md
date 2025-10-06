@@ -26,7 +26,7 @@ challenge run inspired by [The Pokemon IronMON Challenge](https://gist.github.co
 | Custom Item Pool      | Shops and Item boxes don't have TNT Ball, Life Disk, Counter Crest, Sober Disk, TP chips, Charisma Chip, Runner Shoes/Sandals and Binder Crest |
 | TNT Ball              | TNT Ball is available in the Suzaku Item Shop as a 1000bit item                                                                                |
 | Charisma              | Charisma Requirements have been reduced so tamer fights are more available                                                                     |
-| Modifiers             | DV Exp gained is 200%, EXP gained is 300% and Bits gained is 200%                                                                              |
+| Modifiers             | DV Exp gained is 350%, EXP gained is 250% and Bits gained is 200%                                                                              |
 | Shops                 | Shops are limited to 2 items per shop, other than that there are no other limitations                                                          |
 | No Counter Crest      | Removed Tuskmons Counter Crest drop                                                                                                            |
 | Fast Start            | Makes the intro very fast                                                                                                                      |
