@@ -17,6 +17,24 @@ pub fn tnt_ironmon(objects: &mut Objects) {
     objects.item_shop_data.modified[0x5a].sell_price = 500;
 }
 
+pub fn healing_ironmon(objects: &mut Objects) {
+    // power charge
+    objects.item_shop_data.modified[0x2b].buy_price = 500;
+    objects.item_shop_data.modified[0x2b].sell_price = 250;
+
+    // super charge
+    objects.item_shop_data.modified[0x2c].buy_price = 1500;
+    objects.item_shop_data.modified[0x2c].sell_price = 750;
+
+    // ultra charge
+    objects.item_shop_data.modified[0x2d].buy_price = 2000;
+    objects.item_shop_data.modified[0x2d].sell_price = 1000;
+
+    // max charge
+    objects.item_shop_data.modified[0x2e].buy_price = 2000;
+    objects.item_shop_data.modified[0x2e].sell_price = 1000;
+}
+
 pub fn item_in_ironmon(value: usize) -> bool {
     // remove TNT Ball, Life Disk, Sober Disk, CC, Train Chips, Charisma Chips, Runner Shoes/Sandals and Binder Crest
     match value {
@@ -43,6 +61,10 @@ pub fn patch(
 
     if preset.sell_price {
         randomize_sell_price(preset, objects, rng);
+    }
+
+    if preset.healing_ironmon {
+        healing_ironmon(objects);
     }
 
     let len = objects.item_shop_data.modified.len();

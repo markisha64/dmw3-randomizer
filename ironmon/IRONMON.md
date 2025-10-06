@@ -33,3 +33,5 @@ challenge run inspired by [The Pokemon IronMON Challenge](https://gist.github.co
 | Fast Folder Bag       | Skips the Folder Bag cutscene (you still need to talk to divermon)                                                                             |
 | No Running Away       | No running away, be it from your or enemy digimon, doesn't include Zanbamon                                                                    |
 | Ironmon Genji         | Early tamers are too hard on level 2 (their digimon are ~5 at minimum), the EXP and Bits Genji gives has bene increased                        |
+| Ironmon Healing       | Prices of healing items have been increased                                                                                                    |
+              

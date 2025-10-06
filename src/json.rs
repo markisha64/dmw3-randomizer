@@ -183,6 +183,8 @@ pub struct Shops {
     pub max_sell_price: i64,
     #[serde(default = "default_bool_true")]
     pub keep_tnt: bool,
+    #[serde(default = "default_bool_false")]
+    pub healing_ironmon: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

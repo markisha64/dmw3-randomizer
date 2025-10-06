@@ -21,6 +21,7 @@ pub fn shops() -> Element {
     let min_sell_price = read_preset_state.randomizer.shops.min_sell_price;
     let max_sell_price = read_preset_state.randomizer.shops.max_sell_price;
     let keep_tnt = read_preset_state.randomizer.shops.keep_tnt;
+    let healing_ironmon = read_preset_state.randomizer.shops.healing_ironmon;
 
     rsx! {
         div {
@@ -161,6 +162,19 @@ pub fn shops() -> Element {
                     value: max_sell_price,
                     min: min_sell_price,
                     max: dmw3_consts::MAX_SELL_PRICE
+                },
+            }
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    id: "shops.healing_ironmon",
+                    label: "Ironmon healing prices",
+                    disabled: !enabled,
+                    checked: healing_ironmon,
+                    tooltip: "Increases the prices of healing items",
+                    onchange: move |x: bool| {
+                        preset_state.write().randomizer.shops.healing_ironmon = x;
+                    },
                 },
             }
         }
