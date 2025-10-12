@@ -37,8 +37,11 @@ pub fn healing_ironmon(objects: &mut Objects) {
 
 pub fn item_in_ironmon(value: usize) -> bool {
     // remove TNT Ball, Life Disk, Sober Disk, CC, Train Chips, Charisma Chips, Runner Shoes/Sandals and Binder Crest
+    // Charisma ring/gem
     match value {
-        0x5a | 0x46 | 0x13e | 0x44 | 0x3e..0x42 | 0x14f..0x151 | 0x36 | 0x13f => false,
+        0x5a | 0x46 | 0x13e | 0x44 | 0x3e..0x42 | 0x14f..0x151 | 0x36 | 0x13f | 0x12e..0x130 => {
+            false
+        }
         _ => true,
     }
 }
