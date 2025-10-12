@@ -33,6 +33,10 @@ pub fn healing_ironmon(objects: &mut Objects) {
     // max charge
     objects.item_shop_data.modified[0x2e].buy_price = 2000;
     objects.item_shop_data.modified[0x2e].sell_price = 1000;
+
+    // crimson cable
+    objects.item_shop_data.modified[0x55].buy_price = 1000;
+    objects.item_shop_data.modified[0x55].sell_price = 500;
 }
 
 pub fn item_in_ironmon(value: usize) -> bool {
