@@ -30,6 +30,7 @@ challenge run inspired by [The Pokemon IronMON Challenge](https://gist.github.co
 | Shops                 | Shops are limited to 2 items per shop, other than that there are no other limitations                                                                              |
 | No Counter Crest      | Removed Tuskmons Counter Crest drop                                                                                                                                |
 | Fast Start            | Makes the intro very fast                                                                                                                                          |
+| Fast Sepikmon Mask    | Skips the Sepikmon quest (just go back into Jungle Grave after fighting Zanbamon)                                                                                  |
 | Fast Folder Bag       | Skips the Folder Bag cutscene (you still need to talk to divermon)                                                                                                 |
 | No Running Away       | No running away, be it from your or enemy digimon, doesn't include Zanbamon                                                                                        |
 | Ironmon Genji         | Early tamers are too hard on level 2 (their digimon are ~5 at minimum), the EXP and Bits Genji gives has bene increased                                            |
