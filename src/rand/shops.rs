@@ -6,17 +6,6 @@ use rand_xoshiro::Xoshiro256StarStar;
 use crate::json::{ShopItems, Shops};
 use std::collections::BTreeSet;
 
-pub fn tnt_ironmon(objects: &mut Objects) {
-    let f_ptr = objects.shops.modified[0].items;
-    let s_ptr = objects.shops.modified[9].items;
-
-    let idx = (s_ptr.value - f_ptr.value) as usize / 2;
-
-    objects.shop_items.modified[idx] = 0x5a;
-    objects.item_shop_data.modified[0x5a].buy_price = 1000;
-    objects.item_shop_data.modified[0x5a].sell_price = 500;
-}
-
 pub fn healing_ironmon(objects: &mut Objects) {
     // power charge
     objects.item_shop_data.modified[0x2b].buy_price = 500;
