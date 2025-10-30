@@ -16,6 +16,7 @@ challenge run inspired by [The Pokemon IronMON Challenge](https://gist.github.co
 | No Save Scumming   | While you can save the game to continue later, saving and resetting for good training RNG etc. is not allowed                              |
 | No TNT Ball Abuse  | You aren't allowed to use TNT Ball on Galacticmon                                                                                          |
 | No Magasta Items   | You aren't allowed to pick up item boxes in Magasta                                                                                        | 
+| Sell limits        | You aren't allowed to sell items received from these bosses: <br>- Ice Witch -> Ying Yang Hat <br>- Ice Master -> MP Chip <br>- Fire Knight -> Divine Rod <br>- Fire Master -> Mind Chip <br>- Dark Knight -> Brave Sword <br>- BK Seraphimon -> Sniper Suit <br>- BK Imperialdramon -> Hazard Helmet <br>- BK MegaGargomon -> Wild Helmet <br>- BK WarGrowlmon -> Hazard Armor |
 
 ## Specific changes made by the preset/patches compared to normal randomizer
 
