@@ -15,6 +15,7 @@ challenge run inspired by [The Pokemon IronMON Challenge](https://gist.github.co
 | No Auctions        | Auctions give 11k bits with no real risk and as such are banned                                                                            |
 | No Save Scumming   | While you can save the game to continue later, saving and resetting for good training RNG etc. is not allowed                              |
 | No TNT Ball Abuse  | You aren't allowed to use TNT Ball on Galacticmon                                                                                          |
+| No Magasta Items   | You aren't allowed to pick up item boxes in Magasta                                                                                        | 
 
 ## Specific changes made by the preset/patches compared to normal randomizer
 
