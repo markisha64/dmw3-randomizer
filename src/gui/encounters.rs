@@ -71,7 +71,7 @@ pub fn encounters() -> Element {
                         br {},
                         "Shuffle -> fully random"
                         br {},
-                        "Ironmon -> guarantees its in a shop in Suzaku city"
+                        "Ironmon -> guarantees its in a shop in Suzaku city at 1k bits"
                     },
                     label {
                         r#for: "encounters.tnt",
