@@ -67,6 +67,13 @@ pub struct TextFileGroup {
     generic_item: Option<u16>,
 }
 
+#[derive(Clone, Copy)]
+pub struct MusicSet {
+    pub sep_track: u16,
+    pub sep_file: u16,
+    pub index: usize,
+}
+
 pub struct ObjectArray<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,
@@ -96,6 +103,23 @@ impl<T: BinWrite> WriteObjects for ObjectArray<T> {
         self.modified.write(&mut buf)?;
         write_buf[self.index..(self.index + self.slen * self.original.len())]
             .copy_from_slice(&mut buf);
+
+        Ok(())
+    }
+}
+
+impl WriteObjects for ObjectArray<MusicSet> {
+    fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
+        for set in &self.modified {
+            let mut sep_track_buf = vec![];
+            let mut sep_file_buf = vec![];
+
+            set.sep_track.write(&mut sep_track_buf)?;
+            set.sep_file.write(&mut sep_file_buf)?;
+
+            write_buf[set.index..set.index + 2].copy_from_slice(&mut sep_track_buf);
+            write_buf[set.index + 8..set.index + 10].copy_from_slice(&mut sep_file_buf);
+        }
 
         Ok(())
     }
@@ -135,6 +159,7 @@ pub struct MapObject {
     pub talk_file: u16,
     pub stage_encounters: Vec<StageEncountersObject>,
     pub stage_id: u16,
+    pub music: ObjectArray<MusicSet>,
 }
 
 pub struct ModelObject {
@@ -479,6 +504,10 @@ async fn read_map_objects(
                 sw[0],
                 sw[1],
             ];
+
+            let sep_file_instruction = [0x40, 0x00, sw[0], sw[1]];
+
+            let sep_track_instruction = [0x3c, 0x00, sw[0], sw[1]];
 
             let talk_file_set = buf[initsp_index..initp_end_index]
                 .windows(4)
@@ -866,6 +895,33 @@ async fn read_map_objects(
                 slen: 0x18,
             });
 
+            let mut music = Vec::new();
+
+            for (idx, instruction) in buf[initsp_index..initp_end_index]
+                .windows(16)
+                .enumerate()
+                .filter(|(_, x)| {
+                    x[4..8] == sep_track_instruction && x[12..16] == sep_file_instruction
+                })
+            {
+                let sep_track = u16::from_le_bytes([instruction[0], instruction[1]]);
+
+                let sep_file = u16::from_le_bytes([instruction[8], instruction[9]]);
+
+                music.push(MusicSet {
+                    sep_track,
+                    sep_file,
+                    index: initsp_index + idx,
+                });
+            }
+
+            let music_object = ObjectArray {
+                original: music.clone(),
+                modified: music,
+                index: 0,
+                slen: 0,
+            };
+
             // TODO: instead of always checking first 2 instructions before
             // I need to find the first lui (which is considerably suckier)
             Some(MapObject {
@@ -878,6 +934,7 @@ async fn read_map_objects(
                 talk_file,
                 stage_encounters: stage_encounters_objects,
                 stage_id,
+                music: music_object,
             })
         }
         .await;
@@ -1807,6 +1864,8 @@ async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyh
                 }
             }
         }
+
+        object.music.write_buf(buf)?;
 
         object.background_file_index.write_buf(buf)?;
 

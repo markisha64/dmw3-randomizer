@@ -15,6 +15,7 @@ pub fn maps() -> Element {
     let fight_backgrounds = read_state.randomizer.maps.fight_backgrounds;
     let item_boxes = read_state.randomizer.maps.item_boxes;
     let ironmon_charisma = read_state.randomizer.maps.ironmon_charisma;
+    let music = read_state.randomizer.maps.music;
 
     let selected_group_strategy = read_state.randomizer.maps.group_strategy;
 
@@ -166,6 +167,19 @@ pub fn maps() -> Element {
                     tooltip: "Custom charisma values meant for ironmon",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.ironmon_charisma = x;
+                    }
+                },
+            }
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Music",
+                    id: "maps.ironmon_charisma",
+                    checked: music,
+                    disabled: !enabled,
+                    tooltip: "Randomize Music",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.music = x;
                     }
                 },
             }

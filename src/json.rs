@@ -107,6 +107,8 @@ pub struct Maps {
     pub group_strategy: GroupStrategy,
     #[serde(default = "default_bool_false")]
     pub ironmon_charisma: bool,
+    #[serde(default = "default_bool_false")]
+    pub music: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

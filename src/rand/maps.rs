@@ -1,6 +1,10 @@
 use std::collections::{BTreeSet, HashMap};
 
-use crate::{json::GroupStrategy, rand::Objects, util};
+use crate::{
+    json::GroupStrategy,
+    rand::Objects,
+    util::{self, shuffle, uniform_random_vector},
+};
 use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
@@ -70,6 +74,10 @@ pub fn patch(
 
     if maps.ironmon_charisma {
         ironmon_charisma(objects);
+    }
+
+    if maps.music {
+        music(objects, preset, rng)?;
     }
 
     Ok(())
@@ -336,4 +344,39 @@ fn ironmon_charisma(objects: &mut Objects) {
     // 1, 150, 210, 285, 378, 492, 630, 795, 990, 1218, 1482, 1785, 2049, 2277, 2472,
     // ];
     objects.charisma_reqs.modified = vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
+}
+
+fn music_pool(objects: &mut Objects) -> (Vec<(u16, u16)>, usize) {
+    let mut pool = BTreeSet::new();
+
+    let mut i = 0;
+    for map_object in &mut objects.map_objects {
+        for music_set in &mut map_object.music.original {
+            i += 1;
+            pool.insert((music_set.sep_track, music_set.sep_file));
+        }
+    }
+
+    (Vec::from_iter(pool.into_iter()), i)
+}
+
+fn music(
+    objects: &mut Objects,
+    preset: &Randomizer,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
+    let (mut pool, count) = music_pool(objects);
+
+    let mut randomized = uniform_random_vector(&mut pool, count, preset.shuffles, rng);
+
+    for map_object in &mut objects.map_objects {
+        for music_set in &mut map_object.music.modified {
+            let (sep_track, sep_file) = randomized.pop().context("missing seps")?;
+
+            music_set.sep_track = sep_track;
+            music_set.sep_file = sep_file;
+        }
+    }
+
+    Ok(())
 }
