@@ -12,7 +12,6 @@ binwrite = "0.2.1"
 chrono = { version = "0.4.26", features = ["clock"], default-features = false }
 clap = { version = "4.0", features = ["derive"], default-features = false }
 dioxus = { version = "0.5.1", features = ["desktop", "hooks", "launch", "signals", "html", "macro"], default-features = false }
-futures-util = { version = "0.3.28", default-features = false }
 quick-xml = { version = "0.31.0", features = ["serialize", "overlapped-lists"], default-features = false }
 rand_xoshiro = "0.6.0"
 serde = { version = "1.0.185", features = ["derive"], default-features = false }

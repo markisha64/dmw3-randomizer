@@ -1367,7 +1367,6 @@ dependencies = [
  "dmw3_model",
  "dmw3_pack",
  "dmw3_structs",
- "futures-util",
  "home",
  "quick-xml",
  "rand_xoshiro",
