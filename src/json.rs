@@ -109,6 +109,14 @@ pub struct Maps {
     pub ironmon_charisma: bool,
     #[serde(default = "default_bool_false")]
     pub music: bool,
+    #[serde(default = "default_music_pool_overworld")]
+    pub music_pool: MusicPool,
+    #[serde(default = "GroupStrategy::default")]
+    pub battle_music_group_strategy: GroupStrategy,
+    #[serde(default = "default_bool_false")]
+    pub battle_music: bool,
+    #[serde(default = "default_music_pool_battle")]
+    pub battle_music_pool: MusicPool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -396,6 +404,14 @@ fn default_max_starting_mp() -> u8 {
     200
 }
 
+fn default_music_pool_overworld() -> MusicPool {
+    MusicPool::Overworld
+}
+
+fn default_music_pool_battle() -> MusicPool {
+    MusicPool::Battle
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(rename_all = "lowercase")]
 #[derive(Default)]
@@ -454,6 +470,24 @@ impl From<u8> for ShopItems {
             0 => ShopItems::Buyable,
             1 => ShopItems::Sellable,
             _ => ShopItems::Ironmon,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+pub enum MusicPool {
+    Overworld,
+    Battle,
+    Both,
+}
+
+impl From<u8> for MusicPool {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => MusicPool::Overworld,
+            1 => MusicPool::Battle,
+            _ => MusicPool::Both,
         }
     }
 }

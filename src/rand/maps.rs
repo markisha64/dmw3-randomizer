@@ -1,9 +1,9 @@
 use std::collections::{BTreeSet, HashMap};
 
 use crate::{
-    json::GroupStrategy,
+    json::{GroupStrategy, MusicPool},
     rand::Objects,
-    util::{self, shuffle, uniform_random_vector},
+    util::{self, uniform_random_vector},
 };
 use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
@@ -78,6 +78,10 @@ pub fn patch(
 
     if maps.music {
         music(objects, preset, rng)?;
+    }
+
+    if maps.battle_music {
+        battle_music(objects, preset, rng)?;
     }
 
     Ok(())
@@ -346,18 +350,35 @@ fn ironmon_charisma(objects: &mut Objects) {
     objects.charisma_reqs.modified = vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
 }
 
-fn music_pool(objects: &mut Objects) -> (Vec<(u16, u16)>, usize) {
+pub fn music_pool(objects: &mut Objects, music_pool: MusicPool) -> Vec<(u16, u16)> {
     let mut pool = BTreeSet::new();
 
-    let mut i = 0;
-    for map_object in &mut objects.map_objects {
-        for music_set in &mut map_object.music.original {
-            i += 1;
-            pool.insert((music_set.sep_track, music_set.sep_file));
+    if music_pool != MusicPool::Battle {
+        for map_object in &mut objects.map_objects {
+            for music_set in &mut map_object.music.original {
+                pool.insert((music_set.sep_track, music_set.sep_file));
+            }
         }
     }
 
-    (Vec::from_iter(pool.into_iter()), i)
+    if music_pool != MusicPool::Overworld {
+        for map_object in &mut objects.map_objects {
+            for se_obj in &mut map_object.stage_encounters {
+                for opt in &mut se_obj.stage_encounters {
+                    if let Some(encounters_obj) = opt {
+                        for encounter in &mut encounters_obj.original {
+                            let sep_file = (encounter.music >> 16) as u16;
+                            let sep_track = (encounter.music >> 18) as u16 & 0x7f;
+
+                            pool.insert((sep_track, sep_file));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Vec::from_iter(pool.into_iter())
 }
 
 fn music(
@@ -365,9 +386,14 @@ fn music(
     preset: &Randomizer,
     rng: &mut Xoshiro256StarStar,
 ) -> anyhow::Result<()> {
-    let (mut pool, count) = music_pool(objects);
+    let mut pool = music_pool(objects, preset.maps.music_pool);
 
-    let mut randomized = uniform_random_vector(&mut pool, count, preset.shuffles, rng);
+    let pool_len = objects
+        .map_objects
+        .iter()
+        .fold(0, |pv, cv| pv + cv.music.original.len());
+
+    let mut randomized = uniform_random_vector(&mut pool, pool_len, preset.shuffles, rng);
 
     for map_object in &mut objects.map_objects {
         for music_set in &mut map_object.music.modified {
@@ -376,6 +402,92 @@ fn music(
             music_set.sep_track = sep_track;
             music_set.sep_file = sep_file;
         }
+    }
+
+    Ok(())
+}
+
+fn battle_music_ungrouped(
+    preset: &Randomizer,
+    objects: &mut Objects,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
+    let pool = music_pool(objects, preset.maps.battle_music_pool);
+
+    let pool_len = objects.map_objects.iter().fold(0, |pv, cv| {
+        pv + cv.stage_encounters.iter().fold(0, |pv_se, cv| {
+            pv_se
+                + cv.stage_encounters.iter().fold(0, |pv_e, cv| {
+                    if cv.is_some() {
+                        return pv_e + 1;
+                    }
+
+                    pv_e
+                })
+        })
+    });
+
+    let mut randomized = uniform_random_vector(&pool, pool_len, preset.shuffles, rng);
+
+    for map in &mut objects.map_objects {
+        for se_obj in &mut map.stage_encounters {
+            for opt in &mut se_obj.stage_encounters {
+                if let Some(encounters_obj) = opt {
+                    for encounter in &mut encounters_obj.modified {
+                        let (_, sep_file) = randomized.pop().context("missing music")?;
+
+                        encounter.music = (sep_file as u32) << 16;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn battle_music_grouped(preset: &Randomizer, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let mut generated = HashMap::new();
+
+    let pool = music_pool(objects, preset.maps.battle_music_pool);
+    let pool_len = pool.len() as u32;
+
+    for map in &mut objects.map_objects {
+        for se_obj in &mut map.stage_encounters {
+            for opt in &mut se_obj.stage_encounters {
+                if let Some(encounters_obj) = opt {
+                    for encounter in &mut encounters_obj.modified {
+                        encounter.music = match generated.get(&encounter.team_id) {
+                            Some(x) => *x,
+                            None => {
+                                let nv = rng.next_u32() % pool_len;
+                                let (_, sep_file) = pool[nv as usize];
+
+                                generated.insert(encounter.team_id, (sep_file as u32) << 16);
+
+                                nv
+                            }
+                        };
+                    }
+                }
+            }
+        }
+
+        if preset.maps.group_strategy == GroupStrategy::Map {
+            generated.clear();
+        }
+    }
+}
+
+fn battle_music(
+    objects: &mut Objects,
+    preset: &Randomizer,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
+    if preset.maps.battle_music_group_strategy == GroupStrategy::None {
+        battle_music_ungrouped(preset, objects, rng)?;
+    } else {
+        battle_music_grouped(preset, objects, rng);
     }
 
     Ok(())

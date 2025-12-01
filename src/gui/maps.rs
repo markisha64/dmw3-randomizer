@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::gui::checkbox;
-use crate::json::{GroupStrategy, Preset, ShopItems};
+use crate::json::{GroupStrategy, MusicPool, Preset, ShopItems};
 
 #[component]
 pub fn maps() -> Element {
@@ -20,6 +20,12 @@ pub fn maps() -> Element {
     let selected_group_strategy = read_state.randomizer.maps.group_strategy;
 
     let selected = read_state.randomizer.maps.item_boxes_items_only.clone();
+
+    let music = read_state.randomizer.maps.music;
+    let selected_music_pool = read_state.randomizer.maps.music_pool.clone();
+
+    let battle_music = read_state.randomizer.maps.battle_music;
+    let selected_battle_music_pool = read_state.randomizer.maps.battle_music_pool.clone();
 
     rsx! {
         div {
@@ -174,7 +180,7 @@ pub fn maps() -> Element {
                 class: "left",
                 checkbox::checkbox {
                     label: "Music",
-                    id: "maps.ironmon_charisma",
+                    id: "maps.randomize_music",
                     checked: music,
                     disabled: !enabled,
                     tooltip: "Randomize Music",
@@ -182,6 +188,71 @@ pub fn maps() -> Element {
                         state.write().randomizer.maps.music = x;
                     }
                 },
+                label {
+                    r#for: "maps.music_pool",
+                    "Music Pool"
+                },
+                select {
+                    id: "maps.music_pool",
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.maps.music_pool = MusicPool::from(x.data.value().parse::<u8>().unwrap_or(0));
+                    },
+                    option {
+                        value: "0",
+                        selected: selected_music_pool == MusicPool::Overworld,
+                        "Overworld"
+                    },
+                    option {
+                        value: "1",
+                        selected: selected_music_pool == MusicPool::Battle,
+                        "Battle"
+                    },
+                    option {
+                        value: "2",
+                        selected: selected_music_pool == MusicPool::Both,
+                        "Both"
+                    },
+                }
+            }
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Battle Music",
+                    id: "maps.randomize_battle_music",
+                    checked: battle_music,
+                    disabled: !enabled,
+                    tooltip: "Randomize Music",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.battle_music = x;
+                    }
+                },
+                label {
+                    r#for: "maps.battle_music_pool",
+                    "Music Pool"
+                },
+                select {
+                    id: "maps.battle_music_pool",
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.maps.battle_music_pool = MusicPool::from(x.data.value().parse::<u8>().unwrap_or(0));
+                    },
+                    option {
+                        value: "0",
+                        selected: selected_battle_music_pool == MusicPool::Overworld,
+                        "Overworld"
+                    },
+                    option {
+                        value: "1",
+                        selected: selected_battle_music_pool == MusicPool::Battle,
+                        "Battle"
+                    },
+                    option {
+                        value: "2",
+                        selected: selected_battle_music_pool == MusicPool::Both,
+                        "Both"
+                    },
+                }
             }
         }
     }
