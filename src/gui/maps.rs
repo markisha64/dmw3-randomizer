@@ -15,7 +15,6 @@ pub fn maps() -> Element {
     let fight_backgrounds = read_state.randomizer.maps.fight_backgrounds;
     let item_boxes = read_state.randomizer.maps.item_boxes;
     let ironmon_charisma = read_state.randomizer.maps.ironmon_charisma;
-    let music = read_state.randomizer.maps.music;
 
     let selected_group_strategy = read_state.randomizer.maps.group_strategy;
 
@@ -25,6 +24,7 @@ pub fn maps() -> Element {
     let selected_music_pool = read_state.randomizer.maps.music_pool.clone();
 
     let battle_music = read_state.randomizer.maps.battle_music;
+    let battle_music_group_strategy = read_state.randomizer.maps.battle_music_group_strategy;
     let selected_battle_music_pool = read_state.randomizer.maps.battle_music_pool.clone();
 
     rsx! {
@@ -222,7 +222,7 @@ pub fn maps() -> Element {
                     id: "maps.randomize_battle_music",
                     checked: battle_music,
                     disabled: !enabled,
-                    tooltip: "Randomize Music",
+                    tooltip: "Randomize Battle Music",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.battle_music = x;
                     }
@@ -251,6 +251,44 @@ pub fn maps() -> Element {
                         value: "2",
                         selected: selected_battle_music_pool == MusicPool::Both,
                         "Both"
+                    },
+                }
+            }
+            div {
+                class: "tooltip",
+                span {
+                    class: "tooltiptext",
+                    style: "width: 200px",
+                    "None => fully random",
+                    br {},
+                    "Map => group based on overworld map",
+                    br {},
+                    "Party => group based on party id"
+                },
+                label {
+                    r#for: "maps.battle_music_group_strategy",
+                    "Group Strategy"
+                },
+                select {
+                    id: "maps.battle_music_group_strategy",
+                    disabled: !enabled || !battle_music,
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.maps.battle_music_group_strategy = GroupStrategy::from(x.data.value().parse::<u8>().unwrap_or(0));
+                    },
+                    option {
+                        value: "0",
+                        selected: battle_music_group_strategy == GroupStrategy::None,
+                        "None"
+                    },
+                    option {
+                        value: "1",
+                        selected: battle_music_group_strategy == GroupStrategy::Map,
+                        "Map"
+                    },
+                    option {
+                        value: "2",
+                        selected: battle_music_group_strategy == GroupStrategy::Party,
+                        "Party"
                     },
                 }
             }
