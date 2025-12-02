@@ -463,9 +463,11 @@ fn battle_music_grouped(preset: &Randomizer, objects: &mut Objects, rng: &mut Xo
                                 let nv = rng.next_u32() % pool_len;
                                 let (_, sep_file) = pool[nv as usize];
 
-                                generated.insert(encounter.team_id, (sep_file as u32) << 16);
+                                let music = (sep_file as u32) << 16;
 
-                                nv
+                                generated.insert(encounter.team_id, music);
+
+                                music
                             }
                         };
                     }
