@@ -353,24 +353,24 @@ fn ironmon_charisma(objects: &mut Objects) {
 pub fn music_pool(objects: &mut Objects, music_pool: MusicPool) -> Vec<(u16, u16)> {
     let mut pool = BTreeSet::new();
 
-    if music_pool != MusicPool::Battle {
-        for map_object in &mut objects.map_objects {
+    for map_object in &mut objects.map_objects {
+        if music_pool != MusicPool::Battle {
             for music_set in &mut map_object.music.original {
                 pool.insert((music_set.sep_track, music_set.sep_file));
             }
         }
-    }
 
-    if music_pool != MusicPool::Overworld {
-        for map_object in &mut objects.map_objects {
+        if music_pool != MusicPool::Overworld {
             for se_obj in &mut map_object.stage_encounters {
                 for opt in &mut se_obj.stage_encounters {
                     if let Some(encounters_obj) = opt {
                         for encounter in &mut encounters_obj.original {
-                            let sep_file = (encounter.music >> 16) as u16;
-                            let sep_track = (encounter.music >> 18) as u16 & 0x7f;
+                            if encounter.team_id != 0 {
+                                let sep_file = (encounter.music >> 16) as u16;
+                                let sep_track = (encounter.music >> 18) as u16 & 0x7f;
 
-                            pool.insert((sep_track, sep_file));
+                                pool.insert((sep_track, sep_file));
+                            }
                         }
                     }
                 }
