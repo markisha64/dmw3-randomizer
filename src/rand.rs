@@ -303,16 +303,17 @@ impl Executable {
     fn to_stage_load_data_address(&self) -> Pointer {
         match self {
             Executable::PAL => Pointer { value: 0x8009a5f0 },
+            Executable::JAP => Pointer { value: 0x8009a304 },
             Executable::USA => Pointer { value: 0x800998e4 },
-            Executable::JAP => Pointer { value: 0x8009a598 },
         }
     }
 
     fn to_stage_load_data_length(&self) -> usize {
         match self {
+            // should make this also a const some time but yeh 55 is extra post game
             Executable::PAL => dmw3_consts::STAGE_LOAD_DATA_LENGTH + 55,
+            Executable::JAP => dmw3_consts::STAGE_LOAD_DATA_LENGTH + 55,
             Executable::USA => dmw3_consts::STAGE_LOAD_DATA_LENGTH,
-            Executable::JAP => dmw3_consts::STAGE_LOAD_DATA_LENGTH,
         }
     }
 
