@@ -356,36 +356,31 @@ async fn read_map_objects(
                 .await
                 .ok()?;
 
-            let mut offset: usize = 0x4;
-            let mut idx = buf.len() - offset;
-            let mut sstart_idx = buf.len() - offset - 0x10;
-            let mut sstart = buf[sstart_idx..sstart_idx + 8]
-                .iter()
-                .fold(0, |a, b| a + *b as u32);
-            let mut init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
+            let cutscene_idx = buf
+                .windows(0x14)
+                .position(|x| x[0..4] == [0xff; 4] && x[4..20] == [0x0; 16]);
 
-            while !(init_stage_pointers.is_valid() && sstart == 0) && (offset + 0x24) <= buf.len() {
-                offset += 0x14;
+            let init_stage_pointers: Pointer = match cutscene_idx {
+                Some(cutscene_idx) => (0..10).find_map(|i| {
+                    let ptr =
+                        Pointer::from(&buf[cutscene_idx - 4 - i * 0x14..cutscene_idx - i * 0x14]);
 
-                idx = buf.len() - offset;
-                sstart_idx = buf.len() - offset - 0x10;
+                    let talk = u32::from_be_bytes(
+                        buf[cutscene_idx - 12 - i * 0x14..cutscene_idx - 8 - i * 0x14]
+                            .try_into()
+                            .ok()?,
+                    );
 
-                sstart = buf[sstart_idx..sstart_idx + 8]
-                    .iter()
-                    .fold(0, |a, b| a + *b as u32);
+                    (ptr.is_valid() && talk == 0).as_option().and(Some(ptr))
+                }),
+                None => {
+                    let idx = buf.len() - 4;
 
-                init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
-            }
+                    let ptr = Pointer::from(&buf[idx..idx + 4]);
 
-            if init_stage_pointers.is_valid() {
-                let mut pptr = Pointer::from(&buf[idx - 4..idx]);
-                while pptr.is_valid() {
-                    idx -= 4;
-
-                    init_stage_pointers = Pointer::from(&buf[idx..idx + 4]);
-                    pptr = Pointer::from(&buf[idx - 4..idx]);
+                    ptr.is_valid().as_option().and(Some(ptr))
                 }
-            }
+            }?;
 
             init_stage_pointers.is_valid().as_option()?;
 
