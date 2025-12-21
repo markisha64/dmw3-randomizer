@@ -302,9 +302,17 @@ impl Executable {
 
     fn to_stage_load_data_address(&self) -> Pointer {
         match self {
-            Executable::PAL => Pointer { value: 0x8009a884 },
+            Executable::PAL => Pointer { value: 0x8009a5f0 },
             Executable::USA => Pointer { value: 0x800998e4 },
             Executable::JAP => Pointer { value: 0x8009a598 },
+        }
+    }
+
+    fn to_stage_load_data_length(&self) -> usize {
+        match self {
+            Executable::PAL => dmw3_consts::STAGE_LOAD_DATA_LENGTH + 55,
+            Executable::USA => dmw3_consts::STAGE_LOAD_DATA_LENGTH,
+            Executable::JAP => dmw3_consts::STAGE_LOAD_DATA_LENGTH,
         }
     }
 
@@ -342,7 +350,7 @@ async fn read_map_objects(
             file.file_type().await.ok()?.is_file().as_option()?;
 
             let file_name = file.file_name().into_string().ok()?;
-            (file_name.starts_with("WSTAG") && !file_name.starts_with("WSTAG9")).as_option()?;
+            file_name.starts_with("WSTAG").as_option()?;
 
             let buf = fs::read(format!("extract/{}/AAA/PRO/{}", rom_name, file_name))
                 .await
@@ -1442,11 +1450,11 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .to_index_overlay(overlay.value as u32) as usize;
 
     let mut stage_load_data_arr: Vec<StageLoadData> = Vec::new();
-    stage_load_data_arr.reserve(dmw3_consts::STAGE_LOAD_DATA_LENGTH);
+    stage_load_data_arr.reserve(executable.to_stage_load_data_length());
 
     let mut stage_load_data_reader = Cursor::new(&map_buf[stage_load_data_index..]);
 
-    for _ in 0..dmw3_consts::STAGE_LOAD_DATA_LENGTH {
+    for _ in 0..executable.to_stage_load_data_length() {
         let stage_load_data = StageLoadData::read(&mut stage_load_data_reader)?;
 
         stage_load_data_arr.push(stage_load_data);

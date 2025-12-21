@@ -270,7 +270,7 @@ fn item_boxes(
                                 .context("failed to get mut")?;
 
                             for (_lang, text_file) in &mut group.files {
-                                text_file.file.files[map.talk_file as usize] = vec![0, 0, 0, 0];
+                                text_file.file.files[logic.text_index as usize] = vec![0, 0, 0, 0];
                             }
 
                             if let Some(idx) = group.mapped_items.get(&nv) {
