@@ -269,10 +269,7 @@ fn item_boxes(
                                 .get_mut(sname)
                                 .context("failed to get mut")?;
 
-                            for (_lang, text_file) in &mut group.files {
-                                text_file.file.files[logic.text_index as usize] = vec![0, 0, 0, 0];
-                            }
-
+                            // alrady exists (rare)
                             if let Some(idx) = group.mapped_items.get(&nv) {
                                 logic.text_index = (*idx) as u32;
 
@@ -292,10 +289,14 @@ fn item_boxes(
 
                                             let csize = text_file.file.file_size_text();
 
-                                            let received_item_text =
+                                            let new_received_item_text =
                                                 lang.to_received_item(item_name);
 
-                                            csize + 4 + received_item_text.len()
+                                            let old_received_item_text =
+                                                &text_file.file.files[logic.text_index as usize];
+
+                                            csize + new_received_item_text.len()
+                                                - old_received_item_text.len()
                                                 > ((csize / 2048) + (csize % 2048 != 0) as usize)
                                                     * 2048
                                         })
@@ -303,15 +304,12 @@ fn item_boxes(
                                 })
                                 .is_some();
 
+                            // skip
                             if doesnt_fit {
-                                if let Some(idx) = group.generic_item {
-                                    logic.text_index = idx as u32;
-                                }
-
+                                println!("skipping item in {}", map.file_name);
                                 break;
                             }
 
-                            let mut idx = 0;
                             for (lang, talk_file) in &mut group.files {
                                 let item_name = objects
                                     .items
@@ -322,15 +320,11 @@ fn item_boxes(
                                     .files[nv as usize]
                                     .clone();
 
-                                let received_item_text = lang.to_received_item(item_name);
-                                idx = talk_file.file.files.len();
-
-                                logic.text_index = idx as u32;
-
-                                talk_file.file.files.push(received_item_text);
+                                talk_file.file.files[logic.text_index as usize] =
+                                    lang.to_received_item(item_name);
                             }
 
-                            group.mapped_items.insert(nv, idx as u16);
+                            group.mapped_items.insert(nv, logic.text_index as u16);
 
                             break;
                         }

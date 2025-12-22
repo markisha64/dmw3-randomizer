@@ -64,7 +64,6 @@ pub struct TextFile {
 pub struct TextFileGroup {
     files: HashMap<Language, TextFile>,
     mapped_items: HashMap<u16, u16>,
-    generic_item: Option<u16>,
 }
 
 #[derive(Clone, Copy)]
@@ -1482,14 +1481,12 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let items = TextFileGroup {
         files: item_files,
         mapped_items: HashMap::new(),
-        generic_item: None,
     };
 
     let mut text_files: BTreeMap<String, TextFileGroup> = BTreeMap::new();
     for sname in executable.text_files() {
         let mut files: HashMap<Language, TextFile> = HashMap::new();
 
-        let mut generic_item = None;
         for lang in executable.languages() {
             let fsname = lang.to_file_name(sname);
 
@@ -1517,7 +1514,6 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         if doesnt_fit.is_none() {
             for (lang, talk_file) in &mut files {
                 let generic_text = lang.to_received_item_generic();
-                generic_item = Some(talk_file.file.files.len() as u16);
 
                 talk_file.file.files.push(generic_text);
             }
@@ -1526,7 +1522,6 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         let group = TextFileGroup {
             files,
             mapped_items: HashMap::new(),
-            generic_item,
         };
 
         text_files.insert(String::from(*sname), group);
