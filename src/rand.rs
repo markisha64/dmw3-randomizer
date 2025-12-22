@@ -323,6 +323,14 @@ impl Executable {
             Executable::JAP => Pointer { value: 0x80044d98 },
         }
     }
+
+    fn complex_step_signature(&self) -> &[u8; 12] {
+        match self {
+            Executable::USA => b"\x3a\x00\x00\x00\x10\x00\x01\x10\x01\x02\x10\x02",
+            // these two are the same
+            _ => b"\x3a\x00\x00\x96\x01\x00\x00\x10\x00\x01\x10\x01",
+        }
+    }
 }
 
 async fn read_map_objects(
@@ -1572,7 +1580,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     let complex_steps_index = main_buf
         .windows(12)
-        .position(|x| x == b"\x3a\x00\x00\x96\x01\x00\x00\x10\x00\x01\x10\x01")
+        .position(|x| x == executable.complex_step_signature())
         .context("missing complex steps")?;
 
     let mut complex_steps_reader = Cursor::new(&main_buf[complex_steps_index..]);
