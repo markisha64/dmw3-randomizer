@@ -276,55 +276,117 @@ fn item_boxes(
                                 break;
                             }
 
-                            let doesnt_fit = group
-                                .files
-                                .iter()
-                                .find(|(lang, text_file)| {
-                                    objects
+                            if group.overwritten.contains(&logic.text_index) {
+                                // index already overwritten
+                                let doesnt_fit = group
+                                    .files
+                                    .iter()
+                                    .find(|(lang, text_file)| {
+                                        objects
+                                            .items
+                                            .files
+                                            .get(lang)
+                                            .map(|l| {
+                                                let item_name = l.file.files[nv as usize].clone();
+
+                                                let csize = text_file.file.file_size_text();
+
+                                                let new_received_item_text =
+                                                    lang.to_received_item(item_name);
+
+                                                csize + 4 + new_received_item_text.len()
+                                                    > ((csize / 2048)
+                                                        + (csize % 2048 != 0) as usize)
+                                                        * 2048
+                                            })
+                                            .unwrap_or(false)
+                                    })
+                                    .is_some();
+
+                                // skip
+                                if doesnt_fit {
+                                    println!("skipping item in {}", map.file_name);
+                                    break;
+                                }
+
+                                let idx = group
+                                    .files
+                                    .get(&crate::lang::Language::English)
+                                    .context("missing lang")?
+                                    .file
+                                    .files
+                                    .len();
+
+                                for (lang, talk_file) in &mut group.files {
+                                    let item_name = objects
                                         .items
                                         .files
                                         .get(lang)
-                                        .map(|l| {
-                                            let item_name = l.file.files[nv as usize].clone();
+                                        .context("failed to get by lang")?
+                                        .file
+                                        .files[nv as usize]
+                                        .clone();
 
-                                            let csize = text_file.file.file_size_text();
+                                    talk_file.file.files.push(lang.to_received_item(item_name));
+                                }
 
-                                            let new_received_item_text =
-                                                lang.to_received_item(item_name);
+                                logic.text_index = idx as u32;
 
-                                            let old_received_item_text =
-                                                &text_file.file.files[logic.text_index as usize];
-
-                                            csize + new_received_item_text.len()
-                                                - old_received_item_text.len()
-                                                > ((csize / 2048) + (csize % 2048 != 0) as usize)
-                                                    * 2048
-                                        })
-                                        .unwrap_or(false)
-                                })
-                                .is_some();
-
-                            // skip
-                            if doesnt_fit {
-                                println!("skipping item in {}", map.file_name);
-                                break;
-                            }
-
-                            for (lang, talk_file) in &mut group.files {
-                                let item_name = objects
-                                    .items
+                                group.mapped_items.insert(nv, idx as u16);
+                            } else {
+                                // index is safe for overwrite
+                                let doesnt_fit = group
                                     .files
-                                    .get(lang)
-                                    .context("failed to get by lang")?
-                                    .file
-                                    .files[nv as usize]
-                                    .clone();
+                                    .iter()
+                                    .find(|(lang, text_file)| {
+                                        objects
+                                            .items
+                                            .files
+                                            .get(lang)
+                                            .map(|l| {
+                                                let item_name = l.file.files[nv as usize].clone();
 
-                                talk_file.file.files[logic.text_index as usize] =
-                                    lang.to_received_item(item_name);
+                                                let csize = text_file.file.file_size_text();
+
+                                                let new_received_item_text =
+                                                    lang.to_received_item(item_name);
+
+                                                let old_received_item_text = &text_file.file.files
+                                                    [logic.text_index as usize];
+
+                                                csize + new_received_item_text.len()
+                                                    - old_received_item_text.len()
+                                                    > ((csize / 2048)
+                                                        + (csize % 2048 != 0) as usize)
+                                                        * 2048
+                                            })
+                                            .unwrap_or(false)
+                                    })
+                                    .is_some();
+
+                                // skip
+                                if doesnt_fit {
+                                    println!("skipping item in {}", map.file_name);
+                                    break;
+                                }
+
+                                for (lang, talk_file) in &mut group.files {
+                                    let item_name = objects
+                                        .items
+                                        .files
+                                        .get(lang)
+                                        .context("failed to get by lang")?
+                                        .file
+                                        .files[nv as usize]
+                                        .clone();
+
+                                    talk_file.file.files[logic.text_index as usize] =
+                                        lang.to_received_item(item_name);
+                                }
+
+                                group.overwritten.insert(logic.text_index);
+                                group.mapped_items.insert(nv, logic.text_index as u16);
                             }
-
-                            group.mapped_items.insert(nv, logic.text_index as u16);
 
                             break;
                         }

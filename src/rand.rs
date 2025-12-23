@@ -24,6 +24,7 @@ use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::io::Cursor;
 use std::path::PathBuf;
 
@@ -64,6 +65,7 @@ pub struct TextFile {
 pub struct TextFileGroup {
     files: HashMap<Language, TextFile>,
     mapped_items: HashMap<u16, u16>,
+    overwritten: HashSet<u32>,
 }
 
 #[derive(Clone, Copy)]
@@ -1489,6 +1491,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let items = TextFileGroup {
         files: item_files,
         mapped_items: HashMap::new(),
+        overwritten: HashSet::new(),
     };
 
     let mut text_files: BTreeMap<String, TextFileGroup> = BTreeMap::new();
@@ -1530,6 +1533,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         let group = TextFileGroup {
             files,
             mapped_items: HashMap::new(),
+            overwritten: HashSet::new(),
         };
 
         text_files.insert(String::from(*sname), group);
