@@ -38,4 +38,5 @@ challenge run inspired by [The Pokemon IronMON Challenge](https://gist.github.co
 | No Running Away       | No running away, be it from your or enemy digimon, doesn't include Zanbamon                                                                                        |
 | Ironmon Genji         | Early tamers are too hard on level 2 (their digimon are ~5 at minimum), the EXP and Bits Genji gives has bene increased                                            |
 | Ironmon Healing       | Prices of healing items have been increased                                                                                                                        |
+| Post Game Unlock      | Post game leaders are now fightable without epic weapons                                                                                                           |
               
