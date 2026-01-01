@@ -22,11 +22,14 @@ use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
 use rand_xoshiro::rand_core::SeedableRng;
 use rand_xoshiro::Xoshiro256StarStar;
+use rlen::rlen_decode;
+use rlen::rlen_encode;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::Cursor;
 use std::path::PathBuf;
+use tim::Tim;
 
 use crate::json::Preset;
 use crate::json::TNTStrategy;
@@ -2037,6 +2040,59 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
         objects.executable.to_stage_model_path(),
     )
     .await?;
+
+    // just changing to bg so i can record kotemon jumping rope
+    // TODO: change color
+    let training_general_tex = fs::read(format!(
+        "extract/{}/{}",
+        rom_name, "AAA/DAT/TRAINING/STTRNGTM.BIN"
+    ))
+    .await?;
+
+    let mut unpacked_training_tex_0 = Packed::from(training_general_tex);
+
+    let mut unpacked_training_tex = Packed::from(unpacked_training_tex_0.files[0].clone());
+
+    let training_tex = rlen_decode(&unpacked_training_tex.files[0]).map_err(|e| anyhow!(e))?;
+
+    let mut texture_tim = Tim::from(training_tex);
+
+    let r = 4;
+    let g = 244;
+    let b = 4;
+
+    let r_norm = (r / 0x1f) as u16;
+    let g_norm = (g / 0x1f) as u16;
+    let b_norm = (b / 0x1f) as u16;
+
+    let new_c: u16 = (b_norm << 10) | (g_norm << 5) | r_norm;
+    let new_c_bytes = new_c.to_le_bytes();
+
+    for i in 0..16 {
+        let l0 = (i + 48 + 238 * 64) * 2;
+        texture_tim.image.bytes[l0..l0 + 2].copy_from_slice(&new_c_bytes);
+    }
+
+    let new_tim: Vec<u8> = texture_tim.into();
+
+    let mut recoded = rlen_encode(&new_tim);
+
+    let padding_needed = 4 - (recoded.len() % 4);
+    recoded.extend(vec![0; padding_needed]);
+
+    unpacked_training_tex.files[0] = recoded;
+
+    unpacked_training_tex_0.files[0] = unpacked_training_tex.into();
+
+    let training_tex: Vec<u8> = unpacked_training_tex_0.into();
+
+    let mut new_training_tex = File::create(format!(
+        "extract/{}/{}",
+        rom_name, "AAA/DAT/TRAINING/STTRNGTM.BIN"
+    ))
+    .await?;
+
+    new_training_tex.write(&training_tex).await?;
 
     Ok(())
 }
