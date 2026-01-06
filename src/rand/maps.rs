@@ -187,6 +187,11 @@ fn item_boxes(
     rng: &mut Xoshiro256StarStar,
 ) -> anyhow::Result<()> {
     let pool = shoppable(objects, &preset.maps);
+    let language = objects
+        .executable
+        .languages()
+        .first()
+        .context("executable with no languages")?;
 
     for map in &mut objects.map_objects {
         if let Some(entities) = &mut map.entities {
@@ -311,7 +316,7 @@ fn item_boxes(
 
                                 let idx = group
                                     .files
-                                    .get(&crate::lang::Language::English)
+                                    .get(language)
                                     .context("missing lang")?
                                     .file
                                     .files
