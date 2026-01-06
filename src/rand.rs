@@ -1525,22 +1525,6 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
             );
         }
 
-        let doesnt_fit = files.iter().find(|(lang, talk_file)| {
-            let csize = talk_file.file.file_size_text();
-
-            let generic_text = &lang.to_received_item_generic();
-
-            csize + 4 + generic_text.len() > ((csize / 2048) + (csize % 2048 != 0) as usize) * 2048
-        });
-
-        if doesnt_fit.is_none() {
-            for (lang, talk_file) in &mut files {
-                let generic_text = lang.to_received_item_generic();
-
-                talk_file.file.files.push(generic_text);
-            }
-        }
-
         let group = TextFileGroup {
             files,
             mapped_items: HashMap::new(),
