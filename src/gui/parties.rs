@@ -43,6 +43,8 @@ pub fn parties() -> Element {
     let min_start_mp = read_state.randomizer.parties.min_starting_mp;
     let max_start_mp = read_state.randomizer.parties.max_starting_mp;
 
+    let ironmon_multihits = read_state.randomizer.parties.ironmon_multihits;
+
     rsx! {
         div {
             class: "segment",
@@ -331,7 +333,8 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.max_hp_modifier = x as u8
                     }
                 }
-            },            div {
+            },
+            div {
                 class: "left",
                 div { style: "margin-right: 10px;", "MP Affinity Range" }
                 number_field::number_field {
@@ -357,6 +360,19 @@ pub fn parties() -> Element {
                     }
                 }
             },
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Ironmon Multihits",
+                    tooltip: "Makes Hammer Rush and Impact Rush more expensive",
+                    checked: ironmon_multihits,
+                    disabled: !enabled,
+                    id: "parties.ironmon_multihits",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.ironmon_multihits = x;
+                    }
+                },
+            }
         }
     }
 }

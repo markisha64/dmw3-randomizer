@@ -194,6 +194,14 @@ pub fn patch(
         }
     }
 
+    if preset.parties.ironmon_multihits {
+        // hammer rush
+        objects.move_data.modified[0x7b - 1].mp = 80;
+
+        // impact rush
+        objects.move_data.modified[0x7c - 1].mp = 200;
+    }
+
     Ok(())
 }
 

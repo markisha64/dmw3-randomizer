@@ -172,6 +172,8 @@ pub struct Parties {
     pub min_starting_mp: u8,
     #[serde(default = "default_max_starting_mp")]
     pub max_starting_mp: u8,
+    #[serde(default = "default_bool_false")]
+    pub ironmon_multihits: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
