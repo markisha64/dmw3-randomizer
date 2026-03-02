@@ -4,7 +4,7 @@
 The Ironmon challenge is a [Digimon World 3 Randomizer](https://github.com/markisha64/dmw3-randomizer/releases)
 challenge run inspired by [The Pokemon IronMON Challenge](https://gist.github.com/valiant-code/adb18d248fa0fae7da6b639e2ee8f9c1).
 
-## Standard Rules (WIP)
+## Standard Rules v1.0
 
 | Rules              | Details                                                                                                                                    |
 |--------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
@@ -41,4 +41,5 @@ challenge run inspired by [The Pokemon IronMON Challenge](https://gist.github.co
 | Ironmon Genji         | Early tamers are too hard on level 2 (their digimon are ~5 at minimum), the EXP and Bits Genji gives has bene increased                                            |
 | Ironmon Healing       | Prices of healing items have been increased                                                                                                                        |
 | Post Game Unlock      | Post game leaders are now fightable without epic weapons                                                                                                           |
+| Ironmon Multihits     | Hammer Rush costs 80MP and Impact Rush costs 200 MP                                                                                                                |
               
