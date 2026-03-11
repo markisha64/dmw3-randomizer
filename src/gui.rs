@@ -12,7 +12,6 @@ use crate::db;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::PathBuf;
 
-mod archipelago;
 mod card_game;
 mod checkbox;
 mod encounters;
@@ -180,7 +179,7 @@ fn app() -> Element {
                 parties::parties {},
                 scaling::scaling {},
                 models::models {},
-                archipelago::archipelago {},
+                card_game::card_game {}
             },
             div {
                 class: "column",
@@ -188,7 +187,6 @@ fn app() -> Element {
                 encounters::encounters {},
                 maps::maps {},
                 party_exp_bits::party_exp_bits {},
-                card_game::card_game {}
             },
         }
     }
