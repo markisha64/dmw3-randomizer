@@ -2,7 +2,8 @@ use anyhow::anyhow;
 use anyhow::Context;
 use async_std::fs;
 use async_std::fs::File;
-use async_std::prelude::*;
+use async_std::io::WriteExt;
+use async_std::stream::StreamExt;
 use binread::BinRead;
 use binwrite::BinWrite;
 use boolinator::Boolinator;
@@ -1969,11 +1970,6 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
         .party_exp_bits
         .write_buf(&mut objects.bufs.exp_buf)?;
 
-    objects
-        .sector_offsets
-        .write_buf(&mut objects.bufs.main_buf)?;
-    objects.file_sizes.write_buf(&mut objects.bufs.main_buf)?;
-
     let rom_name = path
         .file_name()
         .context("Failed to get file name")?
@@ -2076,6 +2072,87 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     Ok(())
 }
 
+pub async fn fix_lba(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<()> {
+    let mut new_xml = objects.iso_project.clone();
+    new_xml.remove_offsets()?;
+
+    let xml_string = quick_xml::se::to_string(&new_xml)?;
+
+    let mut new_xml = fs::File::create("extract/new.xml").await?;
+    new_xml.write_all(&xml_string.into_bytes()[..]).await?;
+    new_xml.sync_all().await?;
+
+    let lba = get_lba().await?;
+
+    for i in 0..objects.sector_offsets.modified.len() {
+        let offset = objects.sector_offsets.modified[i];
+
+        let file = objects
+            .file_map
+            .iter()
+            .find(|x| x.offs == Some(offset))
+            .context("missing file")?;
+
+        let (modified_offset, modified_size) = lba
+            .entries
+            .iter()
+            .find_map(|x| match x {
+                Entry::File {
+                    name,
+                    length,
+                    lba,
+                    timecode: _,
+                    bytes: _,
+                    source: _,
+                } => match name.split(";").next()? == file.name {
+                    true => Some((*lba, *length)),
+                    false => None,
+                },
+                Entry::Xa {
+                    name,
+                    length,
+                    lba,
+                    timecode: _,
+                    bytes: _,
+                    source: _,
+                } => match name.split(";").next()? == file.name {
+                    true => Some((*lba, *length)),
+                    false => None,
+                },
+                _ => None,
+            })
+            .context("can't find matching file")?;
+
+        objects.sector_offsets.modified[i] = modified_offset;
+        objects.file_sizes.modified[i] = modified_size as u16;
+    }
+
+    // write sector offsets
+    objects
+        .sector_offsets
+        .write_buf(&mut objects.bufs.main_buf)?;
+    objects.file_sizes.write_buf(&mut objects.bufs.main_buf)?;
+
+    let rom_name = path
+        .file_name()
+        .context("Failed to get file name")?
+        .to_str()
+        .context("Failed to convert to str")?;
+
+    let mut new_main_executable = File::create(format!(
+        "extract/{}/{}",
+        rom_name,
+        objects.executable.as_str()
+    ))
+    .await?;
+
+    new_main_executable
+        .write_all(&objects.bufs.main_buf)
+        .await?;
+
+    Ok(())
+}
+
 pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
     let mut objects = read_objects(path).await?;
 
@@ -2121,66 +2198,10 @@ pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
         party_exp_bits::patch(&preset.party_exp_bits, &mut objects)?;
     }
 
-    let mut new_xml = objects.iso_project.clone();
-    new_xml.remove_offsets()?;
-
-    let xml_string = quick_xml::se::to_string(&new_xml)?;
-
-    let mut new_xml = fs::File::create("extract/new.xml").await?;
-    new_xml.write_all(&xml_string.into_bytes()[..]).await?;
-
-    let lba = get_lba().await?;
-
-    for i in 0..objects.sector_offsets.modified.len() {
-        let offset = objects.sector_offsets.modified[i];
-
-        let file = objects
-            .file_map
-            .iter()
-            .find(|x| x.offs == Some(offset))
-            .context("missing file")?;
-
-        println!("file name {}", file.name);
-
-        let modified_offset = lba
-            .entries
-            .iter()
-            .find_map(|x| match x {
-                Entry::File {
-                    name,
-                    length: _,
-                    lba,
-                    timecode: _,
-                    bytes: _,
-                    source: _,
-                } => match name.split(";").next()? == file.name {
-                    true => Some(*lba),
-                    false => None,
-                },
-                Entry::Xa {
-                    name,
-                    length: _,
-                    lba,
-                    timecode: _,
-                    bytes: _,
-                    source: _,
-                } => match name.split(";").next()? == file.name {
-                    true => Some(*lba),
-                    false => None,
-                },
-                _ => None,
-            })
-            .context("can't find matching file")?;
-
-        println!("{}", format!("extract/{}", file.source));
-
-        objects.sector_offsets.modified[i] = modified_offset;
-        objects.file_sizes.modified[i] = fs::metadata(&format!("extract/{}", file.source))
-            .await?
-            .len() as u16;
-    }
-
+    // update all files on disk
     write_objects(path, &mut objects).await?;
+
+    fix_lba(path, &mut objects).await?;
 
     Ok(objects)
 }

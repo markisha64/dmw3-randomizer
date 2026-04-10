@@ -114,6 +114,7 @@ pub struct File {
     #[serde(rename = "@source")]
     pub source: String,
     #[serde(rename = "@offs")]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub offs: Option<u32>,
     #[serde(rename = "@type")]
     _type: String,
@@ -296,7 +297,7 @@ pub async fn get_lba() -> anyhow::Result<LbaLog> {
     let binf = find_bin("mkpsxiso").await?;
 
     let success = Command::new(binf)
-        .arg("extract/out.xml")
+        .arg("extract/new.xml")
         .arg("-y")
         .arg("-lba")
         .arg("extract/lba.txt")
