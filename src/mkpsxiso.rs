@@ -164,22 +164,22 @@ pub enum Entry {
         name: String,
         length: u32,
         lba: u32,
-        timecode: String,
-        bytes: u64,
-        source: String,
+        _timecode: String,
+        _bytes: u64,
+        _source: String,
     },
     Dir {
-        name: String,
-        lba: u32,
-        timecode: String,
+        _name: String,
+        _lba: u32,
+        _timecode: String,
     },
     Xa {
         name: String,
         length: u32,
         lba: u32,
-        timecode: String,
-        bytes: u64,
-        source: String,
+        _timecode: String,
+        _bytes: u64,
+        _source: String,
     },
     DirEnd(String),
 }
@@ -247,18 +247,18 @@ async fn parse_lba_log() -> anyhow::Result<LbaLog> {
                         name,
                         length,
                         lba,
-                        timecode,
-                        bytes,
-                        source,
+                        _timecode: timecode,
+                        _bytes: bytes,
+                        _source: source,
                     });
                 } else {
                     log.entries.push(Entry::File {
                         name,
                         length,
                         lba,
-                        timecode,
-                        bytes,
-                        source,
+                        _timecode: timecode,
+                        _bytes: bytes,
+                        _source: source,
                     });
                 }
             }
@@ -271,9 +271,9 @@ async fn parse_lba_log() -> anyhow::Result<LbaLog> {
                 let lba: u32 = cols.next().and_then(|v| v.parse().ok()).unwrap_or(0);
                 let timecode = cols.next().unwrap_or("").to_string();
                 log.entries.push(Entry::Dir {
-                    name,
-                    lba,
-                    timecode,
+                    _name: name,
+                    _lba: lba,
+                    _timecode: timecode,
                 });
             }
             "End" => {

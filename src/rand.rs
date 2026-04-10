@@ -169,7 +169,6 @@ pub struct MapObject {
 
 pub struct ModelObject {
     packed: dmw3_pack::Packed,
-    og_len: usize,
     file_name: String,
     header: Header,
 }
@@ -177,7 +176,6 @@ pub struct ModelObject {
 pub struct Objects {
     bufs: Bufs,
     executable: Executable,
-    stage: Pointer,
     pub iso_project: IsoProject,
 
     // hard coded data
@@ -212,7 +210,6 @@ pub struct Objects {
     pub item_shop_data: ObjectArray<ItemShopData>,
     pub move_data: ObjectArray<MoveData>,
     pub dv_cond: ObjectArray<DigivolutionConditions>,
-    pub stage_load_data: Vec<StageLoadData>,
     pub map_objects: Vec<MapObject>,
     pub model_objects: Vec<ModelObject>,
     pub stage_model_objects: Vec<ModelObject>,
@@ -221,9 +218,6 @@ pub struct Objects {
 
     pub text_files: BTreeMap<String, TextFileGroup>,
     pub items: TextFileGroup,
-
-    pub overlay_address: Pointer,
-    pub stage_address: Pointer,
 }
 
 enum Executable {
@@ -1084,7 +1078,6 @@ async fn read_model_objects(
         let header = Header::read(&mut Cursor::new(&packed.files[header_buf]))?;
 
         r.push(ModelObject {
-            og_len: packed.file_size(),
             packed,
             file_name,
             header,
@@ -1808,7 +1801,6 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     Ok(Objects {
         executable,
         file_map,
-        stage,
         iso_project,
         model_objects,
         stage_model_objects,
@@ -1853,16 +1845,12 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         item_shop_data: item_shop_data_object,
         move_data: move_data_object,
         dv_cond: dv_cond_object,
-        stage_load_data: stage_load_data_arr,
         map_objects,
 
         screen_name_mapping,
 
         text_files,
         items,
-
-        overlay_address,
-        stage_address,
     })
 }
 
@@ -2101,9 +2089,9 @@ pub async fn fix_lba(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<()
                     name,
                     length,
                     lba,
-                    timecode: _,
-                    bytes: _,
-                    source: _,
+                    _timecode: _,
+                    _bytes: _,
+                    _source: _,
                 } => match name.split(";").next()? == file.name {
                     true => Some((*lba, *length)),
                     false => None,
@@ -2112,9 +2100,9 @@ pub async fn fix_lba(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<()
                     name,
                     length,
                     lba,
-                    timecode: _,
-                    bytes: _,
-                    source: _,
+                    _timecode: _,
+                    _bytes: _,
+                    _source: _,
                 } => match name.split(";").next()? == file.name {
                     true => Some((*lba, *length)),
                     false => None,
