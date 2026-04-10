@@ -264,7 +264,12 @@ fn item_boxes(
                             let real_file = objects
                                 .file_map
                                 .iter()
-                                .find(|x| x.offs == objects.sector_offsets[map.talk_file as usize])
+                                .find(|x| {
+                                    x.offs
+                                        == Some(
+                                            objects.sector_offsets.original[map.talk_file as usize],
+                                        )
+                                })
                                 .context("failed to find real file")?;
 
                             let sname = &real_file.name[1..];
@@ -283,37 +288,6 @@ fn item_boxes(
 
                             if group.overwritten.contains(&logic.text_index) {
                                 // index already overwritten
-                                let doesnt_fit = group
-                                    .files
-                                    .iter()
-                                    .find(|(lang, text_file)| {
-                                        objects
-                                            .items
-                                            .files
-                                            .get(lang)
-                                            .map(|l| {
-                                                let item_name = l.file.files[nv as usize].clone();
-
-                                                let csize = text_file.file.file_size_text();
-
-                                                let new_received_item_text =
-                                                    lang.to_received_item(item_name);
-
-                                                csize + 4 + new_received_item_text.len()
-                                                    > ((csize / 2048)
-                                                        + (csize % 2048 != 0) as usize)
-                                                        * 2048
-                                            })
-                                            .unwrap_or(false)
-                                    })
-                                    .is_some();
-
-                                // skip
-                                if doesnt_fit {
-                                    println!("skipping item in {}", map.file_name);
-                                    break;
-                                }
-
                                 let idx = group
                                     .files
                                     .get(language)
@@ -340,41 +314,6 @@ fn item_boxes(
                                 group.mapped_items.insert(nv, idx as u16);
                             } else {
                                 // index is safe for overwrite
-                                let doesnt_fit = group
-                                    .files
-                                    .iter()
-                                    .find(|(lang, text_file)| {
-                                        objects
-                                            .items
-                                            .files
-                                            .get(lang)
-                                            .map(|l| {
-                                                let item_name = l.file.files[nv as usize].clone();
-
-                                                let csize = text_file.file.file_size_text();
-
-                                                let new_received_item_text =
-                                                    lang.to_received_item(item_name);
-
-                                                let old_received_item_text = &text_file.file.files
-                                                    [logic.text_index as usize];
-
-                                                csize + new_received_item_text.len()
-                                                    - old_received_item_text.len()
-                                                    > ((csize / 2048)
-                                                        + (csize % 2048 != 0) as usize)
-                                                        * 2048
-                                            })
-                                            .unwrap_or(false)
-                                    })
-                                    .is_some();
-
-                                // skip
-                                if doesnt_fit {
-                                    println!("skipping item in {}", map.file_name);
-                                    break;
-                                }
-
                                 for (lang, talk_file) in &mut group.files {
                                     let item_name = objects
                                         .items

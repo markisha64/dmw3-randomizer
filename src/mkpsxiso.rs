@@ -1,11 +1,11 @@
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use async_std::fs;
 use quick_xml::de::from_str;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 
-#[derive(Deserialize, Debug)]
-#[serde(rename_all = "snake_case")]
+#[derive(Deserialize, Serialize, Clone, Debug)]
+#[serde(rename_all = "snake_case", rename = "iso_project")]
 pub struct IsoProject {
     track: Vec<Track>,
 }
@@ -30,6 +30,25 @@ impl IsoProject {
 
         Ok(result)
     }
+
+    pub fn remove_offsets(&mut self) -> anyhow::Result<()> {
+        let data = self
+            .track
+            .iter_mut()
+            .find(|t| t.r#type == "data")
+            .ok_or(anyhow::anyhow!("Missing data track"))?;
+
+        for entry in data.directory_tree.field.iter_mut() {
+            match entry {
+                DirEntry::File(file) => {
+                    file.offs = None;
+                }
+                DirEntry::Dir(dir) => rremove_offsets(dir),
+            }
+        }
+
+        Ok(())
+    }
 }
 
 fn rflatten(dir: &Dir, result: &mut Vec<File>) {
@@ -43,7 +62,18 @@ fn rflatten(dir: &Dir, result: &mut Vec<File>) {
     }
 }
 
-#[derive(Deserialize, Debug)]
+fn rremove_offsets(dir: &mut Dir) {
+    for entry in dir.field.iter_mut() {
+        match entry {
+            DirEntry::File(file) => {
+                file.offs = None;
+            }
+            DirEntry::Dir(dir) => rremove_offsets(dir),
+        }
+    }
+}
+
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 struct Track {
     #[serde(rename = "@type")]
@@ -51,21 +81,21 @@ struct Track {
     directory_tree: DirectoryTree,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 enum DirEntry {
     Dir(Dir),
     File(File),
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 struct DirectoryTree {
     #[serde(rename = "$value")]
     field: Vec<DirEntry>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case")]
 struct Dir {
     #[serde(rename = "$value")]
@@ -76,15 +106,15 @@ struct Dir {
     _source: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 pub struct File {
     #[serde(rename = "@name")]
     pub name: String,
     #[serde(rename = "@source")]
-    _source: String,
+    pub source: String,
     #[serde(rename = "@offs")]
-    pub offs: u32,
+    pub offs: Option<u32>,
     #[serde(rename = "@type")]
     _type: String,
 }
@@ -128,10 +158,159 @@ pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<bool> {
         .success())
 }
 
+pub enum Entry {
+    File {
+        name: String,
+        length: u32,
+        lba: u32,
+        timecode: String,
+        bytes: u64,
+        source: String,
+    },
+    Dir {
+        name: String,
+        lba: u32,
+        timecode: String,
+    },
+    Xa {
+        name: String,
+        length: u32,
+        lba: u32,
+        timecode: String,
+        bytes: u64,
+        source: String,
+    },
+    DirEnd(String),
+}
+
+pub struct LbaLog {
+    pub bin_file: String,
+    pub cue_file: String,
+    pub entries: Vec<Entry>,
+}
+
+async fn parse_lba_log() -> anyhow::Result<LbaLog> {
+    let content = fs::read_to_string("extract/lba.txt").await?;
+    let mut log = LbaLog {
+        bin_file: String::new(),
+        cue_file: String::new(),
+        entries: Vec::new(),
+    };
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+
+        // Parse header metadata
+        if let Some(val) = trimmed.strip_prefix("Image bin file:") {
+            log.bin_file = val.trim().to_string();
+            continue;
+        }
+        if let Some(val) = trimmed.strip_prefix("Image cue file:") {
+            log.cue_file = val.trim().to_string();
+            continue;
+        }
+
+        let mut cols = trimmed.split_whitespace();
+        let entry_type = match cols.next() {
+            Some(t) => t,
+            None => continue,
+        };
+
+        match entry_type {
+            "File" | "XA" => {
+                // Columns: Type  Name  Length  LBA  Timecode  Bytes  SourceFile
+                let name = match cols.next() {
+                    Some(v) => v.to_string(),
+                    None => continue,
+                };
+                let length: u32 = match cols.next().and_then(|v| v.parse().ok()) {
+                    Some(v) => v,
+                    None => continue,
+                };
+                let lba: u32 = match cols.next().and_then(|v| v.parse().ok()) {
+                    Some(v) => v,
+                    None => continue,
+                };
+                let timecode = match cols.next() {
+                    Some(v) => v.to_string(),
+                    None => continue,
+                };
+                let bytes: u64 = match cols.next().and_then(|v| v.parse().ok()) {
+                    Some(v) => v,
+                    None => continue,
+                };
+                let source = cols.next().unwrap_or("").to_string();
+
+                if entry_type == "XA" {
+                    log.entries.push(Entry::Xa {
+                        name,
+                        length,
+                        lba,
+                        timecode,
+                        bytes,
+                        source,
+                    });
+                } else {
+                    log.entries.push(Entry::File {
+                        name,
+                        length,
+                        lba,
+                        timecode,
+                        bytes,
+                        source,
+                    });
+                }
+            }
+            "Dir" => {
+                // Columns: Type  Name  (optional: LBA  Timecode)
+                let name = match cols.next() {
+                    Some(v) => v.to_string(),
+                    None => continue,
+                };
+                let lba: u32 = cols.next().and_then(|v| v.parse().ok()).unwrap_or(0);
+                let timecode = cols.next().unwrap_or("").to_string();
+                log.entries.push(Entry::Dir {
+                    name,
+                    lba,
+                    timecode,
+                });
+            }
+            "End" => {
+                let name = cols.next().unwrap_or("").to_string();
+                log.entries.push(Entry::DirEnd(name));
+            }
+            _ => {}
+        }
+    }
+
+    Ok(log)
+}
+
 pub async fn xml_file() -> anyhow::Result<IsoProject> {
     let xml = fs::read_to_string("extract/out.xml").await?;
 
     Ok(from_str(&xml)?)
+}
+
+pub async fn get_lba() -> anyhow::Result<LbaLog> {
+    let binf = find_bin("mkpsxiso").await?;
+
+    let success = Command::new(binf)
+        .arg("extract/out.xml")
+        .arg("-y")
+        .arg("-lba")
+        .arg("extract/lba.txt")
+        .arg("-noisogen")
+        .output()
+        .await?
+        .status
+        .success();
+
+    if !success {
+        return Err(anyhow!("failed to get lba"));
+    }
+
+    parse_lba_log().await
 }
 
 pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<bool> {
@@ -145,7 +324,7 @@ pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<bool> {
         .arg(&bin)
         .arg("-c")
         .arg(&cue)
-        .arg("extract/out.xml")
+        .arg("extract/new.xml")
         .arg("-y")
         .output()
         .await?

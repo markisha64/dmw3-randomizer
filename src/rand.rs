@@ -32,7 +32,10 @@ use crate::json::Preset;
 use crate::json::TNTStrategy;
 use crate::lang::Language;
 use crate::mkpsxiso;
+use crate::mkpsxiso::get_lba;
 use crate::mkpsxiso::xml_file;
+use crate::mkpsxiso::Entry;
+use crate::mkpsxiso::IsoProject;
 pub use dmw3_structs;
 
 mod card_game;
@@ -174,10 +177,12 @@ pub struct Objects {
     bufs: Bufs,
     executable: Executable,
     stage: Pointer,
+    pub iso_project: IsoProject,
 
     // hard coded data
     pub file_map: Vec<mkpsxiso::File>,
-    pub sector_offsets: Vec<u32>,
+    pub sector_offsets: ObjectArray<u32>,
+    pub file_sizes: ObjectArray<u16>,
 
     pub parties: ObjectArray<u8>,
     pub pack_previews: ObjectArray<u32>,
@@ -326,6 +331,14 @@ impl Executable {
         }
     }
 
+    fn to_sector_offsets_len(&self) -> usize {
+        match self {
+            Executable::PAL => 2382,
+            Executable::USA => 2199,
+            Executable::JAP => 2363,
+        }
+    }
+
     fn complex_step_signature(&self) -> &[u8; 12] {
         match self {
             Executable::USA => b"\x3a\x00\x00\x00\x10\x00\x01\x10\x01\x02\x10\x02",
@@ -427,7 +440,7 @@ async fn read_map_objects(
 
             let sector_offsets_index = sector_offsets
                 .iter()
-                .position(|off| *off == sector_offset)?
+                .position(|off| Some(*off) == sector_offset)?
                 as u32;
 
             let stage_load_data_row = stage_load_data
@@ -983,13 +996,6 @@ async fn write_model_objects(
         .context("Failed to convert to str")?;
 
     for model in objects {
-        if model.packed.file_size()
-            > ((model.og_len / 2048) + (model.og_len % 2048 != 0) as usize) * 2048
-        {
-            println!("extract/{}/{}/{}", rom_name, model_path, model.file_name,);
-            continue;
-        }
-
         let mut new_model = File::create(format!(
             "extract/{}/{}/{}",
             rom_name, model_path, model.file_name,
@@ -1088,12 +1094,13 @@ async fn read_model_objects(
 }
 
 pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
+    let iso_project = xml_file().await?;
+
     let rom_name = path
         .file_name()
         .context("Failed file name get")?
         .to_str()
         .context("Failed to_str conversion")?;
-    let iso_project = xml_file().await?;
 
     let mut itr = fs::read_dir(format!("extract/{}/", rom_name)).await?;
 
@@ -1162,16 +1169,42 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     let file_map = iso_project.flatten()?;
 
+    let files_len = executable.to_sector_offsets_len();
+
     let mut sector_offsets: Vec<u32> = Vec::new();
-    sector_offsets.reserve(file_map.len());
+    sector_offsets.reserve(files_len);
 
     let sector_offsets_index = executable.to_sector_offsets_address().to_index() as usize;
 
-    for i in 0..file_map.len() {
+    for i in 0..files_len {
         sector_offsets.push(u32::from_le_bytes(
             main_buf[sector_offsets_index + i * 4..sector_offsets_index + i * 4 + 4].try_into()?,
         ));
     }
+
+    let mut file_sizes: Vec<u16> = Vec::new();
+    file_sizes.reserve(files_len);
+
+    for i in 0..files_len {
+        file_sizes.push(u16::from_le_bytes(
+            main_buf[sector_offsets_index + files_len * 4 + i * 2
+                ..sector_offsets_index + files_len * 4 + i * 2 + 2]
+                .try_into()?,
+        ));
+    }
+
+    let sector_offsets_object = ObjectArray {
+        original: sector_offsets.clone(),
+        modified: sector_offsets.clone(),
+        index: sector_offsets_index,
+        slen: 0x4,
+    };
+    let file_sizes_object = ObjectArray {
+        original: file_sizes.clone(),
+        modified: file_sizes.clone(),
+        index: sector_offsets_index + files_len * 4,
+        slen: 0x2,
+    };
 
     let mut enemy_stats_reader = Cursor::new(&stats_buf);
 
@@ -1775,9 +1808,11 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         executable,
         file_map,
         stage,
+        iso_project,
         model_objects,
         stage_model_objects,
-        sector_offsets,
+        sector_offsets: sector_offsets_object,
+        file_sizes: file_sizes_object,
         // overlay_address_pointer: overlay,
         bufs: Bufs {
             encounter_buf,
@@ -1934,6 +1969,11 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
         .party_exp_bits
         .write_buf(&mut objects.bufs.exp_buf)?;
 
+    objects
+        .sector_offsets
+        .write_buf(&mut objects.bufs.main_buf)?;
+    objects.file_sizes.write_buf(&mut objects.bufs.main_buf)?;
+
     let rom_name = path
         .file_name()
         .context("Failed to get file name")?
@@ -2079,6 +2119,65 @@ pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
 
     if preset.party_exp_bits.enabled {
         party_exp_bits::patch(&preset.party_exp_bits, &mut objects)?;
+    }
+
+    let mut new_xml = objects.iso_project.clone();
+    new_xml.remove_offsets()?;
+
+    let xml_string = quick_xml::se::to_string(&new_xml)?;
+
+    let mut new_xml = fs::File::create("extract/new.xml").await?;
+    new_xml.write_all(&xml_string.into_bytes()[..]).await?;
+
+    let lba = get_lba().await?;
+
+    for i in 0..objects.sector_offsets.modified.len() {
+        let offset = objects.sector_offsets.modified[i];
+
+        let file = objects
+            .file_map
+            .iter()
+            .find(|x| x.offs == Some(offset))
+            .context("missing file")?;
+
+        println!("file name {}", file.name);
+
+        let modified_offset = lba
+            .entries
+            .iter()
+            .find_map(|x| match x {
+                Entry::File {
+                    name,
+                    length: _,
+                    lba,
+                    timecode: _,
+                    bytes: _,
+                    source: _,
+                } => match name.split(";").next()? == file.name {
+                    true => Some(*lba),
+                    false => None,
+                },
+                Entry::Xa {
+                    name,
+                    length: _,
+                    lba,
+                    timecode: _,
+                    bytes: _,
+                    source: _,
+                } => match name.split(";").next()? == file.name {
+                    true => Some(*lba),
+                    false => None,
+                },
+                _ => None,
+            })
+            .context("can't find matching file")?;
+
+        println!("{}", format!("extract/{}", file.source));
+
+        objects.sector_offsets.modified[i] = modified_offset;
+        objects.file_sizes.modified[i] = fs::metadata(&format!("extract/{}", file.source))
+            .await?
+            .len() as u16;
     }
 
     write_objects(path, &mut objects).await?;
