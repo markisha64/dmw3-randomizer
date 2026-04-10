@@ -79,6 +79,12 @@ struct Track {
     #[serde(rename = "@type")]
     r#type: String,
     directory_tree: DirectoryTree,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    identifiers: Option<Identifiers>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    license: Option<License>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    default_attributes: Option<DefaultAttributes>,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -93,6 +99,54 @@ enum DirEntry {
 struct DirectoryTree {
     #[serde(rename = "$value")]
     field: Vec<DirEntry>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct Identifiers {
+    #[serde(rename = "@system")]
+    pub system: String,
+
+    #[serde(rename = "@application")]
+    pub application: String,
+
+    #[serde(rename = "@volume")]
+    pub volume: String,
+
+    #[serde(rename = "@publisher")]
+    pub publisher: String,
+
+    #[serde(rename = "@data_preparer")]
+    pub data_preparer: String,
+
+    #[serde(rename = "@copyright")]
+    pub copyright: String,
+
+    #[serde(rename = "@creation_date")]
+    pub creation_date: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct License {
+    #[serde(rename = "@file")]
+    pub file: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct DefaultAttributes {
+    #[serde(rename = "@gmt_offs")]
+    pub gmt_offs: i32,
+
+    #[serde(rename = "@xa_attrib")]
+    pub xa_attrib: i32,
+
+    #[serde(rename = "@xa_perm")]
+    pub xa_perm: i32,
+
+    #[serde(rename = "@xa_gid")]
+    pub xa_gid: i32,
+
+    #[serde(rename = "@xa_uid")]
+    pub xa_uid: i32,
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
