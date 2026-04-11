@@ -211,7 +211,7 @@ pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<()> {
         .await?;
 
     if !output.status.success() {
-        return Err(anyhow!(String::from_utf8_lossy(&output.stderr).to_string()));
+        return Err(anyhow!(String::from_utf8_lossy(&output.stdout).to_string()));
     }
 
     Ok(())
@@ -364,7 +364,7 @@ pub async fn get_lba() -> anyhow::Result<LbaLog> {
         .await?;
 
     if !output.status.success() {
-        return Err(anyhow!(String::from_utf8_lossy(&output.stderr).to_string()));
+        return Err(anyhow!(String::from_utf8_lossy(&output.stdout).to_string()));
     }
 
     parse_lba_log().await
@@ -387,7 +387,7 @@ pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<()> {
         .await?;
 
     if !output.status.success() {
-        return Err(anyhow!(String::from_utf8_lossy(&output.stderr).to_string()));
+        return Err(anyhow!(String::from_utf8_lossy(&output.stdout).to_string()));
     }
 
     Ok(())
