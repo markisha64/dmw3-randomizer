@@ -191,7 +191,7 @@ async fn find_bin(name: &str) -> anyhow::Result<String> {
     Err(anyhow::anyhow!("Can't find bin"))
 }
 
-pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<bool> {
+pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let bin = find_bin("dumpsxiso").await?;
 
     let file_name = path
@@ -200,7 +200,7 @@ pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<bool> {
         .to_str()
         .context("failed to convert file name to string")?;
 
-    Ok(Command::new(bin)
+    let output = Command::new(bin)
         .arg("-x")
         .arg(format!("extract/{}/", file_name))
         .arg("-s")
@@ -208,9 +208,13 @@ pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<bool> {
         .arg("-pt")
         .arg(path)
         .output()
-        .await?
-        .status
-        .success())
+        .await?;
+
+    if !output.status.success() {
+        return Err(anyhow!(String::from_utf8_lossy(&output.stderr).to_string()));
+    }
+
+    Ok(())
 }
 
 pub enum Entry {
@@ -350,31 +354,29 @@ pub async fn xml_file() -> anyhow::Result<IsoProject> {
 pub async fn get_lba() -> anyhow::Result<LbaLog> {
     let binf = find_bin("mkpsxiso").await?;
 
-    let success = Command::new(binf)
+    let output = Command::new(binf)
         .arg("extract/new.xml")
         .arg("-y")
         .arg("-lba")
         .arg("extract/lba.txt")
         .arg("-noisogen")
         .output()
-        .await?
-        .status
-        .success();
+        .await?;
 
-    if !success {
-        return Err(anyhow!("failed to get lba"));
+    if !output.status.success() {
+        return Err(anyhow!(String::from_utf8_lossy(&output.stderr).to_string()));
     }
 
     parse_lba_log().await
 }
 
-pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<bool> {
+pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<()> {
     let binf = find_bin("mkpsxiso").await?;
 
     let bin = format!("randomized/{}/{}/new.bin", rom_name, file_name);
     let cue = format!("randomized/{}/{}/new.cue", rom_name, file_name);
 
-    Ok(Command::new(binf)
+    let output = Command::new(binf)
         .arg("-o")
         .arg(&bin)
         .arg("-c")
@@ -382,7 +384,11 @@ pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<bool> {
         .arg("extract/new.xml")
         .arg("-y")
         .output()
-        .await?
-        .status
-        .success())
+        .await?;
+
+    if !output.status.success() {
+        return Err(anyhow!(String::from_utf8_lossy(&output.stderr).to_string()));
+    }
+
+    Ok(())
 }

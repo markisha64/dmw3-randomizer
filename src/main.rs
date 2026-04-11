@@ -27,9 +27,7 @@ fn main() -> anyhow::Result<()> {
     rt.block_on(async {
         if let Some(path) = &args.path {
             if args.dump {
-                if !mkpsxiso::extract(path).await? {
-                    panic!("Error extracting");
-                }
+                mkpsxiso::extract(path).await?;
 
                 dump::dump(path).await?;
             }
@@ -52,9 +50,7 @@ fn main() -> anyhow::Result<()> {
                 None => format!("{}", preset.randomizer.seed),
             };
 
-            if !mkpsxiso::extract(path).await? {
-                return Err(anyhow::anyhow!("Error extracting"));
-            }
+            mkpsxiso::extract(path).await?;
 
             let rom_name = path
                 .file_name()
@@ -66,9 +62,7 @@ fn main() -> anyhow::Result<()> {
 
             create_spoiler(&objects, path, file_name.as_str()).await?;
 
-            if !mkpsxiso::build(rom_name, &file_name).await? {
-                return Err(anyhow::anyhow!("Error repacking"));
-            }
+            mkpsxiso::build(rom_name, &file_name).await?;
 
             println!("randomized into {file_name}");
 

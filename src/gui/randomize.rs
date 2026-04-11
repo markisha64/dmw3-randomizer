@@ -83,9 +83,7 @@ pub fn randomize() -> Element {
 
                             let file_name = args.output.unwrap_or(format!("{}", preset.randomizer.seed));
 
-                            if !mkpsxiso::extract(path).await? {
-                                panic!("Error extracting");
-                            }
+                            mkpsxiso::extract(path).await?;
 
                             state.set(Steps::Randomizing);
 
@@ -101,9 +99,7 @@ pub fn randomize() -> Element {
 
                             state.set(Steps::Packaging);
 
-                            if !mkpsxiso::build(rom_name, &file_name).await? {
-                                panic!("Error repacking")
-                            }
+                            mkpsxiso::build(rom_name, &file_name).await?;
 
                             state.set(Steps::Input);
 
