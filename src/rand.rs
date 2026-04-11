@@ -2129,6 +2129,10 @@ pub async fn fix_lba(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<()
     for i in 0..objects.sector_offsets.modified.len() {
         let offset = objects.sector_offsets.modified[i];
 
+        if offset == 0 {
+            continue;
+        }
+
         let file = objects
             .file_map
             .iter()
