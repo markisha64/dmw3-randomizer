@@ -79,6 +79,17 @@ pub struct MusicSet {
     pub index: usize,
 }
 
+const AUCTION_ITEMS_SETS: [u16; 16] = [
+    0x8b19, 0x8b1f, 0x8b1a, 0x8b20, 0x8489, 0x8495, 0x847c, 0x8462, 0x8ade, 0x8ae8, 0x8af4, 0x8af3,
+    0x8b01, 0x8b0d, 0x8b02, 0x8b0f,
+];
+
+#[derive(Clone, Copy)]
+pub struct AuctionSet {
+    pub item: u16,
+    pub index: usize,
+}
+
 pub struct ObjectArray<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,
@@ -130,6 +141,24 @@ impl WriteObjects for ObjectArray<MusicSet> {
     }
 }
 
+impl WriteObjects for ObjectArray<AuctionSet> {
+    fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
+        let mut buf = [0x00, 0x00, 0x04, 0x34];
+
+        for set in &self.modified {
+            let bitfield = 0x8a00 | set.item;
+            let bytes = bitfield.to_le_bytes();
+
+            buf[0] = bytes[0];
+            buf[1] = bytes[1];
+
+            write_buf[set.index..set.index + 4].copy_from_slice(&buf);
+        }
+
+        Ok(())
+    }
+}
+
 struct Bufs {
     stats_buf: Vec<u8>,
     encounter_buf: Vec<u8>,
@@ -138,7 +167,7 @@ struct Bufs {
     card_shops_buf: Vec<u8>,
     exp_buf: Vec<u8>,
     pack_select_buf: Vec<u8>,
-    _map_buf: Vec<u8>,
+    map_buf: Vec<u8>,
 }
 
 pub struct StageEncountersObject {
@@ -218,6 +247,8 @@ pub struct Objects {
 
     pub text_files: BTreeMap<String, TextFileGroup>,
     pub items: TextFileGroup,
+
+    pub auction_items: ObjectArray<AuctionSet>,
 }
 
 enum Executable {
@@ -1623,6 +1654,26 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         complex_steps.push(step);
     }
 
+    let mut auction_sets = Vec::<AuctionSet>::new();
+    for item_set in AUCTION_ITEMS_SETS {
+        let is_bytes = item_set.to_le_bytes();
+        let index = map_buf
+            .chunks_exact(4)
+            .position(|x| x == &[is_bytes[0], is_bytes[1], 0x04, 0x34])
+            .context("missing auction item")?;
+
+        let item = item_set & 0x1ff;
+
+        auction_sets.push(AuctionSet { item, index });
+    }
+
+    let auction_items = ObjectArray {
+        original: auction_sets.clone(),
+        modified: auction_sets,
+        index: 0,
+        slen: 0,
+    };
+
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let enemy_party_data_arr_copy = enemy_party_data_arr.clone();
@@ -1815,7 +1866,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
             card_shops_buf,
             exp_buf,
             pack_select_buf,
-            _map_buf: map_buf,
+            map_buf,
         },
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
@@ -1851,6 +1902,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
         text_files,
         items,
+
+        auction_items,
     })
 }
 
@@ -1957,6 +2010,7 @@ async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<
     objects
         .party_exp_bits
         .write_buf(&mut objects.bufs.exp_buf)?;
+    objects.auction_items.write_buf(&mut objects.bufs.map_buf)?;
 
     let rom_name = path
         .file_name()
