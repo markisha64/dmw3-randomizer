@@ -41,6 +41,14 @@ pub fn healing_ironmon(objects: &mut Objects) {
     objects.item_shop_data.modified[0x47].sell_price = 2500;
 }
 
+pub fn auction_items(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let mut pool = shoppable(objects, &preset.auction_items_pool);
+
+    for auction_set in &mut objects.auction_items.modified {
+        auction_set.item = pool.remove((rng.next_u64() % pool.len() as u64) as usize);
+    }
+}
+
 pub fn item_in_ironmon(value: usize) -> bool {
     // remove TNT Ball, Life Disk, Sober Disk, CC, Train Chips, Charisma Chips, Runner Shoes/Sandals and Binder Crest
     // Charisma ring/gem
@@ -57,7 +65,7 @@ pub fn patch(
     objects: &mut Objects,
     rng: &mut Xoshiro256StarStar,
 ) -> anyhow::Result<()> {
-    let shoppable = shoppable(objects, preset);
+    let shoppable = shoppable(objects, &preset.items_only);
 
     match preset.limit_shop_items_enabled {
         true => {
@@ -74,6 +82,10 @@ pub fn patch(
 
     if preset.healing_ironmon {
         healing_ironmon(objects);
+    }
+
+    if preset.auction_items {
+        auction_items(preset, objects, rng);
     }
 
     let len = objects.item_shop_data.modified.len();
@@ -99,12 +111,12 @@ fn randomize_sell_price(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro
     }
 }
 
-fn shoppable(objects: &mut Objects, preset: &Shops) -> BTreeSet<u16> {
+pub fn shoppable(objects: &mut Objects, pool: &ShopItems) -> Vec<u16> {
     let len = objects.item_shop_data.original.len();
 
     let mut shoppable: BTreeSet<u16> = BTreeSet::new();
 
-    match preset.items_only {
+    match pool {
         ShopItems::Buyable => {
             for i in 1..len {
                 if objects.item_shop_data.original[i].buy_price > 0 {
@@ -128,18 +140,18 @@ fn shoppable(objects: &mut Objects, preset: &Shops) -> BTreeSet<u16> {
         }
     }
 
-    shoppable
+    shoppable.into_iter().collect()
 }
 
 fn randomize_limited(
     limit: &u8,
     objects: &mut Objects,
     rng: &mut Xoshiro256StarStar,
-    shoppable: BTreeSet<u16>,
+    shoppable: Vec<u16>,
 ) -> anyhow::Result<()> {
     let mut ptr = objects.shops.modified.first().context("empty shops")?.items;
     for i in 0..objects.shops.original.len() {
-        let mut shoppable_arr = Vec::from_iter(shoppable.clone().into_iter());
+        let mut shoppable_arr = shoppable.clone();
         let shop = &mut objects.shops.modified[i];
         let limit_deref = *limit;
 
@@ -161,15 +173,11 @@ fn randomize_limited(
     Ok(())
 }
 
-fn randomize_existing(
-    objects: &mut Objects,
-    rng: &mut Xoshiro256StarStar,
-    shoppable: BTreeSet<u16>,
-) {
-    let mut shoppable_arr = Vec::from_iter(shoppable.clone());
+fn randomize_existing(objects: &mut Objects, rng: &mut Xoshiro256StarStar, shoppable: Vec<u16>) {
+    let mut shoppable_arr = shoppable.clone();
     for item in &mut objects.shop_items.modified {
         if *item == 0 {
-            shoppable_arr = Vec::from_iter(shoppable.clone().into_iter());
+            shoppable_arr = shoppable.clone();
             continue;
         }
 

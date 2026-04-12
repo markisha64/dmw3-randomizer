@@ -2,51 +2,17 @@ use std::collections::{BTreeSet, HashMap};
 
 use crate::{
     json::{GroupStrategy, MusicPool},
-    rand::Objects,
+    rand::{shops::shoppable, Objects},
     util::{self, uniform_random_vector},
 };
 use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use crate::json::{Maps, Randomizer, ShopItems};
-
-use super::shops::item_in_ironmon;
+use crate::json::Randomizer;
 
 pub fn type_script_add_item(value: u16) -> bool {
     (value >= 0x80) && (value - 0x80) < 0xf
-}
-
-fn shoppable(objects: &mut Objects, preset: &Maps) -> Vec<u32> {
-    let len = objects.item_shop_data.original.len();
-
-    let mut shoppable: BTreeSet<u32> = BTreeSet::new();
-
-    match preset.item_boxes_items_only {
-        ShopItems::Buyable => {
-            for i in 1..len {
-                if objects.item_shop_data.original[i].buy_price > 0 {
-                    shoppable.insert(i as u32);
-                }
-            }
-        }
-        ShopItems::Sellable => {
-            for i in 1..len {
-                if objects.item_shop_data.original[i].sell_price > 0 {
-                    shoppable.insert(i as u32);
-                }
-            }
-        }
-        ShopItems::Ironmon => {
-            for i in 1..len {
-                if objects.item_shop_data.original[i].sell_price > 0 && item_in_ironmon(i) {
-                    shoppable.insert(i as u32);
-                }
-            }
-        }
-    }
-
-    Vec::from_iter(shoppable)
 }
 
 pub fn patch(
@@ -186,7 +152,9 @@ fn item_boxes(
     objects: &mut Objects,
     rng: &mut Xoshiro256StarStar,
 ) -> anyhow::Result<()> {
-    let pool = shoppable(objects, &preset.maps);
+    let pool: Vec<_> = shoppable(objects, &preset.maps.item_boxes_items_only)
+        .into_iter()
+        .collect();
     let language = objects
         .executable
         .languages()
@@ -257,7 +225,7 @@ fn item_boxes(
                                 continue;
                             }
 
-                            let nv = pool[(rng.next_u64() % pool.len() as u64) as usize] as u16;
+                            let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
 
                             script.bitfield = nv | ((script.bitfield >> 9) << 9);
 

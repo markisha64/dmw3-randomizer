@@ -7,6 +7,10 @@ use tokio::process::Command;
 #[derive(Deserialize, Serialize, Clone, Debug)]
 #[serde(rename_all = "snake_case", rename = "iso_project")]
 pub struct IsoProject {
+    #[serde(rename = "@image_name")]
+    pub image_name: String,
+    #[serde(rename = "@cue_sheet")]
+    pub cue_sheet: String,
     track: Vec<Track>,
 }
 
