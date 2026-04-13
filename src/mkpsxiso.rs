@@ -1,5 +1,3 @@
-use std::path::Path;
-
 use anyhow::{anyhow, Context};
 use async_std::fs;
 use quick_xml::de::from_str;
@@ -361,10 +359,10 @@ pub async fn get_lba() -> anyhow::Result<LbaLog> {
     let binf = find_bin("mkpsxiso").await?;
 
     let output = Command::new(binf)
-        .arg(Path::new("extract/new.xml"))
+        .arg("extract/new.xml")
         .arg("-y")
         .arg("-lba")
-        .arg(Path::new("extract/lba.txt"))
+        .arg("extract/lba.txt")
         .arg("-noisogen")
         .output()
         .await?;
