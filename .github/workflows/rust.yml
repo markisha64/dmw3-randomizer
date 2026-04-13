@@ -39,7 +39,8 @@ jobs:
       run: |
         export CC=clang
         export CXX=clang++
-        cmake --workflow ci
+        cmake --preset release
+        cmake --build --preset release
     - name: Construct artifact
       run: |
         mkdir artifact
@@ -74,7 +75,8 @@ jobs:
     - name: Build mkpsxiso
       working-directory: mkpsxiso
       run: |
-        cmake --workflow ci
+        cmake --preset release
+        cmake --build --preset release
     - name: Construct artifact
       run: |
         mkdir artifact
