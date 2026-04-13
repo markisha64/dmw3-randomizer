@@ -45,8 +45,8 @@ jobs:
         mkdir artifact
         cp -r assets artifact/assets
         cp target/release/dmw3_randomizer artifact/
-        cp mkpsxiso/build/packages/mkpsxiso artifact/
-        cp mkpsxiso/build/packages/dumpsxiso artifact/
+        cp mkpsxiso/build/Release/mkpsxiso artifact/
+        cp mkpsxiso/build/Release/dumpsxiso artifact/
         zip -r dmw3-randomizer-linux.zip artifact
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -80,7 +80,7 @@ jobs:
         mkdir artifact
         xcopy assets\ artifact\assets /i
         xcopy target\release\*.exe artifact\
-        xcopy mkpsxiso\build\packages\*.exe artifact\
+        xcopy mkpsxiso\build\Release\*.exe artifact\
         Compress-Archive -Path artifact\* -DestinationPath dmw3-randomizer-windows.zip
     - name: Upload artifact
       uses: actions/upload-artifact@v4
