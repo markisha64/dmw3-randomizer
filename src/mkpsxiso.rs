@@ -29,6 +29,7 @@ impl IsoProject {
                     result.push(file.clone());
                 }
                 DirEntry::Dir(dir) => rflatten(dir, &mut result),
+                DirEntry::Dummy(_) => { /* do nothing */ }
             }
         }
 
@@ -48,6 +49,7 @@ impl IsoProject {
                     file.offs = None;
                 }
                 DirEntry::Dir(dir) => rremove_offsets(dir),
+                DirEntry::Dummy(_) => { /* do nothing */ }
             }
         }
 
@@ -62,6 +64,7 @@ fn rflatten(dir: &Dir, result: &mut Vec<File>) {
                 result.push(file.clone());
             }
             DirEntry::Dir(dir) => rflatten(dir, result),
+            DirEntry::Dummy(_) => { /* do nothing */ }
         }
     }
 }
@@ -73,6 +76,7 @@ fn rremove_offsets(dir: &mut Dir) {
                 file.offs = None;
             }
             DirEntry::Dir(dir) => rremove_offsets(dir),
+            DirEntry::Dummy(_) => { /* do nothing */ }
         }
     }
 }
@@ -96,6 +100,7 @@ struct Track {
 enum DirEntry {
     Dir(Dir),
     File(File),
+    Dummy(Dummy),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
@@ -178,6 +183,15 @@ pub struct File {
     _type: String,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "snake_case")]
+pub struct Dummy {
+    #[serde(rename = "@sectors")]
+    pub sectors: u32,
+    #[serde(rename = "@type")]
+    pub sector_type: u32,
+}
+
 async fn exists(exec: &str) -> anyhow::Result<bool> {
     Ok(Command::new(exec).output().await?.status.success())
 }
@@ -210,6 +224,7 @@ pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<()> {
         .arg("-s")
         .arg("extract/out.xml")
         .arg("-pt")
+        .arg("-l")
         .arg(path)
         .output()
         .await?;
@@ -221,6 +236,7 @@ pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[derive(Debug)]
 pub enum Entry {
     File {
         name: String,
@@ -244,14 +260,21 @@ pub enum Entry {
         _source: String,
     },
     DirEnd(String),
+    Dummy {
+        name: String,
+        length: u32,
+        lba: u32,
+        _timecode: String,
+        _bytes: u64,
+    },
 }
 
+#[derive(Debug)]
 pub struct LbaLog {
     pub bin_file: String,
     pub cue_file: String,
     pub entries: Vec<Entry>,
 }
-
 async fn parse_lba_log() -> anyhow::Result<LbaLog> {
     let content = fs::read_to_string("extract/lba.txt").await?;
     let mut log = LbaLog {
@@ -273,14 +296,14 @@ async fn parse_lba_log() -> anyhow::Result<LbaLog> {
             continue;
         }
 
-        let mut cols = trimmed.split_whitespace();
+        let mut cols = trimmed.split('|').map(|x| x.trim());
         let entry_type = match cols.next() {
             Some(t) => t,
             None => continue,
         };
 
         match entry_type {
-            "File" | "XA" => {
+            "File" | "XA" | "Dummy" => {
                 // Columns: Type  Name  Length  LBA  Timecode  Bytes  SourceFile
                 let name = match cols.next() {
                     Some(v) => v.to_string(),
@@ -313,7 +336,7 @@ async fn parse_lba_log() -> anyhow::Result<LbaLog> {
                         _bytes: bytes,
                         _source: source,
                     });
-                } else {
+                } else if entry_type == "File" {
                     log.entries.push(Entry::File {
                         name,
                         length,
@@ -321,6 +344,14 @@ async fn parse_lba_log() -> anyhow::Result<LbaLog> {
                         _timecode: timecode,
                         _bytes: bytes,
                         _source: source,
+                    });
+                } else {
+                    log.entries.push(Entry::Dummy {
+                        name,
+                        length,
+                        lba,
+                        _timecode: timecode,
+                        _bytes: bytes,
                     });
                 }
             }

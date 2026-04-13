@@ -14,7 +14,7 @@ env:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
     - name: Install dependencies
@@ -35,16 +35,18 @@ jobs:
     - name: Build
       run: cargo build --verbose --release --locked
     - name: Build mkpsxiso
+      working-directory: mkpsxiso
       run: |
-        cmake --preset ci -S ./mkpsxiso -B ./mkpsxiso/build
-        cmake --build ./mkpsxiso/build --config Release
+        export CC=clang
+        export CXX=clang++
+        cmake --workflow ci
     - name: Construct artifact
       run: |
         mkdir artifact
         cp -r assets artifact/assets
         cp target/release/dmw3_randomizer artifact/
-        cp mkpsxiso/build/mkpsxiso artifact/
-        cp mkpsxiso/build/dumpsxiso artifact/
+        cp mkpsxiso/build/packages/mkpsxiso artifact/
+        cp mkpsxiso/build/packages/dumpsxiso artifact/
         zip -r dmw3-randomizer-linux.zip artifact
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -53,7 +55,7 @@ jobs:
         path: dmw3-randomizer-linux.zip
   
   build-windows:
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -70,15 +72,15 @@ jobs:
     - name: Build
       run: cargo build --verbose --release --locked
     - name: Build mkpsxiso
+      working-directory: mkpsxiso
       run: |
-        cmake --preset ci -S ./mkpsxiso -B ./mkpsxiso/build -G "Visual Studio 17 2022"
-        cmake --build ./mkpsxiso/build --config Release
+        cmake --workflow ci
     - name: Construct artifact
       run: |
         mkdir artifact
         xcopy assets\ artifact\assets /i
         xcopy target\release\*.exe artifact\
-        xcopy mkpsxiso\build\Release\*.exe artifact\
+        xcopy mkpsxiso\build\packages\*.exe artifact\
         Compress-Archive -Path artifact\* -DestinationPath dmw3-randomizer-windows.zip
     - name: Upload artifact
       uses: actions/upload-artifact@v4
