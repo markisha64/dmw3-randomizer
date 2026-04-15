@@ -1117,6 +1117,36 @@ async fn read_model_objects(
     Ok(r)
 }
 
+async fn read_bufs(rom_name: &str, executable: &Executable) -> anyhow::Result<Bufs> {
+    let (stats_buf, map_buf, main_buf, shops_buf, card_shops_buf, exp_buf, pack_select_buf) = tokio::try_join!(
+        fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)),
+        fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE)),
+        fs::read(format!("extract/{}/{}", rom_name, executable.as_str())),
+        fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)),
+        fs::read(format!(
+            "extract/{}/{}",
+            rom_name,
+            dmw3_consts::CARD_SHOPS_FILE
+        )),
+        fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)),
+        fs::read(format!(
+            "extract/{}/{}",
+            rom_name,
+            dmw3_consts::PACK_SELECT_FILE
+        ))
+    )?;
+
+    Ok(Bufs {
+        stats_buf,
+        main_buf,
+        shops_buf,
+        card_shops_buf,
+        exp_buf,
+        pack_select_buf,
+        map_buf,
+    })
+}
+
 pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let iso_project = xml_file().await?;
 
@@ -1149,32 +1179,15 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     let executable = executable_opt.context("Can't find extracted executable")?;
 
-    let stats_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)).await?;
-
-    let map_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE)).await?;
-
-    let main_buf = fs::read(format!("extract/{}/{}", rom_name, executable.as_str())).await?;
-    let shops_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::SHOPS_FILE)).await?;
-    let card_shops_buf = fs::read(format!(
-        "extract/{}/{}",
-        rom_name,
-        dmw3_consts::CARD_SHOPS_FILE
-    ))
-    .await?;
-    let exp_buf = fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::EXP_FILE)).await?;
-    let pack_select_buf = fs::read(format!(
-        "extract/{}/{}",
-        rom_name,
-        dmw3_consts::PACK_SELECT_FILE
-    ))
-    .await?;
+    let bufs = read_bufs(rom_name, &executable).await?;
 
     let overlay_address = Pointer {
         value: dmw3_consts::OVERLAY_ADDRESS,
     };
 
     let overlay = Pointer::from(
-        &main_buf[overlay_address.to_index() as usize..overlay_address.to_index() as usize + 4],
+        &bufs.main_buf
+            [overlay_address.to_index() as usize..overlay_address.to_index() as usize + 4],
     );
 
     let stage_address = Pointer {
@@ -1182,7 +1195,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     };
 
     let stage = Pointer::from(
-        &main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
+        &bufs.main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
     );
 
     let file_map = iso_project.flatten()?;
@@ -1196,7 +1209,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     for i in 0..files_len {
         sector_offsets.push(u32::from_le_bytes(
-            main_buf[sector_offsets_index + i * 4..sector_offsets_index + i * 4 + 4].try_into()?,
+            bufs.main_buf[sector_offsets_index + i * 4..sector_offsets_index + i * 4 + 4]
+                .try_into()?,
         ));
     }
 
@@ -1205,7 +1219,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     for i in 0..files_len {
         file_sizes.push(u16::from_le_bytes(
-            main_buf[sector_offsets_index + files_len * 4 + i * 2
+            bufs.main_buf[sector_offsets_index + files_len * 4 + i * 2
                 ..sector_offsets_index + files_len * 4 + i * 2 + 2]
                 .try_into()?,
         ));
@@ -1224,7 +1238,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         slen: 0x2,
     };
 
-    let mut enemy_stats_reader = Cursor::new(&stats_buf);
+    let mut enemy_stats_reader = Cursor::new(&bufs.stats_buf);
 
     let mut enemy_stats_arr: Vec<dmw3_structs::EnemyStats> = Vec::new();
 
@@ -1238,14 +1252,15 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         enemy_stats_arr.push(stats);
     }
 
-    let encounter_data_index = map_buf
+    let encounter_data_index = bufs
+        .map_buf
         .windows(16)
         .position(|window| {
             window == b"\x66\x01\x00\x00\x0c\x00\x30\x03\x0f\x27\x10\x00\x7c\x00\x00\x00"
         })
         .context("failed to find encounter data index")?;
 
-    let mut encounter_data_reader = Cursor::new(&map_buf[encounter_data_index..]);
+    let mut encounter_data_reader = Cursor::new(&bufs.map_buf[encounter_data_index..]);
 
     let mut encounter_data_arr: Vec<EncounterData> = Vec::new();
 
@@ -1266,7 +1281,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
 
     let enemy_party_data_index = encounter_data_index + 0xc * encounter_data_arr.len();
 
-    let mut enemy_party_reader = Cursor::new(&map_buf[enemy_party_data_index..]);
+    let mut enemy_party_reader = Cursor::new(&bufs.map_buf[enemy_party_data_index..]);
 
     for _ in 0..335 {
         enemy_party_data_arr.push(PartyData::read(&mut enemy_party_reader)?);
@@ -1275,25 +1290,27 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let mut party_exp_bits_arr = Vec::new();
     party_exp_bits_arr.reserve(335);
 
-    let party_exp_bits = exp_buf
+    let party_exp_bits = bufs
+        .exp_buf
         .windows(24)
         .position(|window| window == dmw3_consts::PARTY_DV_EXP)
         .context("Can't find exp bits")?;
 
     let mut party_exp_bits_reader =
-        Cursor::new(&exp_buf[party_exp_bits..party_exp_bits + 0xc * 335]);
+        Cursor::new(&bufs.exp_buf[party_exp_bits..party_exp_bits + 0xc * 335]);
 
     for _ in 0..335 {
         party_exp_bits_arr.push(PartyExpBits::read(&mut party_exp_bits_reader)?);
     }
 
-    let shops_index = shops_buf
+    let shops_index = bufs
+        .shops_buf
         .windows(8)
         .position(|window| window == b"\x00\x00\x00\x00\x0b\x00\x00\x00")
         .context("Can't find shops beginning")?
         + 4;
 
-    let mut shops_reader = Cursor::new(&shops_buf[shops_index..]);
+    let mut shops_reader = Cursor::new(&bufs.shops_buf[shops_index..]);
 
     let mut shops_arr: Vec<Shop> = Vec::new();
     shops_arr.reserve(dmw3_consts::SHOPS_LEN);
@@ -1315,20 +1332,21 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let back_index = (back_shop.item_count * 2
         + back_shop.items.to_index_overlay(overlay.value as u32)) as usize;
 
-    let shop_items_arr: Vec<u16> = shops_buf[front_index..back_index]
+    let shop_items_arr: Vec<u16> = bufs.shops_buf[front_index..back_index]
         .to_vec()
         .chunks_exact(2)
         .map(|a| u16::from_ne_bytes([a[0], a[1]]))
         .collect();
 
-    let item_shop_data_index = main_buf
+    let item_shop_data_index = bufs
+        .main_buf
         .windows(12)
         .position(|window| -> bool {
             window == b"\x64\x01\x65\x01\x66\x01\x67\x01\x00\x00\x00\x00"
         })
         .context("Can't find item shop data beginning")?;
 
-    let mut item_shop_data_reader = Cursor::new(&main_buf[item_shop_data_index..]);
+    let mut item_shop_data_reader = Cursor::new(&bufs.main_buf[item_shop_data_index..]);
 
     let mut item_shop_data_arr: Vec<ItemShopData> = Vec::new();
     item_shop_data_arr.reserve(403);
@@ -1339,12 +1357,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         item_shop_data_arr.push(item_shop_data);
     }
 
-    let card_shops_index = card_shops_buf
+    let card_shops_index = bufs
+        .card_shops_buf
         .windows(8)
         .position(|window| window == b"\x31\x00\x00\x00\x00\x00\x00\x00")
         .context("Can't find card shops beginning")?;
 
-    let mut card_shops_reader = Cursor::new(&card_shops_buf[card_shops_index..]);
+    let mut card_shops_reader = Cursor::new(&bufs.card_shops_buf[card_shops_index..]);
 
     let mut card_shops_arr: Vec<CardShopData> = Vec::new();
 
@@ -1363,20 +1382,21 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .items
         .to_index_overlay(overlay.value as u32) as usize;
 
-    let card_shop_items_arr: Vec<u16> = card_shops_buf
+    let card_shop_items_arr: Vec<u16> = bufs.card_shops_buf
         [card_shops_items_index..card_shops_items_index + 8 * 2 * card_shops_arr.len()]
         .to_vec()
         .chunks_exact(2)
         .map(|a| u16::from_ne_bytes([a[0], a[1]]))
         .collect();
 
-    let card_pricing_index = card_shops_buf
+    let card_pricing_index = bufs
+        .card_shops_buf
         .chunks(4)
         .position(|window| window == b"\x0a\x00\x98\x08")
         .context("Can't find card pricing")?
         * 4;
 
-    let mut card_pricing_reader = Cursor::new(&card_shops_buf[card_pricing_index..]);
+    let mut card_pricing_reader = Cursor::new(&bufs.card_shops_buf[card_pricing_index..]);
 
     let mut card_pricing_arr: Vec<CardPricing> = Vec::new();
 
@@ -1390,13 +1410,14 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         card_pricing_arr.push(pricing);
     }
 
-    let booster_data_index = card_shops_buf
+    let booster_data_index = bufs
+        .card_shops_buf
         .windows(8)
         .position(|window| window == b"\x19\x01\x00\x00\x5b\x00\x00\x00")
         .context("Can't find booster data")?
         + 4;
 
-    let mut booster_data_reader = Cursor::new(&card_shops_buf[booster_data_index..]);
+    let mut booster_data_reader = Cursor::new(&bufs.card_shops_buf[booster_data_index..]);
 
     let mut booster_data_arr = Vec::new();
 
@@ -1415,21 +1436,22 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         .slots[0]
         .to_index_overlay(overlay.value as u32) as usize;
 
-    let booster_data_items: Vec<u32> = card_shops_buf
+    let booster_data_items: Vec<u32> = bufs.card_shops_buf
         [booster_data_items_index..booster_data_items_index + 16 * 6 * 4 * booster_data_arr.len()]
         .to_vec()
         .chunks_exact(4)
         .map(|a| u32::from_ne_bytes([a[0], a[1], a[2], a[3]]))
         .collect();
 
-    let digivolution_data_index = main_buf
+    let digivolution_data_index = bufs
+        .main_buf
         .windows(16)
         .position(|window| -> bool {
             window == b"\x7f\x01\x30\x00\x2c\x00\x29\x00\x22\x00\x21\x00\x01\x00\x55\x00"
         })
         .context("Can't find digivolution data beginning")?;
 
-    let mut digivolution_data_reader = Cursor::new(&main_buf[digivolution_data_index..]);
+    let mut digivolution_data_reader = Cursor::new(&bufs.main_buf[digivolution_data_index..]);
 
     let mut rookie_data_arr: Vec<DigivolutionData> = Vec::new();
     rookie_data_arr.reserve(dmw3_consts::ROOKIE_COUNT);
@@ -1452,14 +1474,15 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let mut move_data_arr: Vec<MoveData> = Vec::new();
     move_data_arr.reserve(444);
 
-    let move_data_index = main_buf
+    let move_data_index = bufs
+        .main_buf
         .windows(18)
         .position(|window| -> bool {
             window == b"\x00\x00\x3c\x00\x02\x02\x6e\x01\x01\x01\x01\x01\x01\x00\x02\x39\x05\x01"
         })
         .context("Can't find move data beginning")?;
 
-    let mut move_data_reader = Cursor::new(&main_buf[move_data_index..]);
+    let mut move_data_reader = Cursor::new(&bufs.main_buf[move_data_index..]);
 
     // hardcoding this for now
     for _ in 0..443 {
@@ -1468,7 +1491,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         move_data_arr.push(move_data);
     }
 
-    let parties_index = main_buf
+    let parties_index = bufs
+        .main_buf
         .windows(9)
         .position(|window| window == dmw3_consts::PACKS)
         .context("Can't find parties")?;
@@ -1481,7 +1505,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         default_pack_preview.extend(b"\x00\x00\x00");
     }
 
-    let pack_select_preview_index = pack_select_buf
+    let pack_select_preview_index = bufs
+        .pack_select_buf
         .windows(36)
         .position(|window| window == default_pack_preview)
         .context("Can't find parties preview")?;
@@ -1489,7 +1514,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     // dword aligned
     let starting_folder_index = parties_index + 12;
     let mut starting_folder_reader =
-        Cursor::new(&main_buf[starting_folder_index..starting_folder_index + 4 * 40]);
+        Cursor::new(&bufs.main_buf[starting_folder_index..starting_folder_index + 4 * 40]);
     let mut starting_folder = Vec::new();
     for _ in 0..40 {
         let card = u32::read(&mut starting_folder_reader)?;
@@ -1499,12 +1524,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let mut dv_cond_arr: Vec<DigivolutionConditions> = Vec::new();
     dv_cond_arr.reserve(dmw3_consts::ROOKIE_COUNT);
 
-    let dv_cond_index = exp_buf
+    let dv_cond_index = bufs
+        .exp_buf
         .windows(8)
         .position(|x| x == b"\x09\x00\x00\x00\x00\x00\x01\x00")
         .context("Can't find DV conditions beginning")?;
 
-    let mut dv_cond_reader = Cursor::new(&exp_buf[dv_cond_index..]);
+    let mut dv_cond_reader = Cursor::new(&bufs.exp_buf[dv_cond_index..]);
 
     for _ in 0..dmw3_consts::ROOKIE_COUNT {
         let dv_cond = DigivolutionConditions::read(&mut dv_cond_reader)?;
@@ -1519,7 +1545,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let mut stage_load_data_arr: Vec<StageLoadData> = Vec::new();
     stage_load_data_arr.reserve(executable.to_stage_load_data_length());
 
-    let mut stage_load_data_reader = Cursor::new(&map_buf[stage_load_data_index..]);
+    let mut stage_load_data_reader = Cursor::new(&bufs.map_buf[stage_load_data_index..]);
 
     for _ in 0..executable.to_stage_load_data_length() {
         let stage_load_data = StageLoadData::read(&mut stage_load_data_reader)?;
@@ -1585,12 +1611,14 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         text_files.insert(String::from(*sname), group);
     }
 
-    let screen_name_mapping_index = map_buf
+    let screen_name_mapping_index = bufs
+        .map_buf
         .chunks(4)
         .position(|chunk| chunk == SCREEN_NAME_MAPPING)
         .context("failed to find screen name mapping")?;
 
-    let mut screen_name_mapping_reader = Cursor::new(&map_buf[(screen_name_mapping_index * 4)..]);
+    let mut screen_name_mapping_reader =
+        Cursor::new(&bufs.map_buf[(screen_name_mapping_index * 4)..]);
 
     let mut screen_name_mapping: Vec<ScreenNameMapping> = Vec::new();
 
@@ -1600,13 +1628,14 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         screen_name_mapping.push(mapping);
     }
 
-    let quest_ranges_index = main_buf
+    let quest_ranges_index = bufs
+        .main_buf
         .windows(12)
         .position(|x| x == b"\x02\x12\x04\x17\x04\x2c\x14\x17\x18\x25\x27\x2a")
         .context("missing quest ranges")?;
 
     let mut quest_ranges_reader =
-        Cursor::new(&main_buf[quest_ranges_index..(quest_ranges_index + 33 * 2)]);
+        Cursor::new(&bufs.main_buf[quest_ranges_index..(quest_ranges_index + 33 * 2)]);
 
     let mut quest_ranges = Vec::new();
 
@@ -1614,13 +1643,14 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         quest_ranges.push(QuestRange::read(&mut quest_ranges_reader)?);
     }
 
-    let charisma_reqs_index = main_buf
+    let charisma_reqs_index = bufs
+        .main_buf
         .windows(16)
         .position(|x| x == b"\x3c\x00\x00\x00\x96\x00\x00\x00\xd2\x00\x00\x00\x1d\x01\x00\x00")
         .context("missing charisma reqs")?;
 
     let mut charisma_reqs_reader =
-        Cursor::new(&main_buf[charisma_reqs_index..(charisma_reqs_index + 4 * 15)]);
+        Cursor::new(&bufs.main_buf[charisma_reqs_index..(charisma_reqs_index + 4 * 15)]);
 
     let mut charisma_reqs = Vec::new();
 
@@ -1628,12 +1658,13 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         charisma_reqs.push(u32::read(&mut charisma_reqs_reader)?);
     }
 
-    let complex_steps_index = main_buf
+    let complex_steps_index = bufs
+        .main_buf
         .windows(12)
         .position(|x| x == executable.complex_step_signature())
         .context("missing complex steps")?;
 
-    let mut complex_steps_reader = Cursor::new(&main_buf[complex_steps_index..]);
+    let mut complex_steps_reader = Cursor::new(&bufs.main_buf[complex_steps_index..]);
 
     let mut complex_steps = Vec::new();
 
@@ -1650,7 +1681,8 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let mut auction_sets = Vec::<AuctionSet>::new();
     for item_set in AUCTION_ITEMS_SETS {
         let is_bytes = item_set.to_le_bytes();
-        let index = map_buf
+        let index = bufs
+            .map_buf
             .chunks_exact(4)
             .position(|x| x == &[is_bytes[0], is_bytes[1], 0x04, 0x34])
             .context("missing auction item")?
@@ -1852,15 +1884,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         sector_offsets: sector_offsets_object,
         file_sizes: file_sizes_object,
         // overlay_address_pointer: overlay,
-        bufs: Bufs {
-            stats_buf,
-            main_buf,
-            shops_buf,
-            card_shops_buf,
-            exp_buf,
-            pack_select_buf,
-            map_buf,
-        },
+        bufs,
         enemy_stats: enemy_stats_object,
         encounters: encounters_object,
         enemy_parties: enemy_parties_object,
