@@ -20,6 +20,7 @@ Support is added for all 3 versions, if you notice any problems, fill out an iss
 - Randomized map backgrounds
 - Randomized item box items
 - Randomized music
+- Randomized auction items (no text)
 
 ## Spoiler
 
