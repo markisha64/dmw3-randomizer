@@ -8,6 +8,7 @@ mod mkpsxiso;
 mod db;
 mod dump;
 mod lang;
+mod objects;
 mod rand;
 mod util;
 use rand::patch;

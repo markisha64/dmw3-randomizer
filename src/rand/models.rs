@@ -2,9 +2,7 @@ use rand_xoshiro::{rand_core::RngCore, Xoshiro256StarStar};
 use rlen::{rlen_decode, rlen_encode};
 use tim::Tim;
 
-use crate::{json::Randomizer, rand::Objects};
-
-use super::ModelObject;
+use crate::{json::Randomizer, objects::ModelObject, rand::Objects};
 
 fn hue(
     preset: &Randomizer,

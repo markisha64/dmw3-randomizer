@@ -7,7 +7,7 @@ use binwrite::BinWrite;
 use dmw3_structs::{Pointer, StageEncounter, StageEncounterArea};
 use tar::{Builder, Header};
 
-use crate::rand::{read_objects, Objects};
+use crate::objects::{read_objects, Objects};
 
 static DEFAULT_AREA: StageEncounterArea = StageEncounterArea {
     steps_inddex: 0,
