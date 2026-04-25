@@ -358,6 +358,291 @@ impl Executable {
     }
 }
 
+fn read_map_color(
+    buf: &Vec<u8>,
+    stage: &Pointer,
+    initsp_index: usize,
+    initp_end_index: usize,
+) -> Option<Object<MapColor>> {
+    let map_color_offset = buf[initsp_index..initp_end_index].chunks(4).position(|x| {
+        x[0] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[0]
+            && x[1] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[1]
+            && x[2] != dmw3_consts::LI_INSTRUCTION[0]
+            && x[3] != dmw3_consts::LI_INSTRUCTION[1]
+    })?;
+
+    let map_color_addiu = buf[initsp_index..initsp_index + map_color_offset * 4]
+        .windows(4)
+        .rev()
+        .position(|x| x[3] == dmw3_consts::ADDIU)?;
+
+    let aidx = initsp_index + map_color_offset * 4 - map_color_addiu - 4;
+    let addiu_first_half = i16::from_le_bytes([buf[aidx], buf[aidx + 1]]);
+
+    let address = (0x800a0000 + addiu_first_half as i64) as u32;
+
+    let map_color_address = Pointer { value: address };
+
+    let idx = map_color_address.to_index_overlay(stage.value) as usize;
+
+    let mut map_color_reader = Cursor::new(&buf[idx..idx + 4]);
+    let color = MapColor::read(&mut map_color_reader).ok()?;
+
+    Some(Object {
+        original: color.clone(),
+        modified: color.clone(),
+        index: idx,
+        slen: 0x4,
+    })
+}
+
+fn read_entities(
+    buf: &Vec<u8>,
+    stage: &Pointer,
+    sw: &[u8],
+    initsp_index: usize,
+    initp_end_index: usize,
+) -> Option<MapEntities> {
+    let entities_instruction = [
+        dmw3_consts::ENTITIES_INSTRUCTION[0],
+        dmw3_consts::ENTITIES_INSTRUCTION[1],
+        sw[0],
+        sw[1],
+    ];
+
+    let mut entities_raw: Vec<EntityData> = Vec::new();
+    let mut entity_logics_raw = Vec::new();
+    let mut scripts_condition_raw = Vec::new();
+    let mut entity_conditions_raw = Vec::new();
+
+    let entities_set = buf[initsp_index..initp_end_index]
+        .chunks(4)
+        .position(|x| x == entities_instruction)?;
+
+    let entities_address =
+        Pointer::from_instruction(&buf[initsp_index..initsp_index + entities_set * 4]);
+
+    if entities_address.is_valid() {
+        return None;
+    }
+
+    let ent_index = entities_address.to_index_overlay(stage.value) as usize;
+
+    let mut i = 0;
+    loop {
+        let ptr = Pointer::from(&buf[ent_index + i * 4..ent_index + (i + 1) * 4]);
+
+        if ptr.null() {
+            break;
+        }
+
+        i += 1;
+    }
+
+    let real_pointer = Pointer::from(&buf[ent_index..ent_index + 4]);
+
+    let real_idx = real_pointer.to_index_overlay(stage.value);
+
+    let mut entities_reader =
+        Cursor::new(&buf[(real_idx as usize)..(real_idx as usize) + 0x14 * i]);
+
+    let mut min_script_cond: Option<Pointer> = None;
+
+    for _ in 0..i {
+        let entity = EntityData::read(&mut entities_reader).ok()?;
+
+        if !entity.conditions.null() {
+            let condition_idx = entity.conditions.to_index_overlay(stage.value);
+
+            let mut condition_reader = Cursor::new(&buf[condition_idx as usize..]);
+
+            loop {
+                let condition_result = ScriptConditionStep::read(&mut condition_reader).ok()?;
+
+                entity_conditions_raw.push(condition_result.clone());
+            }
+        }
+
+        if entity.logic.null() {
+            entities_raw.push(entity);
+
+            continue;
+        }
+
+        let logic_idx = entity.logic.to_index_overlay(stage.value);
+
+        let mut logic_reader = Cursor::new(&buf[logic_idx as usize..]);
+
+        let mut logics = Vec::new();
+        loop {
+            let logic = match EntityLogic::read(&mut logic_reader) {
+                Ok(x) => x,
+                Err(_) => break,
+            };
+
+            let textbox_idx = logic.text_index;
+
+            logics.push(logic);
+
+            if textbox_idx == 0 {
+                break;
+            }
+        }
+
+        for logic in &logics {
+            if !logic.conditions.null() {
+                if min_script_cond.is_none() {
+                    min_script_cond = Some(logic.conditions);
+                }
+
+                if logic.conditions.value < min_script_cond.unwrap().value {
+                    min_script_cond = Some(logic.conditions);
+                }
+
+                let condition_idx = logic.conditions.to_index_overlay(stage.value);
+
+                let mut condition_reader = Cursor::new(&buf[condition_idx as usize..]);
+
+                loop {
+                    let condition = ScriptConditionStep::read(&mut condition_reader).ok()?;
+
+                    scripts_condition_raw.push(condition.clone());
+
+                    if condition.is_last_step() {
+                        break;
+                    }
+                }
+            }
+
+            if !logic.script.null() {
+                if min_script_cond.is_none() {
+                    min_script_cond = Some(logic.script);
+                }
+
+                if logic.script.value < min_script_cond.unwrap().value {
+                    min_script_cond = Some(logic.script);
+                }
+
+                let script_idx = logic.script.to_index_overlay(stage.value);
+
+                let mut script_reader = Cursor::new(&buf[script_idx as usize..]);
+
+                loop {
+                    let script_result = ScriptConditionStep::read(&mut script_reader);
+
+                    match script_result {
+                        Ok(script) => {
+                            scripts_condition_raw.push(script.clone());
+
+                            if script.is_last_step() {
+                                break;
+                            }
+                        }
+                        Err(_) => panic!("binread error"),
+                    }
+                }
+            }
+        }
+
+        entity_logics_raw.extend(logics.into_iter());
+
+        entities_raw.push(entity);
+    }
+
+    let entities_obj = ObjectArray {
+        original: entities_raw.clone(),
+        modified: entities_raw.clone(),
+        index: real_idx as usize,
+        slen: 0x14,
+    };
+
+    let entity_logics = ObjectArray {
+        original: entity_logics_raw.clone(),
+        modified: entity_logics_raw.clone(),
+        index: entities_raw
+            .iter()
+            .find(|x| !x.logic.null())
+            .map(|x| x.logic.to_index_overlay(stage.value) as usize)
+            .unwrap_or(0),
+        slen: 0xc,
+    };
+
+    let scripts_conditions = ObjectArray {
+        original: scripts_condition_raw.clone(),
+        modified: scripts_condition_raw.clone(),
+        index: min_script_cond
+            .map(|x| x.to_index_overlay(stage.value) as usize)
+            .unwrap_or(0),
+        slen: 0x4,
+    };
+
+    let entity_conditions = ObjectArray {
+        original: entity_conditions_raw.clone(),
+        modified: entity_conditions_raw.clone(),
+        index: entities_raw
+            .iter()
+            .filter(|x| !x.conditions.null())
+            .min_by(|a, b| a.conditions.value.cmp(&b.conditions.value))
+            .map(|x| x.conditions.to_index_overlay(stage.value) as usize)
+            .unwrap_or(0),
+        slen: 0x4,
+    };
+
+    Some(MapEntities {
+        entities: entities_obj,
+        entity_logics,
+        scripts_conditions,
+        entity_conditions,
+    })
+}
+
+fn read_environmentals(
+    buf: &Vec<u8>,
+    stage: &Pointer,
+    sw: &[u8],
+    initsp_index: usize,
+    initp_end_index: usize,
+) -> Option<ObjectArray<Environmental>> {
+    let environmental_instruction = [
+        dmw3_consts::ENVIRONMENTAL_INSTRUCTION[0],
+        dmw3_consts::ENVIRONMENTAL_INSTRUCTION[1],
+        sw[0],
+        sw[1],
+    ];
+    let mut environmentals: Vec<Environmental> = Vec::new();
+
+    let environmental_set = buf[initsp_index..initp_end_index]
+        .chunks(4)
+        .position(|x| x == environmental_instruction)?;
+
+    let environmental_address =
+        Pointer::from_instruction(&buf[initsp_index..initsp_index + environmental_set * 4]);
+
+    let index = environmental_address.to_index_overlay(stage.value) as usize;
+
+    let mut environmentals_reader = Cursor::new(&buf[(index as usize)..]);
+
+    loop {
+        let environmental = Environmental::read(&mut environmentals_reader).ok()?;
+
+        if environmental.conditions[0] == 0x0000ffff
+            && environmental.conditions[1] == 0x0000ffff
+            && environmental.next_stage_id == 0
+        {
+            break;
+        }
+
+        environmentals.push(environmental);
+    }
+
+    Some(ObjectArray {
+        original: environmentals.clone(),
+        modified: environmentals.clone(),
+        index,
+        slen: 0x18,
+    })
+}
+
 async fn read_map_objects(
     path: &PathBuf,
     stage_load_data: &Vec<StageLoadData>,
@@ -472,61 +757,10 @@ async fn read_map_objects(
                 index: background_file_index_index as usize,
             };
 
-            let mut map_color: Option<Object<MapColor>> = None;
-
-            if let Some(map_color_offset) =
-                buf[initsp_index..initp_end_index].chunks(4).position(|x| {
-                    x[0] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[0]
-                        && x[1] == dmw3_consts::STAGE_COLOR_INSTRUCTION_HALF[1]
-                        && x[2] != dmw3_consts::LI_INSTRUCTION[0]
-                        && x[3] != dmw3_consts::LI_INSTRUCTION[1]
-                })
-            {
-                if let Some(map_color_addiu) = buf
-                    [initsp_index..initsp_index + map_color_offset * 4]
-                    .windows(4)
-                    .rev()
-                    .position(|x| x[3] == dmw3_consts::ADDIU)
-                {
-                    let aidx = initsp_index + map_color_offset * 4 - map_color_addiu - 4;
-                    let addiu_first_half = i16::from_le_bytes([buf[aidx], buf[aidx + 1]]);
-
-                    let address = (0x800a0000 + addiu_first_half as i64) as u32;
-
-                    let map_color_address = Pointer { value: address };
-
-                    let idx = map_color_address.to_index_overlay(stage.value) as usize;
-
-                    let mut map_color_reader = Cursor::new(&buf[idx..idx + 4]);
-                    let color = MapColor::read(&mut map_color_reader).ok()?;
-
-                    map_color = Some(Object {
-                        original: color.clone(),
-                        modified: color.clone(),
-                        index: idx,
-                        slen: 0x4,
-                    });
-                }
-            }
-
-            let mut environmentals: Vec<Environmental> = Vec::new();
-            let mut environmentals_index: Option<u32> = None;
+            let map_color: Option<Object<MapColor>> =
+                read_map_color(&buf, stage, initsp_index, initp_end_index);
 
             // we need to assemble full sw instruction
-            let environmental_instruction = [
-                dmw3_consts::ENVIRONMENTAL_INSTRUCTION[0],
-                dmw3_consts::ENVIRONMENTAL_INSTRUCTION[1],
-                sw[0],
-                sw[1],
-            ];
-
-            let entities_instruction = [
-                dmw3_consts::ENTITIES_INSTRUCTION[0],
-                dmw3_consts::ENTITIES_INSTRUCTION[1],
-                sw[0],
-                sw[1],
-            ];
-
             let talk_file_instruction = [
                 dmw3_consts::TALK_FILE_INSTRUCTION[0],
                 dmw3_consts::TALK_FILE_INSTRUCTION[1],
@@ -563,235 +797,7 @@ async fn read_map_objects(
 
             let talk_file = u16::from_le_bytes([buf[instruction - 2], buf[instruction - 1]]);
 
-            if let Some(environmental_set) = buf[initsp_index..initp_end_index]
-                .chunks(4)
-                .position(|x| x == environmental_instruction)
-            {
-                let environmental_address = Pointer::from_instruction(
-                    &buf[initsp_index..initsp_index + environmental_set * 4],
-                );
-
-                let env_index = environmental_address.to_index_overlay(stage.value);
-                environmentals_index = Some(env_index);
-
-                let mut environmentals_reader = Cursor::new(&buf[(env_index as usize)..]);
-
-                loop {
-                    let environmental = Environmental::read(&mut environmentals_reader).ok()?;
-
-                    if environmental.conditions[0] == 0x0000ffff
-                        && environmental.conditions[1] == 0x0000ffff
-                        && environmental.next_stage_id == 0
-                    {
-                        break;
-                    }
-
-                    environmentals.push(environmental);
-                }
-            }
-
-            let mut entities_raw: Vec<EntityData> = Vec::new();
-            let mut entity_logics_raw = Vec::new();
-            let mut scripts_condition_raw = Vec::new();
-            let mut entity_conditions_raw = Vec::new();
-            let mut entities = None;
-
-            if let Some(entities_set) = buf[initsp_index..initp_end_index]
-                .chunks(4)
-                .position(|x| x == entities_instruction)
-            {
-                let entities_address =
-                    Pointer::from_instruction(&buf[initsp_index..initsp_index + entities_set * 4]);
-
-                if entities_address.is_valid() {
-                    let ent_index = entities_address.to_index_overlay(stage.value) as usize;
-
-                    let mut i = 0;
-                    loop {
-                        let ptr = Pointer::from(&buf[ent_index + i * 4..ent_index + (i + 1) * 4]);
-
-                        if ptr.null() {
-                            break;
-                        }
-
-                        i += 1;
-                    }
-
-                    let real_pointer = Pointer::from(&buf[ent_index..ent_index + 4]);
-
-                    let real_idx = real_pointer.to_index_overlay(stage.value);
-
-                    let mut entities_reader =
-                        Cursor::new(&buf[(real_idx as usize)..(real_idx as usize) + 0x14 * i]);
-
-                    let mut min_script_cond: Option<Pointer> = None;
-
-                    for _ in 0..i {
-                        let entity = EntityData::read(&mut entities_reader).ok()?;
-
-                        if !entity.conditions.null() {
-                            let condition_idx = entity.conditions.to_index_overlay(stage.value);
-
-                            let mut condition_reader = Cursor::new(&buf[condition_idx as usize..]);
-
-                            loop {
-                                let condition_result =
-                                    ScriptConditionStep::read(&mut condition_reader);
-
-                                match condition_result {
-                                    Ok(condition) => {
-                                        entity_conditions_raw.push(condition.clone());
-
-                                        if condition.is_last_step() {
-                                            break;
-                                        }
-                                    }
-                                    Err(_) => panic!("binread error"),
-                                }
-                            }
-                        }
-
-                        if entity.logic.null() {
-                            entities_raw.push(entity);
-
-                            continue;
-                        }
-
-                        let logic_idx = entity.logic.to_index_overlay(stage.value);
-
-                        let mut logic_reader = Cursor::new(&buf[logic_idx as usize..]);
-
-                        let mut logics = Vec::new();
-                        loop {
-                            let logic = match EntityLogic::read(&mut logic_reader) {
-                                Ok(x) => x,
-                                Err(_) => break,
-                            };
-
-                            let textbox_idx = logic.text_index;
-
-                            logics.push(logic);
-
-                            if textbox_idx == 0 {
-                                break;
-                            }
-                        }
-
-                        for logic in &logics {
-                            if !logic.conditions.null() {
-                                if min_script_cond.is_none() {
-                                    min_script_cond = Some(logic.conditions);
-                                }
-
-                                if logic.conditions.value < min_script_cond.unwrap().value {
-                                    min_script_cond = Some(logic.conditions);
-                                }
-
-                                let condition_idx = logic.conditions.to_index_overlay(stage.value);
-
-                                let mut condition_reader =
-                                    Cursor::new(&buf[condition_idx as usize..]);
-
-                                loop {
-                                    let condition_result =
-                                        ScriptConditionStep::read(&mut condition_reader);
-
-                                    match condition_result {
-                                        Ok(condition) => {
-                                            scripts_condition_raw.push(condition.clone());
-
-                                            if condition.is_last_step() {
-                                                break;
-                                            }
-                                        }
-                                        Err(_) => panic!("binread error"),
-                                    }
-                                }
-                            }
-
-                            if !logic.script.null() {
-                                if min_script_cond.is_none() {
-                                    min_script_cond = Some(logic.script);
-                                }
-
-                                if logic.script.value < min_script_cond.unwrap().value {
-                                    min_script_cond = Some(logic.script);
-                                }
-
-                                let script_idx = logic.script.to_index_overlay(stage.value);
-
-                                let mut script_reader = Cursor::new(&buf[script_idx as usize..]);
-
-                                loop {
-                                    let script_result =
-                                        ScriptConditionStep::read(&mut script_reader);
-
-                                    match script_result {
-                                        Ok(script) => {
-                                            scripts_condition_raw.push(script.clone());
-
-                                            if script.is_last_step() {
-                                                break;
-                                            }
-                                        }
-                                        Err(_) => panic!("binread error"),
-                                    }
-                                }
-                            }
-                        }
-
-                        entity_logics_raw.extend(logics.into_iter());
-
-                        entities_raw.push(entity);
-                    }
-
-                    let entities_obj = ObjectArray {
-                        original: entities_raw.clone(),
-                        modified: entities_raw.clone(),
-                        index: real_idx as usize,
-                        slen: 0x14,
-                    };
-
-                    let entity_logics = ObjectArray {
-                        original: entity_logics_raw.clone(),
-                        modified: entity_logics_raw.clone(),
-                        index: entities_raw
-                            .iter()
-                            .find(|x| !x.logic.null())
-                            .map(|x| x.logic.to_index_overlay(stage.value) as usize)
-                            .unwrap_or(0),
-                        slen: 0xc,
-                    };
-
-                    let scripts_conditions = ObjectArray {
-                        original: scripts_condition_raw.clone(),
-                        modified: scripts_condition_raw.clone(),
-                        index: min_script_cond
-                            .map(|x| x.to_index_overlay(stage.value) as usize)
-                            .unwrap_or(0),
-                        slen: 0x4,
-                    };
-
-                    let entity_conditions = ObjectArray {
-                        original: entity_conditions_raw.clone(),
-                        modified: entity_conditions_raw.clone(),
-                        index: entities_raw
-                            .iter()
-                            .filter(|x| !x.conditions.null())
-                            .min_by(|a, b| a.conditions.value.cmp(&b.conditions.value))
-                            .map(|x| x.conditions.to_index_overlay(stage.value) as usize)
-                            .unwrap_or(0),
-                        slen: 0x4,
-                    };
-
-                    entities = Some(MapEntities {
-                        entities: entities_obj,
-                        entity_logics,
-                        scripts_conditions,
-                        entity_conditions,
-                    })
-                }
-            }
+            let entities = read_entities(&buf, stage, sw, initsp_index, initp_end_index);
 
             let stage_encounter_set = buf[initsp_index..initp_end_index]
                 .chunks(4)
@@ -935,13 +941,8 @@ async fn read_map_objects(
                 stage_encounters_objects.extend(objs_forward.into_iter());
             }
 
-            let environmental_object = environmentals_index.map(|idx| ObjectArray {
-                original: environmentals.clone(),
-                modified: environmentals.clone(),
-                index: idx as usize,
-                slen: 0x18,
-            });
-
+            let environmental_object =
+                read_environmentals(&buf, stage, sw, initsp_index, initp_end_index);
             let mut music = Vec::new();
 
             for (idx, instruction) in buf[initsp_index..initp_end_index]
