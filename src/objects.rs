@@ -14,6 +14,7 @@ use dmw3_structs::BoosterData;
 use dmw3_structs::CardPricing;
 use dmw3_structs::CardShopData;
 use dmw3_structs::ComplexScriptConditionStep;
+use dmw3_structs::EnvironmentalOverride;
 use dmw3_structs::PartyExpBits;
 use dmw3_structs::QuestRange;
 use dmw3_structs::ScreenNameMapping;
@@ -21,6 +22,7 @@ use dmw3_structs::ScriptConditionStep;
 use dmw3_structs::StageEncounter;
 use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
+use dmw3_structs::StageOverride;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -144,6 +146,22 @@ impl WriteObjects for ObjectArray<AuctionSet> {
     }
 }
 
+impl WriteObjects for StageOverridesObject {
+    fn write_buf(&self, buf: &mut Vec<u8>) -> anyhow::Result<()> {
+        for stage_override in &self.stage_overrides {
+            stage_override.write_buf(buf)?;
+        }
+
+        for environmental_overrides in &self.environmental_overrides {
+            for environmental_override in environmental_overrides {
+                environmental_override.write_buf(buf)?;
+            }
+        }
+
+        Ok(())
+    }
+}
+
 pub struct Bufs {
     pub stats_buf: Vec<u8>,
     pub main_buf: Vec<u8>,
@@ -158,6 +176,11 @@ pub struct StageEncountersObject {
     pub stage_encounters_object: Object<StageEncounters>,
     pub stage_encounter_areas: Vec<Option<Object<StageEncounterArea>>>,
     pub stage_encounters: Vec<Option<ObjectArray<StageEncounter>>>,
+}
+
+pub struct StageOverridesObject {
+    pub stage_overrides: Vec<Object<StageOverride>>,
+    pub environmental_overrides: Vec<Vec<Object<EnvironmentalOverride>>>,
 }
 
 pub struct MapEntities {
@@ -178,6 +201,7 @@ pub struct MapObject {
     pub stage_encounters: Vec<StageEncountersObject>,
     pub stage_id: u16,
     pub music: ObjectArray<MusicSet>,
+    pub stage_overrides: Option<StageOverridesObject>,
 }
 
 pub struct ModelObject {
@@ -643,6 +667,118 @@ fn read_environmentals(
     })
 }
 
+fn read_stage_overrides(
+    buf: &Vec<u8>,
+    stage: &Pointer,
+    stage_encounters: &Vec<StageEncountersObject>,
+) -> Option<StageOverridesObject> {
+    let se_object = stage_encounters.first()?;
+    let first_area = se_object.stage_encounter_areas[1].as_ref()?;
+
+    let ptr_above_first_team = Pointer {
+        value: first_area.original.teams[0].value - 4,
+    };
+
+    let idx = ptr_above_first_team.to_index_overlay(stage.value) as usize;
+    let deref_above_first_team = Pointer {
+        value: u32::from_le_bytes((&buf[idx..idx + 4]).try_into().ok()?),
+    };
+
+    if !deref_above_first_team.null() {
+        return None;
+    }
+
+    let ptr_above_eoa = Pointer {
+        value: first_area.original.teams[0].value - 8,
+    };
+
+    let idx = ptr_above_eoa.to_index_overlay(stage.value) as usize;
+    let default_override_ptr = Pointer {
+        value: u32::from_le_bytes((&buf[idx..idx + 4]).try_into().ok()?),
+    };
+
+    if !default_override_ptr.is_valid() {
+        return None;
+    }
+
+    let idx = default_override_ptr.to_index_overlay(stage.value) as usize;
+    let mut cursor = Cursor::new(&buf[idx..]);
+
+    let default_override = StageOverride::read(&mut cursor).ok()?;
+
+    if default_override.var1 != 0 || default_override.var2 != 0 {
+        return None;
+    }
+
+    let mut stage_overrides = Vec::new();
+    let mut environmental_overrides = Vec::new();
+
+    let stage_overrides_ptr = Pointer {
+        value: default_override_ptr.value + 8,
+    };
+
+    let idx = stage_overrides_ptr.to_index_overlay(stage.value) as usize;
+    let len = (ptr_above_first_team.value - stage_overrides_ptr.value) / 4;
+    let mut cursor = Cursor::new(&buf[idx..]);
+
+    for _ in 0..len {
+        let stage_override_ptr = Pointer::read(&mut cursor).ok()?;
+
+        if !stage_override_ptr.is_valid() {
+            return None;
+        }
+
+        let stage_override_idx = stage_override_ptr.to_index_overlay(stage.value) as usize;
+        let mut stage_override_reader = Cursor::new(&buf[stage_override_idx..]);
+
+        let stage_override = StageOverride::read(&mut stage_override_reader).ok()?;
+
+        if !stage_override.overrides.is_valid() {
+            return None;
+        }
+
+        let mut environmentals = Vec::new();
+
+        let mut idx = stage_override.overrides.to_index_overlay(stage.value) as usize;
+        let mut reader = Cursor::new(&buf[idx..]);
+        let mut environmental_override = EnvironmentalOverride::read(&mut reader).ok()?;
+
+        while !environmental_override.next.null() {
+            let new_idx = environmental_override.next.to_index_overlay(stage.value) as usize;
+            reader = Cursor::new(&buf[new_idx..]);
+
+            environmentals.push(Object {
+                original: environmental_override.clone(),
+                modified: environmental_override,
+                index: idx,
+                slen: 0x10,
+            });
+            environmental_override = EnvironmentalOverride::read(&mut reader).ok()?;
+            idx = new_idx;
+        }
+
+        environmentals.push(Object {
+            original: environmental_override.clone(),
+            modified: environmental_override,
+            index: idx,
+            slen: 0x10,
+        });
+
+        stage_overrides.push(Object {
+            original: stage_override.clone(),
+            modified: stage_override,
+            index: stage_override_idx,
+            slen: 0x8,
+        });
+        environmental_overrides.push(environmentals);
+    }
+
+    Some(StageOverridesObject {
+        stage_overrides,
+        environmental_overrides,
+    })
+}
+
 async fn read_map_objects(
     path: &PathBuf,
     stage_load_data: &Vec<StageLoadData>,
@@ -970,6 +1106,8 @@ async fn read_map_objects(
                 slen: 0,
             };
 
+            let stage_overrides = read_stage_overrides(&buf, stage, &stage_encounters_objects);
+
             // TODO: instead of always checking first 2 instructions before
             // I need to find the first lui (which is considerably suckier)
             Some(MapObject {
@@ -983,6 +1121,7 @@ async fn read_map_objects(
                 stage_encounters: stage_encounters_objects,
                 stage_id,
                 music: music_object,
+                stage_overrides,
             })
         }
         .await;
@@ -1949,6 +2088,10 @@ async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyh
                     encounter.write_buf(buf)?;
                 }
             }
+        }
+
+        if let Some(stage_overrides) = object.stage_overrides.as_ref() {
+            stage_overrides.write_buf(buf)?;
         }
 
         object.music.write_buf(buf)?;
