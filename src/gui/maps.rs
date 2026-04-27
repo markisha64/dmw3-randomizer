@@ -15,6 +15,7 @@ pub fn maps() -> Element {
     let fight_backgrounds = read_state.randomizer.maps.fight_backgrounds;
     let item_boxes = read_state.randomizer.maps.item_boxes;
     let ironmon_charisma = read_state.randomizer.maps.ironmon_charisma;
+    let mobius_desert = read_state.randomizer.maps.mobius_desert;
 
     let selected_group_strategy = read_state.randomizer.maps.group_strategy;
 
@@ -291,6 +292,19 @@ pub fn maps() -> Element {
                         "Party"
                     },
                 }
+            }
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Mobius Desert",
+                    id: "maps.randomize_mobius_desert",
+                    checked: mobius_desert,
+                    disabled: !enabled,
+                    tooltip: "Randomize Mobius Desert",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.mobius_desert = x;
+                    }
+                },
             }
         }
     }

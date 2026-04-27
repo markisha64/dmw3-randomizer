@@ -647,15 +647,19 @@ fn recursive(
     Ok(node)
 }
 
-fn random_mobius_desert(
+fn random_mobius_desert_helper(
     objects: &mut Objects,
     preset: &Randomizer,
     rng: &mut Xoshiro256StarStar,
+    mobius_1_file_name: &str,
+    mobius_2_file_name: &str,
+    mirage_id: u16,
+    s_noise_id: u16,
 ) -> anyhow::Result<()> {
     let mobius_desert_1 = objects
         .map_objects
         .iter()
-        .find(|x| x.file_name.starts_with("WSTAG635"))
+        .find(|x| x.file_name.starts_with(mobius_1_file_name))
         .context("failed to find mobius asuka 1")?
         .stage_overrides
         .as_ref()
@@ -663,7 +667,7 @@ fn random_mobius_desert(
     let mobius_desert_2 = objects
         .map_objects
         .iter()
-        .find(|x| x.file_name.starts_with("WSTAG640"))
+        .find(|x| x.file_name.starts_with(mobius_2_file_name))
         .context("failed to find mobius asuka 2")?
         .stage_overrides
         .as_ref()
@@ -702,8 +706,8 @@ fn random_mobius_desert(
 
             let direction = env_override.original.next_stage_direction;
 
-            if env_override.original.next_stage_id == 599
-                || env_override.original.next_stage_id == 602
+            if env_override.original.next_stage_id == mirage_id
+                || env_override.original.next_stage_id == s_noise_id
             {
                 *node.arr_from_direction(direction) = Gate::Reserved;
             }
@@ -749,8 +753,8 @@ fn random_mobius_desert(
 
             let direction = env_override.original.next_stage_direction;
 
-            if env_override.original.next_stage_id == 599
-                || env_override.original.next_stage_id == 602
+            if env_override.original.next_stage_id == mirage_id
+                || env_override.original.next_stage_id == s_noise_id
             {
                 *node.arr_from_direction(direction) = Gate::Reserved;
             }
@@ -801,29 +805,82 @@ fn random_mobius_desert(
 
     *to_update = updated_entrance;
 
-    // for i in 0..mobius_desert_1.stage_overrides.len() {
-    //     let stage_override = &mobius_desert_1.stage_overrides[i];
-    //     let var1 = stage_override.original.var1;
-    //     let var2 = stage_override.original.var2;
+    let mobius_desert_1 = objects
+        .map_objects
+        .iter_mut()
+        .find(|x| x.file_name.starts_with(mobius_1_file_name))
+        .context("failed to find mobius asuka 1")?
+        .stage_overrides
+        .as_mut()
+        .context("no stage overrides")?;
 
-    //     if var1 == 0 && var2 == 0 {
-    //         continue;
-    //     }
+    for i in 0..mobius_desert_1.stage_overrides.len() {
+        let stage_override = &mobius_desert_1.stage_overrides[i];
+        let var1 = stage_override.original.var1;
+        let var2 = stage_override.original.var2;
 
-    //     let new_node = mobius_1_nodes
-    //         .iter_mut()
-    //         .find(|x| x.id == (var1, var2))
-    //         .context("missing node")?;
+        if var1 == 0 && var2 == 0 {
+            continue;
+        }
 
-    //     for env_override in &mut mobius_desert_1.environmental_overrides[i] {
-    //         if let Gate::To((var1, var2)) =
-    //             new_node.arr_from_direction(env_override.original.next_stage_direction)
-    //         {
-    //             env_override.modified.var1 = *var1;
-    //             env_override.modified.var2 = *var2;
-    //         }
-    //     }
-    // }
+        let new_node = mobius_1_nodes
+            .iter_mut()
+            .find(|x| x.id == (var1, var2))
+            .context("missing node")?;
+
+        for env_override in &mut mobius_desert_1.environmental_overrides[i] {
+            if let Gate::To((var1, var2)) =
+                new_node.arr_from_direction(env_override.original.next_stage_direction)
+            {
+                env_override.modified.var1 = *var1;
+                env_override.modified.var2 = *var2;
+            }
+        }
+    }
+
+    let mobius_desert_2 = objects
+        .map_objects
+        .iter_mut()
+        .find(|x| x.file_name.starts_with(mobius_2_file_name))
+        .context("failed to find mobius asuka 1")?
+        .stage_overrides
+        .as_mut()
+        .context("no stage overrides")?;
+
+    for i in 0..mobius_desert_2.stage_overrides.len() {
+        let stage_override = &mobius_desert_2.stage_overrides[i];
+        let var1 = stage_override.original.var1;
+        let var2 = stage_override.original.var2;
+
+        if var1 == 0 && var2 == 0 {
+            continue;
+        }
+
+        let new_node = mobius_1_nodes
+            .iter_mut()
+            .find(|x| x.id == (var1, var2))
+            .context("missing node")?;
+
+        for env_override in &mut mobius_desert_2.environmental_overrides[i] {
+            if let Gate::To((var1, var2)) =
+                new_node.arr_from_direction(env_override.original.next_stage_direction)
+            {
+                env_override.modified.var1 = *var1;
+                env_override.modified.var2 = *var2;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn random_mobius_desert(
+    objects: &mut Objects,
+    preset: &Randomizer,
+    rng: &mut Xoshiro256StarStar,
+) -> anyhow::Result<()> {
+    random_mobius_desert_helper(objects, preset, rng, "WSTAG635", "WSTAG640", 599, 602)?;
+    random_mobius_desert_helper(objects, preset, rng, "WSTAG636", "WSTAG641", 707, 704)?;
 
     Ok(())
 }
