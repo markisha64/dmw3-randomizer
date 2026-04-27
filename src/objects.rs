@@ -41,6 +41,7 @@ use dmw3_structs::{
     Environmental, ItemShopData, MapColor, MoveData, PartyData, Pointer, Shop, StageLoadData,
 };
 
+#[derive(Debug)]
 pub struct Object<T> {
     pub original: T,
     pub modified: T,
@@ -77,6 +78,7 @@ pub struct AuctionSet {
     pub index: usize,
 }
 
+#[derive(Debug)]
 pub struct ObjectArray<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,

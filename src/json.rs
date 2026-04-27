@@ -108,6 +108,8 @@ pub struct Maps {
     pub battle_music: bool,
     #[serde(default = "default_music_pool_battle")]
     pub battle_music_pool: MusicPool,
+    #[serde(default = "default_bool_true")]
+    pub mobius_desert: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
