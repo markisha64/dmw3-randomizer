@@ -467,6 +467,7 @@ fn battle_music(
     Ok(())
 }
 
+#[derive(Debug)]
 struct Gates {
     north: Vec<(i16, i16)>,
     east: Vec<(i16, i16)>,
@@ -499,7 +500,7 @@ enum MobiusType {
     Mobius2,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Copy)]
 struct Node {
     id: (i16, i16),
     mobius_type: MobiusType,
@@ -510,7 +511,7 @@ struct Node {
 }
 
 impl Node {
-    fn arr_from_direction(&mut self, direction: u16) -> &mut Gate {
+    fn gate_from_direction(&mut self, direction: u16) -> &mut Gate {
         match direction {
             5 => &mut self.east,
             7 => &mut self.south,
@@ -523,10 +524,6 @@ impl Node {
     fn get_empty(&self) -> Vec<u16> {
         let mut rv = Vec::new();
 
-        if self.north == Gate::Empty {
-            rv.push(3);
-        }
-
         if self.east == Gate::Empty {
             rv.push(5);
         }
@@ -537,6 +534,10 @@ impl Node {
 
         if self.west == Gate::Empty {
             rv.push(1);
+        }
+
+        if self.north == Gate::Empty {
+            rv.push(3);
         }
 
         rv
@@ -553,72 +554,104 @@ fn recursive(
     mobius_2_visited: &mut HashSet<(i16, i16)>,
     rng: &mut Xoshiro256StarStar,
     shuffles: u8,
-) -> anyhow::Result<Node> {
-    match node.mobius_type {
+) -> anyhow::Result<()> {
+    let mobius_type = node.mobius_type;
+    // mark as visited
+    match mobius_type {
         MobiusType::Mobius1 => mobius_1_visited.insert(node.id),
         MobiusType::Mobius2 => mobius_2_visited.insert(node.id),
     };
 
-    let mut empty_directions = node.get_empty();
-    shuffle(&mut empty_directions, 5, rng);
+    let get_direction = |node: &Node, rng: &mut Xoshiro256StarStar| {
+        let mut empty_directions = node.get_empty();
+        shuffle(&mut empty_directions, shuffles, rng);
 
-    for direction in empty_directions {
-        let opposite = (direction + 4) % 8;
+        empty_directions.last().map(|x| *x)
+    };
 
-        let (gate_id, random) = match node.mobius_type {
-            MobiusType::Mobius1 => mobius_2_gates
-                .arr_from_direction(opposite)
-                .pop()
-                .map(|x| (x, false))
-                .unwrap_or((
-                    mobius_2_nodes[(rng.next_u32() as usize) % mobius_2_nodes.len()].id,
-                    true,
-                )),
-            MobiusType::Mobius2 => mobius_1_gates
-                .arr_from_direction(opposite)
-                .pop()
-                .map(|x| (x, false))
-                .unwrap_or((
-                    mobius_1_nodes[(rng.next_u32() as usize) % mobius_1_nodes.len()].id,
-                    true,
-                )),
+    // iter over paths
+    while let Some(direction) = get_direction(&node, rng) {
+        // remove no longer empty gate
+        let gates = match mobius_type {
+            MobiusType::Mobius1 => &mut *mobius_1_gates,
+            MobiusType::Mobius2 => &mut *mobius_2_gates,
         };
 
-        *node.arr_from_direction(direction) = Gate::To(gate_id);
+        let idx = gates
+            .arr_from_direction(direction)
+            .iter()
+            .position(|x| *x == node.id)
+            .context("failed to find gate")?;
 
-        if match node.mobius_type {
-            MobiusType::Mobius1 => !mobius_2_visited.contains(&gate_id),
-            MobiusType::Mobius2 => !mobius_1_visited.contains(&gate_id),
+        gates.arr_from_direction(direction).remove(idx);
+
+        // opposite side for connecting map
+        let opposite = (direction + 4) % 8;
+
+        // connecting to map
+        let (next_node_id, random) = {
+            let (gates, nodes) = match mobius_type {
+                MobiusType::Mobius1 => (&mut *mobius_2_gates, &mobius_2_nodes),
+                MobiusType::Mobius2 => (&mut *mobius_1_gates, &mobius_1_nodes),
+            };
+
+            gates
+                .arr_from_direction(opposite)
+                .pop()
+                .map(|x| (x, false))
+                .unwrap_or((nodes[(rng.next_u32() as usize) % nodes.len()].id, true))
+        };
+
+        *node.gate_from_direction(direction) = Gate::To(next_node_id);
+
+        if !random {
+            // update next node
+            let to_update = match mobius_type {
+                MobiusType::Mobius1 => mobius_2_nodes
+                    .iter_mut()
+                    .find(|x| x.id == next_node_id)
+                    .context("missing gate non random"),
+                MobiusType::Mobius2 => mobius_1_nodes
+                    .iter_mut()
+                    .find(|x| x.id == next_node_id)
+                    .context("missing gate non random"),
+            }?;
+
+            *to_update.gate_from_direction(opposite) = Gate::To(node.id);
+        }
+
+        // update node
+        let to_update = match mobius_type {
+            MobiusType::Mobius1 => mobius_1_nodes
+                .iter_mut()
+                .find(|x| x.id == node.id)
+                .context("missing gate to update"),
+            MobiusType::Mobius2 => mobius_2_nodes
+                .iter_mut()
+                .find(|x| x.id == node.id)
+                .context("missing gate to update"),
+        }?;
+
+        *to_update = node;
+
+        if match mobius_type {
+            MobiusType::Mobius1 => !mobius_2_visited.contains(&next_node_id),
+            MobiusType::Mobius2 => !mobius_1_visited.contains(&next_node_id),
         } {
-            if !random {
-                let to_update = match node.mobius_type {
-                    MobiusType::Mobius1 => mobius_2_nodes
-                        .iter_mut()
-                        .find(|x| x.id == gate_id)
-                        .context("missing gate 1"),
-                    MobiusType::Mobius2 => mobius_1_nodes
-                        .iter_mut()
-                        .find(|x| x.id == gate_id)
-                        .context("missing gate 2"),
-                }?;
-
-                *to_update.arr_from_direction(opposite) = Gate::To(node.id);
-            }
-
-            let to_update = match node.mobius_type {
+            let next_node = match mobius_type {
                 MobiusType::Mobius1 => mobius_2_nodes
                     .iter()
-                    .find(|x| x.id == gate_id)
-                    .context("missing gate 3"),
+                    .find(|x| x.id == next_node_id)
+                    .context("missing gate to update"),
                 MobiusType::Mobius2 => mobius_1_nodes
                     .iter()
-                    .find(|x| x.id == gate_id)
-                    .context("missing gate 4"),
+                    .find(|x| x.id == next_node_id)
+                    .context("missing gate to update"),
             }?
             .clone();
 
-            let updated = recursive(
-                to_update,
+            recursive(
+                next_node,
                 mobius_1_gates,
                 mobius_2_gates,
                 mobius_1_nodes,
@@ -628,23 +661,23 @@ fn recursive(
                 rng,
                 shuffles,
             )?;
-
-            let to_update = match node.mobius_type {
-                MobiusType::Mobius1 => mobius_2_nodes
-                    .iter_mut()
-                    .find(|x| x.id == gate_id)
-                    .context("missing gate 5"),
-                MobiusType::Mobius2 => mobius_1_nodes
-                    .iter_mut()
-                    .find(|x| x.id == gate_id)
-                    .context("missing gate 6"),
-            }?;
-
-            *to_update = updated;
         }
+
+        let updated = match mobius_type {
+            MobiusType::Mobius1 => mobius_1_nodes
+                .iter()
+                .find(|x| x.id == node.id)
+                .context("missing gate to update"),
+            MobiusType::Mobius2 => mobius_2_nodes
+                .iter()
+                .find(|x| x.id == node.id)
+                .context("missing gate to update"),
+        }?;
+
+        node = *updated;
     }
 
-    Ok(node)
+    Ok(())
 }
 
 fn random_mobius_desert_helper(
@@ -700,21 +733,17 @@ fn random_mobius_desert_helper(
         };
 
         for env_override in &mobius_desert_1.environmental_overrides[i] {
-            if env_override.original.var1 == 0 && env_override.original.var2 == 0 {
-                continue;
-            }
-
             let direction = env_override.original.next_stage_direction;
 
             if env_override.original.next_stage_id == mirage_id
                 || env_override.original.next_stage_id == s_noise_id
             {
-                *node.arr_from_direction(direction) = Gate::Reserved;
+                *node.gate_from_direction(direction) = Gate::Reserved;
+            } else {
+                mobius_1_gates
+                    .arr_from_direction(direction)
+                    .push((var1, var2));
             }
-
-            mobius_1_gates
-                .arr_from_direction(direction)
-                .push((env_override.original.var1, env_override.original.var2));
         }
 
         mobius_1_nodes.push(node);
@@ -747,21 +776,17 @@ fn random_mobius_desert_helper(
         };
 
         for env_override in &mobius_desert_2.environmental_overrides[i] {
-            if env_override.original.var1 == 0 && env_override.original.var2 == 0 {
-                continue;
-            }
-
             let direction = env_override.original.next_stage_direction;
 
             if env_override.original.next_stage_id == mirage_id
                 || env_override.original.next_stage_id == s_noise_id
             {
-                *node.arr_from_direction(direction) = Gate::Reserved;
+                *node.gate_from_direction(direction) = Gate::Reserved;
+            } else {
+                mobius_2_gates
+                    .arr_from_direction(direction)
+                    .push((var1, var2));
             }
-
-            mobius_2_gates
-                .arr_from_direction(direction)
-                .push((env_override.original.var1, env_override.original.var2));
         }
 
         mobius_2_nodes.push(node);
@@ -786,7 +811,7 @@ fn random_mobius_desert_helper(
         .context("missing mobius entrance")?
         .clone();
 
-    let updated_entrance = recursive(
+    recursive(
         mobius_enrance,
         &mut mobius_1_gates,
         &mut mobius_2_gates,
@@ -797,13 +822,6 @@ fn random_mobius_desert_helper(
         rng,
         preset.shuffles,
     )?;
-
-    let to_update = mobius_1_nodes
-        .iter_mut()
-        .find(|x| x.id == (1, 1))
-        .context("missing mobius entrance")?;
-
-    *to_update = updated_entrance;
 
     let mobius_desert_1 = objects
         .map_objects
@@ -830,7 +848,7 @@ fn random_mobius_desert_helper(
 
         for env_override in &mut mobius_desert_1.environmental_overrides[i] {
             if let Gate::To((var1, var2)) =
-                new_node.arr_from_direction(env_override.original.next_stage_direction)
+                new_node.gate_from_direction(env_override.original.next_stage_direction)
             {
                 env_override.modified.var1 = *var1;
                 env_override.modified.var2 = *var2;
@@ -863,7 +881,7 @@ fn random_mobius_desert_helper(
 
         for env_override in &mut mobius_desert_2.environmental_overrides[i] {
             if let Gate::To((var1, var2)) =
-                new_node.arr_from_direction(env_override.original.next_stage_direction)
+                new_node.gate_from_direction(env_override.original.next_stage_direction)
             {
                 env_override.modified.var1 = *var1;
                 env_override.modified.var2 = *var2;
