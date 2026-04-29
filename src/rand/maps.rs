@@ -2,6 +2,7 @@ use std::collections::{BTreeSet, HashMap, HashSet};
 
 use crate::{
     json::{GroupStrategy, MusicPool},
+    objects::StageOverridesObject,
     rand::{shops::shoppable, Objects},
     util::{self, shuffle, uniform_random_vector},
 };
@@ -467,7 +468,7 @@ fn battle_music(
     Ok(())
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 struct Gates {
     north: Vec<(i16, i16)>,
     east: Vec<(i16, i16)>,
@@ -481,9 +482,15 @@ impl Gates {
             5 => &mut self.east,
             7 => &mut self.south,
             1 => &mut self.west,
-            3 => &mut self.north,
             _ => &mut self.north,
         }
+    }
+
+    fn shuffle_all(&mut self, shuffles: u8, rng: &mut Xoshiro256StarStar) {
+        shuffle(&mut self.north, shuffles, rng);
+        shuffle(&mut self.east, shuffles, rng);
+        shuffle(&mut self.south, shuffles, rng);
+        shuffle(&mut self.west, shuffles, rng);
     }
 }
 
@@ -494,16 +501,9 @@ enum Gate {
     To((i16, i16)),
 }
 
-#[derive(Clone, Copy, Debug)]
-enum MobiusType {
-    Mobius1,
-    Mobius2,
-}
-
 #[derive(Clone, Debug, Copy)]
 struct Node {
     id: (i16, i16),
-    mobius_type: MobiusType,
     north: Gate,
     east: Gate,
     south: Gate,
@@ -544,137 +544,167 @@ impl Node {
     }
 }
 
-fn recursive(
+struct MobiusState {
+    gates: Gates,
+    nodes: Vec<Node>,
+    node_index: HashMap<(i16, i16), usize>,
+    visited: HashSet<(i16, i16)>,
+}
+
+impl MobiusState {
+    fn new() -> Self {
+        Self {
+            gates: Gates::default(),
+            nodes: Vec::new(),
+            node_index: HashMap::new(),
+            visited: HashSet::new(),
+        }
+    }
+
+    fn insert_node(&mut self, node: Node) {
+        let idx = self.nodes.len();
+        self.node_index.insert(node.id, idx);
+        self.nodes.push(node);
+    }
+
+    fn find_node(&self, id: (i16, i16)) -> Option<Node> {
+        self.node_index.get(&id).map(|&i| self.nodes[i])
+    }
+
+    fn find_node_mut(&mut self, id: (i16, i16)) -> Option<&mut Node> {
+        self.node_index
+            .get(&id)
+            .copied()
+            .map(|i| &mut self.nodes[i])
+    }
+
+    fn update_node(&mut self, node: Node) -> anyhow::Result<()> {
+        let &i = self.node_index.get(&node.id).context("node not found")?;
+        self.nodes[i] = node;
+        Ok(())
+    }
+
+    fn random_node_id(&self, rng: &mut Xoshiro256StarStar) -> (i16, i16) {
+        self.nodes[(rng.next_u32() as usize) % self.nodes.len()].id
+    }
+}
+
+fn build_mobius_state(
+    overrides: &StageOverridesObject,
+    mirage_id: u16,
+    s_noise_id: u16,
+) -> MobiusState {
+    let mut state = MobiusState::new();
+
+    for (i, stage_override) in overrides.stage_overrides.iter().enumerate() {
+        let var1 = stage_override.original.var1;
+        let var2 = stage_override.original.var2;
+
+        if var1 == 0 && var2 == 0 {
+            continue;
+        }
+
+        let mut node = Node {
+            id: (var1, var2),
+            north: Gate::Empty,
+            east: Gate::Empty,
+            south: Gate::Empty,
+            west: Gate::Empty,
+        };
+
+        for env_override in &overrides.environmental_overrides[i] {
+            let direction = env_override.original.next_stage_direction;
+            if env_override.original.next_stage_id == mirage_id
+                || env_override.original.next_stage_id == s_noise_id
+            {
+                *node.gate_from_direction(direction) = Gate::Reserved;
+            } else {
+                state.gates.arr_from_direction(direction).push((var1, var2));
+            }
+        }
+
+        state.insert_node(node);
+    }
+
+    state
+}
+
+fn apply_node_gates(
+    overrides: &mut StageOverridesObject,
+    state: &mut MobiusState,
+) -> anyhow::Result<()> {
+    for i in 0..overrides.stage_overrides.len() {
+        let var1 = overrides.stage_overrides[i].original.var1;
+        let var2 = overrides.stage_overrides[i].original.var2;
+
+        if var1 == 0 && var2 == 0 {
+            continue;
+        }
+
+        let node = state.find_node_mut((var1, var2)).context("missing node")?;
+
+        for env_override in &mut overrides.environmental_overrides[i] {
+            if let Gate::To((v1, v2)) =
+                node.gate_from_direction(env_override.original.next_stage_direction)
+            {
+                env_override.modified.var1 = *v1;
+                env_override.modified.var2 = *v2;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn traverse(
     mut node: Node,
-    mobius_1_gates: &mut Gates,
-    mobius_2_gates: &mut Gates,
-    mobius_1_nodes: &mut Vec<Node>,
-    mobius_2_nodes: &mut Vec<Node>,
-    mobius_1_visited: &mut HashSet<(i16, i16)>,
-    mobius_2_visited: &mut HashSet<(i16, i16)>,
+    own: &mut MobiusState,
+    other: &mut MobiusState,
     rng: &mut Xoshiro256StarStar,
     shuffles: u8,
 ) -> anyhow::Result<()> {
-    let mobius_type = node.mobius_type;
-    // mark as visited
-    match mobius_type {
-        MobiusType::Mobius1 => mobius_1_visited.insert(node.id),
-        MobiusType::Mobius2 => mobius_2_visited.insert(node.id),
-    };
+    own.visited.insert(node.id);
 
-    let get_direction = |node: &Node, rng: &mut Xoshiro256StarStar| {
-        let mut empty_directions = node.get_empty();
-        shuffle(&mut empty_directions, shuffles, rng);
+    loop {
+        let mut empty = node.get_empty();
 
-        empty_directions.last().map(|x| *x)
-    };
+        shuffle(&mut empty, shuffles, rng);
 
-    // iter over paths
-    while let Some(direction) = get_direction(&node, rng) {
-        // remove no longer empty gate
-        let gates = match mobius_type {
-            MobiusType::Mobius1 => &mut *mobius_1_gates,
-            MobiusType::Mobius2 => &mut *mobius_2_gates,
+        let Some(&direction) = empty.last() else {
+            break;
         };
 
-        let idx = gates
-            .arr_from_direction(direction)
-            .iter()
-            .position(|x| *x == node.id)
-            .context("failed to find gate")?;
-
-        gates.arr_from_direction(direction).remove(idx);
-
-        // opposite side for connecting map
         let opposite = (direction + 4) % 8;
 
-        // connecting to map
-        let (next_node_id, random) = {
-            let (gates, nodes) = match mobius_type {
-                MobiusType::Mobius1 => (&mut *mobius_2_gates, &mobius_2_nodes),
-                MobiusType::Mobius2 => (&mut *mobius_1_gates, &mobius_1_nodes),
-            };
+        let gates = own.gates.arr_from_direction(direction);
+        let idx = gates
+            .iter()
+            .position(|&x| x == node.id)
+            .context("failed to find gate")?;
+        gates.remove(idx);
 
-            gates
-                .arr_from_direction(opposite)
-                .pop()
-                .map(|x| (x, false))
-                .unwrap_or((nodes[(rng.next_u32() as usize) % nodes.len()].id, true))
+        let (next_id, random) = match other.gates.arr_from_direction(opposite).pop() {
+            Some(id) => (id, false),
+            None => (other.random_node_id(rng), true),
         };
 
-        *node.gate_from_direction(direction) = Gate::To(next_node_id);
+        *node.gate_from_direction(direction) = Gate::To(next_id);
 
         if !random {
-            // update next node
-            let to_update = match mobius_type {
-                MobiusType::Mobius1 => mobius_2_nodes
-                    .iter_mut()
-                    .find(|x| x.id == next_node_id)
-                    .context("missing gate non random"),
-                MobiusType::Mobius2 => mobius_1_nodes
-                    .iter_mut()
-                    .find(|x| x.id == next_node_id)
-                    .context("missing gate non random"),
-            }?;
-
-            *to_update.gate_from_direction(opposite) = Gate::To(node.id);
+            *other
+                .find_node_mut(next_id)
+                .context("missing gate non random")?
+                .gate_from_direction(opposite) = Gate::To(node.id);
         }
 
-        // update node
-        let to_update = match mobius_type {
-            MobiusType::Mobius1 => mobius_1_nodes
-                .iter_mut()
-                .find(|x| x.id == node.id)
-                .context("missing gate to update"),
-            MobiusType::Mobius2 => mobius_2_nodes
-                .iter_mut()
-                .find(|x| x.id == node.id)
-                .context("missing gate to update"),
-        }?;
+        own.update_node(node)?;
 
-        *to_update = node;
+        if !other.visited.contains(&next_id) {
+            let next_node = other.find_node(next_id).context("next node not found")?;
+            traverse(next_node, other, own, rng, shuffles)?;
 
-        if match mobius_type {
-            MobiusType::Mobius1 => !mobius_2_visited.contains(&next_node_id),
-            MobiusType::Mobius2 => !mobius_1_visited.contains(&next_node_id),
-        } {
-            let next_node = match mobius_type {
-                MobiusType::Mobius1 => mobius_2_nodes
-                    .iter()
-                    .find(|x| x.id == next_node_id)
-                    .context("missing gate to update"),
-                MobiusType::Mobius2 => mobius_1_nodes
-                    .iter()
-                    .find(|x| x.id == next_node_id)
-                    .context("missing gate to update"),
-            }?
-            .clone();
-
-            recursive(
-                next_node,
-                mobius_1_gates,
-                mobius_2_gates,
-                mobius_1_nodes,
-                mobius_2_nodes,
-                mobius_1_visited,
-                mobius_2_visited,
-                rng,
-                shuffles,
-            )?;
+            node = own.find_node(node.id).context("own node not found")?;
         }
-
-        let updated = match mobius_type {
-            MobiusType::Mobius1 => mobius_1_nodes
-                .iter()
-                .find(|x| x.id == node.id)
-                .context("missing gate to update"),
-            MobiusType::Mobius2 => mobius_2_nodes
-                .iter()
-                .find(|x| x.id == node.id)
-                .context("missing gate to update"),
-        }?;
-
-        node = *updated;
     }
 
     Ok(())
@@ -689,205 +719,54 @@ fn random_mobius_desert_helper(
     mirage_id: u16,
     s_noise_id: u16,
 ) -> anyhow::Result<()> {
-    let mobius_desert_1 = objects
+    let m1_overrides = objects
         .map_objects
         .iter()
         .find(|x| x.file_name.starts_with(mobius_1_file_name))
-        .context("failed to find mobius asuka 1")?
-        .stage_overrides
-        .as_ref()
-        .context("no stage overrides")?;
-    let mobius_desert_2 = objects
-        .map_objects
-        .iter()
-        .find(|x| x.file_name.starts_with(mobius_2_file_name))
-        .context("failed to find mobius asuka 2")?
+        .context("failed to find mobius 1")?
         .stage_overrides
         .as_ref()
         .context("no stage overrides")?;
 
-    let mut mobius_1_gates = Gates {
-        north: Vec::new(),
-        east: Vec::new(),
-        south: Vec::new(),
-        west: Vec::new(),
-    };
-    let mut mobius_1_nodes = Vec::new();
-
-    for i in 0..mobius_desert_1.stage_overrides.len() {
-        let stage_override = &mobius_desert_1.stage_overrides[i];
-        let var1 = stage_override.original.var1;
-        let var2 = stage_override.original.var2;
-
-        if var1 == 0 && var2 == 0 {
-            continue;
-        }
-
-        let mut node = Node {
-            north: Gate::Empty,
-            east: Gate::Empty,
-            south: Gate::Empty,
-            west: Gate::Empty,
-            id: (var1, var2),
-            mobius_type: MobiusType::Mobius1,
-        };
-
-        for env_override in &mobius_desert_1.environmental_overrides[i] {
-            let direction = env_override.original.next_stage_direction;
-
-            if env_override.original.next_stage_id == mirage_id
-                || env_override.original.next_stage_id == s_noise_id
-            {
-                *node.gate_from_direction(direction) = Gate::Reserved;
-            } else {
-                mobius_1_gates
-                    .arr_from_direction(direction)
-                    .push((var1, var2));
-            }
-        }
-
-        mobius_1_nodes.push(node);
-    }
-
-    let mut mobius_2_gates = Gates {
-        north: Vec::new(),
-        east: Vec::new(),
-        south: Vec::new(),
-        west: Vec::new(),
-    };
-    let mut mobius_2_nodes = Vec::new();
-
-    for i in 0..mobius_desert_2.stage_overrides.len() {
-        let stage_override = &mobius_desert_2.stage_overrides[i];
-        let var1 = stage_override.original.var1;
-        let var2 = stage_override.original.var2;
-
-        if var1 == 0 && var2 == 0 {
-            continue;
-        }
-
-        let mut node = Node {
-            north: Gate::Empty,
-            east: Gate::Empty,
-            south: Gate::Empty,
-            west: Gate::Empty,
-            id: (var1, var2),
-            mobius_type: MobiusType::Mobius2,
-        };
-
-        for env_override in &mobius_desert_2.environmental_overrides[i] {
-            let direction = env_override.original.next_stage_direction;
-
-            if env_override.original.next_stage_id == mirage_id
-                || env_override.original.next_stage_id == s_noise_id
-            {
-                *node.gate_from_direction(direction) = Gate::Reserved;
-            } else {
-                mobius_2_gates
-                    .arr_from_direction(direction)
-                    .push((var1, var2));
-            }
-        }
-
-        mobius_2_nodes.push(node);
-    }
-
-    let mut mobius_1_visited = HashSet::new();
-    let mut mobius_2_visited = HashSet::new();
-
-    shuffle(&mut mobius_1_gates.north, preset.shuffles, rng);
-    shuffle(&mut mobius_1_gates.east, preset.shuffles, rng);
-    shuffle(&mut mobius_1_gates.south, preset.shuffles, rng);
-    shuffle(&mut mobius_1_gates.west, preset.shuffles, rng);
-
-    shuffle(&mut mobius_2_gates.north, preset.shuffles, rng);
-    shuffle(&mut mobius_2_gates.east, preset.shuffles, rng);
-    shuffle(&mut mobius_2_gates.south, preset.shuffles, rng);
-    shuffle(&mut mobius_2_gates.west, preset.shuffles, rng);
-
-    let mobius_enrance = mobius_2_nodes
+    let m2_overrides = objects
+        .map_objects
         .iter()
-        .find(|x| x.id == (1, 1))
-        .context("missing mobius entrance")?
-        .clone();
+        .find(|x| x.file_name.starts_with(mobius_2_file_name))
+        .context("failed to find mobius 2")?
+        .stage_overrides
+        .as_ref()
+        .context("no stage overrides")?;
 
-    recursive(
-        mobius_enrance,
-        &mut mobius_1_gates,
-        &mut mobius_2_gates,
-        &mut mobius_1_nodes,
-        &mut mobius_2_nodes,
-        &mut mobius_1_visited,
-        &mut mobius_2_visited,
-        rng,
-        preset.shuffles,
-    )?;
+    let mut m1 = build_mobius_state(m1_overrides, mirage_id, s_noise_id);
+    let mut m2 = build_mobius_state(m2_overrides, mirage_id, s_noise_id);
 
-    let mobius_desert_1 = objects
+    m1.gates.shuffle_all(preset.shuffles, rng);
+    m2.gates.shuffle_all(preset.shuffles, rng);
+
+    let entrance = m1.find_node((1, 1)).context("missing mobius entrance")?;
+    traverse(entrance, &mut m1, &mut m2, rng, preset.shuffles)?;
+
+    let m1_overrides = objects
         .map_objects
         .iter_mut()
         .find(|x| x.file_name.starts_with(mobius_1_file_name))
-        .context("failed to find mobius asuka 1")?
+        .context("failed to find mobius 1")?
         .stage_overrides
         .as_mut()
         .context("no stage overrides")?;
 
-    for i in 0..mobius_desert_1.stage_overrides.len() {
-        let stage_override = &mobius_desert_1.stage_overrides[i];
-        let var1 = stage_override.original.var1;
-        let var2 = stage_override.original.var2;
+    apply_node_gates(m1_overrides, &mut m1)?;
 
-        if var1 == 0 && var2 == 0 {
-            continue;
-        }
-
-        let new_node = mobius_1_nodes
-            .iter_mut()
-            .find(|x| x.id == (var1, var2))
-            .context("missing node")?;
-
-        for env_override in &mut mobius_desert_1.environmental_overrides[i] {
-            if let Gate::To((var1, var2)) =
-                new_node.gate_from_direction(env_override.original.next_stage_direction)
-            {
-                env_override.modified.var1 = *var1;
-                env_override.modified.var2 = *var2;
-            }
-        }
-    }
-
-    let mobius_desert_2 = objects
+    let m2_overrides = objects
         .map_objects
         .iter_mut()
         .find(|x| x.file_name.starts_with(mobius_2_file_name))
-        .context("failed to find mobius asuka 1")?
+        .context("failed to find mobius 2")?
         .stage_overrides
         .as_mut()
         .context("no stage overrides")?;
 
-    for i in 0..mobius_desert_2.stage_overrides.len() {
-        let stage_override = &mobius_desert_2.stage_overrides[i];
-        let var1 = stage_override.original.var1;
-        let var2 = stage_override.original.var2;
-
-        if var1 == 0 && var2 == 0 {
-            continue;
-        }
-
-        let new_node = mobius_1_nodes
-            .iter_mut()
-            .find(|x| x.id == (var1, var2))
-            .context("missing node")?;
-
-        for env_override in &mut mobius_desert_2.environmental_overrides[i] {
-            if let Gate::To((var1, var2)) =
-                new_node.gate_from_direction(env_override.original.next_stage_direction)
-            {
-                env_override.modified.var1 = *var1;
-                env_override.modified.var2 = *var2;
-            }
-        }
-    }
+    apply_node_gates(m2_overrides, &mut m2)?;
 
     Ok(())
 }
