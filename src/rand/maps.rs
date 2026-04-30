@@ -6,7 +6,7 @@ use crate::{
     rand::{shops::shoppable, Objects},
     util::{self, shuffle, uniform_random_vector},
 };
-use anyhow::Context;
+use anyhow::{anyhow, Context};
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -714,15 +714,15 @@ fn random_mobius_desert_helper(
     objects: &mut Objects,
     preset: &Randomizer,
     rng: &mut Xoshiro256StarStar,
-    mobius_1_file_name: &str,
-    mobius_2_file_name: &str,
+    mobius_1_id: u16,
+    mobius_2_id: u16,
     mirage_id: u16,
     s_noise_id: u16,
 ) -> anyhow::Result<()> {
     let m1_overrides = objects
         .map_objects
         .iter()
-        .find(|x| x.file_name.starts_with(mobius_1_file_name))
+        .find(|x| x.stage_id == mobius_1_id)
         .context("failed to find mobius 1")?
         .stage_overrides
         .as_ref()
@@ -731,7 +731,7 @@ fn random_mobius_desert_helper(
     let m2_overrides = objects
         .map_objects
         .iter()
-        .find(|x| x.file_name.starts_with(mobius_2_file_name))
+        .find(|x| x.stage_id == mobius_2_id)
         .context("failed to find mobius 2")?
         .stage_overrides
         .as_ref()
@@ -749,7 +749,7 @@ fn random_mobius_desert_helper(
     let m1_overrides = objects
         .map_objects
         .iter_mut()
-        .find(|x| x.file_name.starts_with(mobius_1_file_name))
+        .find(|x| x.stage_id == mobius_1_id)
         .context("failed to find mobius 1")?
         .stage_overrides
         .as_mut()
@@ -760,7 +760,7 @@ fn random_mobius_desert_helper(
     let m2_overrides = objects
         .map_objects
         .iter_mut()
-        .find(|x| x.file_name.starts_with(mobius_2_file_name))
+        .find(|x| x.stage_id == mobius_2_id)
         .context("failed to find mobius 2")?
         .stage_overrides
         .as_mut()
@@ -776,8 +776,50 @@ fn random_mobius_desert(
     preset: &Randomizer,
     rng: &mut Xoshiro256StarStar,
 ) -> anyhow::Result<()> {
-    random_mobius_desert_helper(objects, preset, rng, "WSTAG635", "WSTAG640", 599, 602)?;
-    random_mobius_desert_helper(objects, preset, rng, "WSTAG636", "WSTAG641", 707, 704)?;
+    let id_map = objects
+        .map_objects
+        .iter()
+        .filter(|x| {
+            vec![
+                "WSTAG635.PRO".to_string(), // mobius 1 asuka
+                "WSTAG636.PRO".to_string(), // mobius 1 amaterasu
+                "WSTAG640.PRO".to_string(), // mobius 2 asuka
+                "WSTAG641.PRO".to_string(), // mobius 2 amaterasu
+                "WSTAG630.PRO".to_string(), // s noise 1 asuka
+                "WSTAG631.PRO".to_string(), // s noise 1 amaterasu
+                "WSTAG645.PRO".to_string(), // mirage tower 1 asuka
+                "WSTAG646.PRO".to_string(), // mirage tower 1 amaterasu
+            ]
+            .contains(&x.file_name)
+        })
+        .map(|x| (x.file_name.clone(), x.stage_id))
+        .collect::<HashMap<String, u16>>();
+
+    if id_map.len() != 8 {
+        return Err(anyhow!("missing map objects"));
+    }
+
+    // asuka
+    random_mobius_desert_helper(
+        objects,
+        preset,
+        rng,
+        id_map["WSTAG635.PRO"],
+        id_map["WSTAG640.PRO"],
+        id_map["WSTAG645.PRO"],
+        id_map["WSTAG630.PRO"],
+    )?;
+
+    // amaterasu
+    random_mobius_desert_helper(
+        objects,
+        preset,
+        rng,
+        id_map["WSTAG636.PRO"],
+        id_map["WSTAG641.PRO"],
+        id_map["WSTAG646.PRO"],
+        id_map["WSTAG631.PRO"],
+    )?;
 
     Ok(())
 }
