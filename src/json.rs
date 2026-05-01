@@ -110,6 +110,10 @@ pub struct Maps {
     pub battle_music_pool: MusicPool,
     #[serde(default = "default_bool_true")]
     pub mobius_desert: bool,
+    #[serde(default = "default_bool_true")]
+    pub mobius_desert_single_exit: bool,
+    #[serde(default = "default_bool_false")]
+    pub mobius_desert_mirror_servers: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

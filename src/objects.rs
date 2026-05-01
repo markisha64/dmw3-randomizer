@@ -720,7 +720,8 @@ fn read_stage_overrides(
     };
 
     let idx = stage_overrides_ptr.to_index_overlay(stage.value) as usize;
-    let len = (ptr_above_first_team.value - stage_overrides_ptr.value) / 4;
+    // -1, we skip default since it points to 1.1 anyways
+    let len = ((ptr_above_first_team.value - stage_overrides_ptr.value) / 4) - 1;
     let mut cursor = Cursor::new(&buf[idx..]);
 
     for _ in 0..len {
@@ -740,14 +741,13 @@ fn read_stage_overrides(
         }
 
         let mut environmentals = Vec::new();
+        let mut ptr_next = stage_override.overrides;
 
-        let mut idx = stage_override.overrides.to_index_overlay(stage.value) as usize;
-        let mut reader = Cursor::new(&buf[idx..]);
-        let mut environmental_override = EnvironmentalOverride::read(&mut reader).ok()?;
-
-        while !environmental_override.next.null() {
-            let new_idx = environmental_override.next.to_index_overlay(stage.value) as usize;
-            reader = Cursor::new(&buf[new_idx..]);
+        loop {
+            let idx = ptr_next.to_index_overlay(stage.value) as usize;
+            let mut reader = Cursor::new(&buf[idx..]);
+            let environmental_override = EnvironmentalOverride::read(&mut reader).ok()?;
+            ptr_next = environmental_override.next;
 
             environmentals.push(Object {
                 original: environmental_override.clone(),
@@ -755,16 +755,11 @@ fn read_stage_overrides(
                 index: idx,
                 slen: 0x10,
             });
-            environmental_override = EnvironmentalOverride::read(&mut reader).ok()?;
-            idx = new_idx;
-        }
 
-        environmentals.push(Object {
-            original: environmental_override.clone(),
-            modified: environmental_override,
-            index: idx,
-            slen: 0x10,
-        });
+            if ptr_next.null() {
+                break;
+            }
+        }
 
         stage_overrides.push(Object {
             original: stage_override.clone(),

@@ -7,6 +7,7 @@ use crate::{
     util::{self, shuffle, uniform_random_vector},
 };
 use anyhow::{anyhow, Context};
+use dmw3_structs::EnvironmentalOverride;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -593,6 +594,7 @@ fn build_mobius_state(
     overrides: &StageOverridesObject,
     mirage_id: u16,
     s_noise_id: u16,
+    preset: &Randomizer,
 ) -> MobiusState {
     let mut state = MobiusState::new();
 
@@ -614,11 +616,16 @@ fn build_mobius_state(
 
         for env_override in &overrides.environmental_overrides[i] {
             let direction = env_override.original.next_stage_direction;
-            if env_override.original.next_stage_id == mirage_id
-                || env_override.original.next_stage_id == s_noise_id
-            {
+            let stage_id = env_override.original.next_stage_id;
+
+            if stage_id == mirage_id {
+                // Mirage Tower always unmoved
+                *node.gate_from_direction(direction) = Gate::Reserved;
+            } else if stage_id == s_noise_id && !preset.maps.mobius_desert_single_exit {
+                // If S Noise Desert and single exit disabled
                 *node.gate_from_direction(direction) = Gate::Reserved;
             } else {
+                // Otherwise add gate
                 state.gates.arr_from_direction(direction).push((var1, var2));
             }
         }
@@ -632,6 +639,7 @@ fn build_mobius_state(
 fn apply_node_gates(
     overrides: &mut StageOverridesObject,
     state: &mut MobiusState,
+    opposite_id: u16,
 ) -> anyhow::Result<()> {
     for i in 0..overrides.stage_overrides.len() {
         let var1 = overrides.stage_overrides[i].original.var1;
@@ -649,6 +657,7 @@ fn apply_node_gates(
             {
                 env_override.modified.var1 = *v1;
                 env_override.modified.var2 = *v2;
+                env_override.modified.next_stage_id = opposite_id;
             }
         }
     }
@@ -683,14 +692,14 @@ fn traverse(
             .context("failed to find gate")?;
         gates.remove(idx);
 
-        let (next_id, random) = match other.gates.arr_from_direction(opposite).pop() {
-            Some(id) => (id, false),
-            None => (other.random_node_id(rng), true),
+        let (next_id, double_connect) = match other.gates.arr_from_direction(opposite).pop() {
+            Some(id) => (id, true),
+            None => (other.random_node_id(rng), false),
         };
 
         *node.gate_from_direction(direction) = Gate::To(next_id);
 
-        if !random {
+        if double_connect {
             *other
                 .find_node_mut(next_id)
                 .context("missing gate non random")?
@@ -737,8 +746,23 @@ fn random_mobius_desert_helper(
         .as_ref()
         .context("no stage overrides")?;
 
-    let mut m1 = build_mobius_state(m1_overrides, mirage_id, s_noise_id);
-    let mut m2 = build_mobius_state(m2_overrides, mirage_id, s_noise_id);
+    let mut m1 = build_mobius_state(m1_overrides, mirage_id, s_noise_id, preset);
+    let mut m2 = build_mobius_state(m2_overrides, mirage_id, s_noise_id, preset);
+
+    if preset.maps.mobius_desert_single_exit {
+        m1.find_node_mut((1, 1))
+            .context("missing mobius entrance")?
+            .east = Gate::Reserved;
+
+        let idx = m1
+            .gates
+            .east
+            .iter()
+            .position(|x| *x == (1, 1))
+            .context("missing inserted gate")?;
+
+        m1.gates.east.remove(idx);
+    }
 
     m1.gates.shuffle_all(preset.shuffles, rng);
     m2.gates.shuffle_all(preset.shuffles, rng);
@@ -755,7 +779,7 @@ fn random_mobius_desert_helper(
         .as_mut()
         .context("no stage overrides")?;
 
-    apply_node_gates(m1_overrides, &mut m1)?;
+    apply_node_gates(m1_overrides, &mut m1, mobius_2_id)?;
 
     let m2_overrides = objects
         .map_objects
@@ -766,7 +790,7 @@ fn random_mobius_desert_helper(
         .as_mut()
         .context("no stage overrides")?;
 
-    apply_node_gates(m2_overrides, &mut m2)?;
+    apply_node_gates(m2_overrides, &mut m2, mobius_1_id)?;
 
     Ok(())
 }
@@ -799,11 +823,16 @@ fn random_mobius_desert(
         return Err(anyhow!("missing map objects"));
     }
 
+    let mut nrng = rng.clone();
+
     // asuka
     random_mobius_desert_helper(
         objects,
         preset,
-        rng,
+        match preset.maps.mobius_desert_mirror_servers {
+            true => &mut nrng,
+            _ => &mut *rng,
+        },
         id_map["WSTAG635.PRO"],
         id_map["WSTAG640.PRO"],
         id_map["WSTAG645.PRO"],

@@ -15,7 +15,10 @@ pub fn maps() -> Element {
     let fight_backgrounds = read_state.randomizer.maps.fight_backgrounds;
     let item_boxes = read_state.randomizer.maps.item_boxes;
     let ironmon_charisma = read_state.randomizer.maps.ironmon_charisma;
+
     let mobius_desert = read_state.randomizer.maps.mobius_desert;
+    let mobius_desert_single_exit = read_state.randomizer.maps.mobius_desert_single_exit;
+    let mobius_desert_mirror_servers = read_state.randomizer.maps.mobius_desert_mirror_servers;
 
     let selected_group_strategy = read_state.randomizer.maps.group_strategy;
 
@@ -303,6 +306,29 @@ pub fn maps() -> Element {
                     tooltip: "Randomize Mobius Desert",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.mobius_desert = x;
+                    }
+                },
+            }
+            div {
+                class: "left",
+                checkbox::checkbox {
+                    label: "Single Exit",
+                    id: "maps.randomize_mobius_desert_single_exit",
+                    checked: mobius_desert_single_exit,
+                    disabled: !enabled || !mobius_desert,
+                    tooltip: "Usually there are 4 exits back to S Noise Desert",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.mobius_desert_single_exit = x;
+                    }
+                },
+                checkbox::checkbox {
+                    label: "Mirror Servers",
+                    id: "maps.randomize_mobius_desert_mirror_servers",
+                    checked: mobius_desert_mirror_servers,
+                    disabled: !enabled || !mobius_desert,
+                    tooltip: "Mirro the Servers",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.mobius_desert_mirror_servers = x;
                     }
                 },
             }
