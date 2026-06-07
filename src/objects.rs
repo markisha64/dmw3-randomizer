@@ -448,7 +448,7 @@ fn read_entities(
     let entities_address =
         Pointer::from_instruction(&buf[initsp_index..initsp_index + entities_set * 4]);
 
-    if entities_address.is_valid() {
+    if !entities_address.is_valid() {
         return None;
     }
 
@@ -486,6 +486,10 @@ fn read_entities(
                 let condition_result = ScriptConditionStep::read(&mut condition_reader).ok()?;
 
                 entity_conditions_raw.push(condition_result.clone());
+
+                if condition_result.is_last_step() {
+                    break;
+                }
             }
         }
 
