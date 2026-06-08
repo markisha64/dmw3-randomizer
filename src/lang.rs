@@ -43,13 +43,26 @@ impl Language {
 
         let islice = &item[0..first_not_null];
 
-        // I ain't making this for all languages, if someone want to go ahead
-        match self {
-            _ => {
-                result.extend(b"\x02\x07\x02\x09\x02\x07\x26\x2C\x28\x2F\xE7\x01\x01\x16\x01\x01\x2E\x36\x3B\x01\x01\x28\x01\x01\x02\x01");
-                result.extend(islice);
-                result.extend(b"\xE7\x02\x02\x02");
-            }
+        let (prefix_str, suffix_str) = match self {
+            Language::Japanese => ("[name][player_name][name]やった!\n「", "」を\nてに，いれたぜ!![pause]"),
+            Language::US => ("[name][player_name][name]Yeah! I got\na ", "![pause]"),
+            Language::English => ("[name][player_name][name]Yeah! I got\na ", "![pause]"),
+            Language::French => ("[name][player_name][name]Ouais ! J'ai\nune ", "![pause]"),
+            Language::Italian => ("[name][player_name][name]Sì! Ho una\n", "![pause]"),
+            Language::German => ("[name][player_name][name]Yeah! Hab'\neine ", "![pause]"),
+            Language::Spanish => ("[name][player_name][name]¡Sí! Tengo\nuna ", "[pause]"),
+        };
+
+        let prefix: dmw3_lang::String = prefix_str.parse().unwrap();
+        let suffix: dmw3_lang::String = suffix_str.parse().unwrap();
+
+        for codepoint in prefix.iter() {
+            codepoint.encode(&mut result).unwrap();
+        }
+
+        result.extend_from_slice(islice);
+        for codepoint in suffix.iter() {
+            codepoint.encode(&mut result).unwrap();
         }
 
         let pad_length = (result.len() / 4 + 1) * 4 - result.len();
