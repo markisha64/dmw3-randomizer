@@ -326,7 +326,7 @@ pub fn maps() -> Element {
                     id: "maps.randomize_mobius_desert_mirror_servers",
                     checked: mobius_desert_mirror_servers,
                     disabled: !enabled || !mobius_desert,
-                    tooltip: "Mirro the Servers",
+                    tooltip: "Mirror the servers mobius desert",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.mobius_desert_mirror_servers = x;
                     }
