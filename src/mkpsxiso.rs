@@ -192,21 +192,30 @@ pub struct Dummy {
     pub sector_type: u32,
 }
 
-async fn exists(exec: &str) -> anyhow::Result<bool> {
-    Ok(Command::new(exec).output().await?.status.success())
+async fn exists(exec: &str) -> bool {
+    Command::new(exec)
+        .output()
+        .await
+        .map(|x| x.status.success())
+        .unwrap_or(false)
 }
 
 async fn find_bin(name: &str) -> anyhow::Result<String> {
-    if exists(name).await? {
+    if exists(name).await {
         return Ok(String::from(name));
     }
 
-    let built = format!("mkpsxiso/build/{name}");
-    if exists(&built).await? {
+    let built = format!("./{name}");
+    if exists(&built).await {
         return Ok(built);
     }
 
-    Err(anyhow::anyhow!("Can't find bin"))
+    let built = format!("mkpsxiso/build/{name}");
+    if exists(&built).await {
+        return Ok(built);
+    }
+
+    Err(anyhow::anyhow!("Can't find {}", name))
 }
 
 pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<()> {
