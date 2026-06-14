@@ -15,6 +15,7 @@ use dmw3_structs::CardPricing;
 use dmw3_structs::CardShopData;
 use dmw3_structs::ComplexScriptConditionStep;
 use dmw3_structs::EnvironmentalOverride;
+use dmw3_structs::MaskObject;
 use dmw3_structs::PartyExpBits;
 use dmw3_structs::QuestRange;
 use dmw3_structs::ScreenNameMapping;
@@ -195,6 +196,7 @@ pub struct MapEntities {
 pub struct MapObject {
     pub file_name: String,
     pub buf: Vec<u8>,
+    pub mask_objects: Option<ObjectArray<MaskObject>>,
     pub environmentals: Option<ObjectArray<Environmental>>,
     pub map_color: Option<Object<MapColor>>,
     pub background_file_index: Object<u16>,
@@ -673,6 +675,50 @@ fn read_environmentals(
     })
 }
 
+fn read_mask_objects(
+    buf: &Vec<u8>,
+    stage: &Pointer,
+    sw: &[u8],
+    initsp_index: usize,
+    initp_end_index: usize,
+) -> Option<ObjectArray<MaskObject>> {
+    let mask_objects_instruction = [
+        dmw3_consts::MASK_OBJECTS_INSTRUCTION[0],
+        dmw3_consts::MASK_OBJECTS_INSTRUCTION[1],
+        sw[0],
+        sw[1],
+    ];
+    let mut mask_objects: Vec<MaskObject> = Vec::new();
+
+    let mask_object_set = buf[initsp_index..initp_end_index]
+        .chunks(4)
+        .position(|x| x == mask_objects_instruction)?;
+
+    let mask_object_address =
+        Pointer::from_instruction(&buf[initsp_index..initsp_index + mask_object_set * 4]);
+
+    let index = mask_object_address.to_index_overlay(stage.value) as usize;
+
+    let mut mask_objects_reader = Cursor::new(&buf[(index as usize)..]);
+
+    loop {
+        let mask_object = MaskObject::read(&mut mask_objects_reader).ok()?;
+
+        if mask_object.z == 0 {
+            break;
+        }
+
+        mask_objects.push(mask_object);
+    }
+
+    Some(ObjectArray {
+        original: mask_objects.clone(),
+        modified: mask_objects.clone(),
+        index,
+        slen: 0x18,
+    })
+}
+
 fn read_stage_overrides(
     buf: &Vec<u8>,
     stage: &Pointer,
@@ -1080,6 +1126,8 @@ async fn read_map_objects(
 
             let environmental_object =
                 read_environmentals(&buf, stage, sw, initsp_index, initp_end_index);
+            let mask_objects_object =
+                read_mask_objects(&buf, stage, sw, initsp_index, initp_end_index);
             let mut music = Vec::new();
 
             for (idx, instruction) in buf[initsp_index..initp_end_index]
@@ -1114,6 +1162,7 @@ async fn read_map_objects(
             Some(MapObject {
                 file_name,
                 buf: buf.clone(),
+                mask_objects: mask_objects_object,
                 environmentals: environmental_object,
                 entities,
                 map_color,

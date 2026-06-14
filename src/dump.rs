@@ -237,6 +237,7 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
 
     for map_obj in &objects.map_objects {
         let mut areas = Vec::new();
+        let mut mask_objects = Vec::new();
         let mut encounters = Vec::new();
         let mut stage_id = Vec::new();
         let mut talk_file = Vec::new();
@@ -264,6 +265,10 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
                 .entity_conditions
                 .original
                 .write(&mut entity_conditions)?;
+        }
+
+        if let Some(obj) = &map_obj.mask_objects {
+            obj.original.write(&mut mask_objects)?;
         }
 
         for stage_encounters_obj in &map_obj.stage_encounters {
@@ -307,6 +312,10 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         fs::write(
             format!("dump/{}/maps/{}/talk_file", rom_name, &map_obj.file_name),
             talk_file,
+        )?;
+        fs::write(
+            format!("dump/{}/maps/{}/mask_objects", rom_name, &map_obj.file_name),
+            mask_objects,
         )?;
         fs::write(
             format!("dump/{}/maps/{}/entities", rom_name, &map_obj.file_name),
