@@ -309,6 +309,7 @@ impl Executable {
                 Language::Italian,
                 Language::German,
                 Language::Spanish,
+                Language::Japanese,
             ],
             Executable::USA => &[Language::US],
             Executable::JAP => &[Language::Japanese],
