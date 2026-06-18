@@ -34,6 +34,8 @@ pub struct Randomizer {
     pub maps: Maps,
     #[serde(default = "default_models")]
     pub models: Models,
+    #[serde(default = "default_auction")]
+    pub auctions: Auction,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -192,12 +194,19 @@ pub struct Shops {
     pub max_sell_price: i64,
     #[serde(default = "default_bool_true")]
     pub keep_tnt: bool,
+    #[serde(default = "default_bool_false")]
+    pub healing_ironmon: bool,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct Auction {
+    #[serde(default = "default_bool_true")]
+    pub enabled: bool,
     #[serde(default = "default_bool_true")]
     pub auction_items: bool,
     #[serde(default = "ShopItems::default")]
     pub auction_items_pool: ShopItems,
-    #[serde(default = "default_bool_false")]
-    pub healing_ironmon: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -272,6 +281,10 @@ fn default_parties() -> Parties {
 }
 
 fn default_shops() -> Shops {
+    serde_json::from_str("{}").unwrap()
+}
+
+fn default_auction() -> Auction {
     serde_json::from_str("{}").unwrap()
 }
 

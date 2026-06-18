@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use crate::json::{Encounters, Randomizer, TNTStrategy};
 use crate::rand::{dmw3_structs::EncounterData, Objects};
@@ -31,7 +31,7 @@ pub fn patch(
     let modified_enemy_stats = &mut objects.enemy_stats.modified;
     let encounters = &objects.encounters.original;
 
-    let possible_ids: BTreeSet<u32> = BTreeSet::from_iter(
+    let possible_ids: HashSet<u32> = HashSet::from_iter(
         encounters
             .iter()
             .filter(|x| !skip(x, &preset.encounters))
@@ -43,7 +43,7 @@ pub fn patch(
         .filter(|x| skip(x, &preset.encounters))
         .count();
 
-    let mut shuffled_encounters_digimon: BTreeMap<u32, Vec<EncounterData>> = BTreeMap::new();
+    let mut shuffled_encounters_digimon: HashMap<u32, Vec<EncounterData>> = HashMap::new();
 
     let possible_arr = Vec::from_iter(possible_ids);
     let mut shuffled_ids =

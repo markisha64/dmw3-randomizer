@@ -23,7 +23,12 @@ pub fn shops() -> Element {
     let keep_tnt = read_preset_state.randomizer.shops.keep_tnt;
     let healing_ironmon = read_preset_state.randomizer.shops.healing_ironmon;
 
-    let auction_items = read_preset_state.randomizer.shops.auction_items;
+    let auction_items = read_preset_state.randomizer.auctions.auction_items;
+    let auction_selected = read_preset_state
+        .randomizer
+        .auctions
+        .auction_items_pool
+        .clone();
 
     rsx! {
         div {
@@ -188,7 +193,7 @@ pub fn shops() -> Element {
                     checked: auction_items,
                     tooltip: "Randomize Auction Items",
                     onchange: move |x: bool| {
-                        preset_state.write().randomizer.shops.auction_items = x;
+                        preset_state.write().randomizer.auctions.auction_items = x;
                     },
                 }
                 div {
@@ -210,21 +215,21 @@ pub fn shops() -> Element {
                         id: "shops.auction_items_pool",
                         disabled: !enabled || !auction_items,
                         onchange: move |x: Event<FormData>| {
-                            preset_state.write().randomizer.shops.auction_items_pool = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
+                            preset_state.write().randomizer.auctions.auction_items_pool = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
                         },
                         option {
                             value: "0",
-                            selected: selected == ShopItems::Buyable,
+                            selected: auction_selected == ShopItems::Buyable,
                             "Buyable"
                         },
                         option {
                             value: "1",
-                            selected: selected == ShopItems::Sellable,
+                            selected: auction_selected == ShopItems::Sellable,
                             "Sellable"
                         },
                         option {
                             value: "2",
-                            selected: selected == ShopItems::Ironmon,
+                            selected: auction_selected == ShopItems::Ironmon,
                             "Ironmon"
                         },
                     }

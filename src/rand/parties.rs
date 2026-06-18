@@ -4,7 +4,7 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::Randomizer;
 use crate::rand::Objects;
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 use super::dmw3_structs::DigivolutionData;
 use crate::util::{self, uniform_random_vector};
@@ -258,7 +258,7 @@ fn hp_mp_balanced(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &
 }
 
 fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    let mut learnable: BTreeSet<u16> = BTreeSet::new();
+    let mut learnable: HashSet<u16> = HashSet::new();
 
     for digivolution in &objects.digivolution_data.original {
         for tech in digivolution.tech.iter() {
@@ -287,8 +287,8 @@ fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
 }
 
 fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Randomizer) {
-    let mut learnable_rookie: BTreeSet<u16> = BTreeSet::new();
-    let mut learnable: BTreeSet<u16> = BTreeSet::new();
+    let mut learnable_rookie: HashSet<u16> = HashSet::new();
+    let mut learnable: HashSet<u16> = HashSet::new();
 
     for rookie in &objects.rookie_data.original {
         learnable_rookie.insert(rookie.ori_tech);

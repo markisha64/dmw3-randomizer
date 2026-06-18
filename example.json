@@ -2,14 +2,12 @@
 	"randomizer": {
 		"seed": 64,
 		"shuffles": 5,
-		"models": {
-			"enabled": true
-		},
 		"encounters": {
 			"enabled": true,
 			"cardmon": true,
 			"bosses": true,
 			"keep_zanbamon": true,
+			"keep_galacticmon": true,
 			"strategy": "swap"
 		},
 		"parties": {
@@ -17,12 +15,10 @@
 			"parties": true,
 			"stat_distribution": true,
 			"res_distribution": true,
-			"total_starting_stat": 200,
+			"total_starting_stats": 200,
 			"min_starting_stat": 30,
-			"total_starting_ress": 680,
+			"total_starting_res": 680,
 			"min_starting_res": 60,
-			"stat_affinities": true,
-			"res_affinities": true,
 			"learned_tech": true,
 			"signatures": true,
 			"digivolutions": true,
@@ -39,33 +35,76 @@
 			"min_starting_hp": 130,
 			"max_starting_hp": 180,
 			"min_starting_mp": 10,
-			"max_starting_mp": 200
+			"max_starting_mp": 200,
+			"ironmon_multihits": false
 		},
 		"shops": {
 			"enabled": true,
-			"limitShopItems": 8,
-			"items_only": "Buyable",
+			"limit_shop_items_enabled": true,
+			"limit_shop_items": 8,
+			"items_only": "sellable",
 			"sell_price": true,
 			"min_sell_price": 6,
 			"max_sell_price": 6000,
-			"keep_tnt": true
+			"keep_tnt": true,
+			"healing_ironmon": false
+		},
+		"cardGame": {
+			"enabled": true,
+			"shop_items": true,
+			"buy_price": true,
+			"min_card_buy_price": 500,
+			"max_card_buy_price": 11000,
+			"boosters": true,
+			"starting_folder": true
 		},
 		"maps": {
 			"enabled": true,
 			"color": false,
+			"backgrounds": false,
 			"item_boxes": true,
-			"item_boxes_items_only": "Buyable"
+			"item_boxes_items_only": "sellable",
+			"fight_backgrounds": true,
+			"group_strategy": "party",
+			"ironmon_charisma": false,
+			"music": false,
+			"music_pool": "overworld",
+			"battle_music_group_strategy": "party",
+			"battle_music": false,
+			"battle_music_pool": "battle",
+			"mobius_desert": true,
+			"mobius_desert_single_exit": true,
+			"mobius_desert_mirror_servers": false
+		},
+		"models": {
+			"enabled": true,
+			"hue_enabled": false,
+			"stage_hue_enabled": false
+		},
+		"auctions": {
+			"enabled": true,
+			"auction_items": true,
+			"auction_items_pool": "sellable"
 		}
 	},
 	"scaling": {
+		"enabled": true,
 		"scaling_offset": 50,
 		"base_stats": 180,
 		"base_res": 620,
 		"stat_modifier": 50,
 		"res_modifier": 15,
-		"hp_modifier": 1
+		"hp_modifier": 1.0,
+		"natural_scaling": true
 	},
 	"fixes": {
-		"scaling": true
+		"scaling": false
+	},
+	"partyExpBits": {
+		"enabled": true,
+		"dv_exp_modifier": 1.0,
+		"exp_modifier": 1.0,
+		"bits_modifier": 1.0,
+		"ironmon_genji": false
 	}
 }

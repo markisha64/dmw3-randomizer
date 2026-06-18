@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     json::{GroupStrategy, MusicPool},
@@ -7,7 +7,6 @@ use crate::{
     util::{self, shuffle, uniform_random_vector},
 };
 use anyhow::{anyhow, Context};
-use dmw3_structs::EnvironmentalOverride;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -133,7 +132,7 @@ fn backgrounds(
     objects: &mut Objects,
     rng: &mut Xoshiro256StarStar,
 ) -> anyhow::Result<()> {
-    let possible_indices: BTreeSet<u16> = BTreeSet::from_iter(
+    let possible_indices: HashSet<u16> = HashSet::from_iter(
         objects
             .map_objects
             .iter()
@@ -325,7 +324,7 @@ fn ironmon_charisma(objects: &mut Objects) {
 }
 
 pub fn music_pool(objects: &mut Objects, music_pool: MusicPool) -> Vec<(u16, u16)> {
-    let mut pool = BTreeSet::new();
+    let mut pool = HashSet::new();
 
     for map_object in &mut objects.map_objects {
         if music_pool != MusicPool::Battle {

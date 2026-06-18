@@ -4,7 +4,7 @@ use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::{ShopItems, Shops};
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 pub fn tnt_ironmon(objects: &mut Objects) {
     let f_ptr = objects.shops.modified[0].items;
@@ -39,14 +39,6 @@ pub fn healing_ironmon(objects: &mut Objects) {
     // life plug
     objects.item_shop_data.modified[0x47].buy_price = 5000;
     objects.item_shop_data.modified[0x47].sell_price = 2500;
-}
-
-pub fn auction_items(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    let mut pool = shoppable(objects, &preset.auction_items_pool);
-
-    for auction_set in &mut objects.auction_items.modified {
-        auction_set.item = pool.remove((rng.next_u64() % pool.len() as u64) as usize);
-    }
 }
 
 pub fn item_in_ironmon(value: usize) -> bool {
@@ -84,10 +76,6 @@ pub fn patch(
         healing_ironmon(objects);
     }
 
-    if preset.auction_items {
-        auction_items(preset, objects, rng);
-    }
-
     let len = objects.item_shop_data.modified.len();
     for i in 1..len {
         objects.item_shop_data.modified[i].buy_price =
@@ -114,7 +102,7 @@ fn randomize_sell_price(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro
 pub fn shoppable(objects: &mut Objects, pool: &ShopItems) -> Vec<u16> {
     let len = objects.item_shop_data.original.len();
 
-    let mut shoppable: BTreeSet<u16> = BTreeSet::new();
+    let mut shoppable: HashSet<u16> = HashSet::new();
 
     match pool {
         ShopItems::Buyable => {

@@ -11,6 +11,7 @@ use crate::objects::Objects;
 
 pub use dmw3_structs;
 
+mod auctions;
 mod card_game;
 mod encounters;
 mod fixes;
@@ -48,6 +49,10 @@ pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
 
     if preset.randomizer.encounters.strategy == TNTStrategy::Ironmon {
         shops::tnt_ironmon(&mut objects);
+    }
+
+    if preset.randomizer.auctions.enabled {
+        auctions::patch(&preset.randomizer.auctions, &mut objects, &mut rng)?;
     }
 
     if preset.randomizer.card_game.enabled {

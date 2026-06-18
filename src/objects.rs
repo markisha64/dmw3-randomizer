@@ -24,7 +24,6 @@ use dmw3_structs::StageEncounter;
 use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
 use dmw3_structs::StageOverride;
-use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::Cursor;
@@ -219,6 +218,8 @@ pub struct Objects {
     pub executable: Executable,
     pub iso_project: IsoProject,
 
+    pub cargo_tower_text: HashMap<Language, Vec<Packed>>,
+
     // hard coded data
     pub file_map: Vec<mkpsxiso::File>,
     pub sector_offsets: ObjectArray<u32>,
@@ -257,7 +258,7 @@ pub struct Objects {
 
     pub screen_name_mapping: Vec<ScreenNameMapping>,
 
-    pub text_files: BTreeMap<String, TextFileGroup>,
+    pub text_files: HashMap<String, TextFileGroup>,
     pub items: TextFileGroup,
 
     pub auction_items: ObjectArray<AuctionSet>,
@@ -1758,7 +1759,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         overwritten: HashSet::new(),
     };
 
-    let mut text_files: BTreeMap<String, TextFileGroup> = BTreeMap::new();
+    let mut text_files: HashMap<String, TextFileGroup> = HashMap::new();
     for sname in executable.text_files() {
         let mut files: HashMap<Language, TextFile> = HashMap::new();
 
@@ -1785,6 +1786,27 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         };
 
         text_files.insert(String::from(*sname), group);
+    }
+
+    let mut cargo_tower_text = HashMap::new();
+    for lang in executable.languages() {
+        let file = fs::read(format!(
+            "extract/{}/{}",
+            rom_name,
+            lang.to_path("SDMG260.BIN")
+        ))
+        .await?;
+
+        let unpacked_cutscenes = Packed::from(file);
+
+        cargo_tower_text.insert(
+            *lang,
+            unpacked_cutscenes
+                .files
+                .into_iter()
+                .map(|x| Packed::from_text(x))
+                .collect::<Vec<_>>(),
+        );
     }
 
     let screen_name_mapping_index = bufs
@@ -2055,6 +2077,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         executable,
         file_map,
         iso_project,
+        cargo_tower_text,
         model_objects,
         stage_model_objects,
         sector_offsets: sector_offsets_object,
@@ -2348,6 +2371,29 @@ pub async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Res
 
             new_file.write_all(&bytes).await?
         }
+    }
+
+    for lang in objects.executable.languages() {
+        let files = objects
+            .cargo_tower_text
+            .get(lang)
+            .context("missing language")?
+            .iter()
+            .map(|x| x.to_bytes_text())
+            .collect::<Vec<_>>();
+
+        let packed = Packed { files };
+
+        let mut new_file = File::create(format!(
+            "extract/{}/{}",
+            rom_name,
+            lang.to_path("SDMG260.BIN")
+        ))
+        .await?;
+
+        let bytes: Vec<u8> = packed.into();
+
+        new_file.write_all(&bytes).await?
     }
 
     new_main_executable
