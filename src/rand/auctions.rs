@@ -1,6 +1,7 @@
 use std::iter;
 
 use anyhow::Context;
+use dmw3_consts::{AUCTION_COUNT, OINKMON_AUCTION_IDX};
 use rand_xoshiro::{rand_core::RngCore, Xoshiro256StarStar};
 
 use crate::{json::Auction, lang::Language, objects::Objects, rand::shops::shoppable};
@@ -571,7 +572,7 @@ fn auction_items(preset: &Auction, objects: &mut Objects, rng: &mut Xoshiro256St
 fn auction_text(objects: &mut Objects) -> anyhow::Result<()> {
     for lang in objects.executable.languages() {
         // 15 normal and 1 Oinkmon
-        for i in 0..15 {
+        for i in 0..AUCTION_COUNT {
             let item = objects.auction_items.modified[i].item;
 
             let item_name = &objects
@@ -601,9 +602,9 @@ fn auction_text(objects: &mut Objects) -> anyhow::Result<()> {
             .get_mut(lang)
             .context("missing language")?;
 
-        cutscene_text[60] = oinkmon_intro_text(*lang, &DEFAULT_AUCTION_PRICES[15]);
-        cutscene_text[61] = oinkmon_bid_text(*lang, DEFAULT_AUCTION_PRICES[15][4]);
-        cutscene_text[62] = oinkmon_win_text(*lang, DEFAULT_AUCTION_PRICES[15][4]);
+        cutscene_text[60] = oinkmon_intro_text(*lang, &DEFAULT_AUCTION_PRICES[OINKMON_AUCTION_IDX]);
+        cutscene_text[61] = oinkmon_bid_text(*lang, DEFAULT_AUCTION_PRICES[OINKMON_AUCTION_IDX][4]);
+        cutscene_text[62] = oinkmon_win_text(*lang, DEFAULT_AUCTION_PRICES[OINKMON_AUCTION_IDX][4]);
         cutscene_text[63] = oinkmon_pass_text(*lang);
     }
 
