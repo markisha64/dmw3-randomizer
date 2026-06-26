@@ -12,6 +12,7 @@ use crate::db;
 use rand_xoshiro::Xoshiro256StarStar;
 use std::path::PathBuf;
 
+mod auctions;
 mod card_game;
 mod checkbox;
 mod encounters;
@@ -180,6 +181,7 @@ fn app() -> Element {
                 scaling::scaling {},
                 models::models {},
                 card_game::card_game {}
+                auctions::auctions {}
             },
             div {
                 class: "column",

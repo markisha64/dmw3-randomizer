@@ -23,13 +23,6 @@ pub fn shops() -> Element {
     let keep_tnt = read_preset_state.randomizer.shops.keep_tnt;
     let healing_ironmon = read_preset_state.randomizer.shops.healing_ironmon;
 
-    let auction_items = read_preset_state.randomizer.auctions.auction_items;
-    let auction_selected = read_preset_state
-        .randomizer
-        .auctions
-        .auction_items_pool
-        .clone();
-
     rsx! {
         div {
             class: "segment",
@@ -184,57 +177,6 @@ pub fn shops() -> Element {
                     },
                 },
             }
-            div {
-                class: "left",
-                checkbox::checkbox {
-                    id: "shops.auction_items",
-                    label: "Auction Items",
-                    disabled: !enabled,
-                    checked: auction_items,
-                    tooltip: "Randomize Auction Items",
-                    onchange: move |x: bool| {
-                        preset_state.write().randomizer.auctions.auction_items = x;
-                    },
-                }
-                div {
-                    class: "tooltip",
-                    span {
-                        class: "tooltiptext",
-                        style: "width: 200px;",
-                        "Buyable => all buyable items",
-                        br {},
-                        "Sellable => all sellable items",
-                        br {},
-                        "Ironmon => special pool",
-                    },
-                    label {
-                        r#for: "shops.auction_items_pool",
-                        "Auction Pool"
-                    },
-                    select {
-                        id: "shops.auction_items_pool",
-                        disabled: !enabled || !auction_items,
-                        onchange: move |x: Event<FormData>| {
-                            preset_state.write().randomizer.auctions.auction_items_pool = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
-                        },
-                        option {
-                            value: "0",
-                            selected: auction_selected == ShopItems::Buyable,
-                            "Buyable"
-                        },
-                        option {
-                            value: "1",
-                            selected: auction_selected == ShopItems::Sellable,
-                            "Sellable"
-                        },
-                        option {
-                            value: "2",
-                            selected: auction_selected == ShopItems::Ironmon,
-                            "Ironmon"
-                        },
-                    }
-                },
-            },
         }
     }
 }
