@@ -569,7 +569,37 @@ fn auction_items(preset: &Auction, objects: &mut Objects, rng: &mut Xoshiro256St
     }
 }
 
-fn auction_text(objects: &mut Objects) -> anyhow::Result<()> {
+fn full_prices(objects: &Objects) -> [[u32; 5]; 16] {
+    let mut result = [[0; 5]; 16];
+
+    for j in 0..5 {
+        result[0][j] = objects.bits_checks.modified[0] * (500 + (j as u32) * 125) / 1000;
+        result[1][j] = objects.bits_checks.modified[0] * (500 + (j as u32) * 125) / 1000;
+        result[2][j] = objects.bits_checks.modified[1] * (500 + (j as u32) * 125) / 1000;
+        result[3][j] = objects.bits_checks.modified[1] * (500 + (j as u32) * 125) / 1000;
+        result[4][j] = objects.bits_checks.modified[2] * (500 + (j as u32) * 125) / 1000;
+        result[5][j] = objects.bits_checks.modified[2] * (500 + (j as u32) * 125) / 1000;
+        result[6][j] = objects.bits_checks.modified[3] * (500 + (j as u32) * 125) / 1000;
+        result[7][j] = objects.bits_checks.modified[3] * (500 + (j as u32) * 125) / 1000;
+        result[8][j] = objects.bits_checks.modified[4] * (500 + (j as u32) * 125) / 1000;
+        result[9][j] = objects.bits_checks.modified[4] * (500 + (j as u32) * 125) / 1000;
+        result[10][j] = objects.bits_checks.modified[5] * (500 + (j as u32) * 125) / 1000;
+        result[11][j] = objects.bits_checks.modified[5] * (500 + (j as u32) * 125) / 1000;
+        result[12][j] = objects.bits_checks.modified[6] * (500 + (j as u32) * 125) / 1000;
+        result[13][j] = objects.bits_checks.modified[7] * (500 + (j as u32) * 125) / 1000;
+        result[14][j] = objects.bits_checks.modified[8] * (500 + (j as u32) * 125) / 1000;
+        result[15][j] = objects.bits_checks.modified[9] * (500 + (j as u32) * 125) / 1000;
+    }
+
+    result
+}
+
+fn auction_text(preset: &Auction, objects: &mut Objects) -> anyhow::Result<()> {
+    let prices = match preset.auction_values {
+        true => &full_prices(objects),
+        false => &DEFAULT_AUCTION_PRICES,
+    };
+
     for lang in objects.executable.languages() {
         // 15 normal and 1 Oinkmon
         for i in 0..AUCTION_COUNT {
@@ -588,11 +618,10 @@ fn auction_text(objects: &mut Objects) -> anyhow::Result<()> {
                 .get_mut(lang)
                 .context("missing language")?;
 
-            cutscene_text[i * 4] =
-                auction_intro_text(*lang, item_name.as_slice(), &DEFAULT_AUCTION_PRICES[i]);
-            cutscene_text[i * 4 + 1] = auction_bid_text(*lang, DEFAULT_AUCTION_PRICES[i][4]);
+            cutscene_text[i * 4] = auction_intro_text(*lang, item_name.as_slice(), &prices[i]);
+            cutscene_text[i * 4 + 1] = auction_bid_text(*lang, prices[i][4]);
             cutscene_text[i * 4 + 2] =
-                auction_win_text(*lang, item_name.as_slice(), 0, DEFAULT_AUCTION_PRICES[i][4]);
+                auction_win_text(*lang, item_name.as_slice(), 0, prices[i][4]);
             cutscene_text[i * 4 + 3] = auction_pass_text(*lang);
         }
 
@@ -602,13 +631,23 @@ fn auction_text(objects: &mut Objects) -> anyhow::Result<()> {
             .get_mut(lang)
             .context("missing language")?;
 
-        cutscene_text[60] = oinkmon_intro_text(*lang, &DEFAULT_AUCTION_PRICES[OINKMON_AUCTION_IDX]);
-        cutscene_text[61] = oinkmon_bid_text(*lang, DEFAULT_AUCTION_PRICES[OINKMON_AUCTION_IDX][4]);
-        cutscene_text[62] = oinkmon_win_text(*lang, DEFAULT_AUCTION_PRICES[OINKMON_AUCTION_IDX][4]);
+        cutscene_text[60] = oinkmon_intro_text(*lang, &prices[OINKMON_AUCTION_IDX]);
+        cutscene_text[61] = oinkmon_bid_text(*lang, prices[OINKMON_AUCTION_IDX][4]);
+        cutscene_text[62] = oinkmon_win_text(*lang, prices[OINKMON_AUCTION_IDX][4]);
         cutscene_text[63] = oinkmon_pass_text(*lang);
     }
 
     Ok(())
+}
+
+fn auction_values(preset: &Auction, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    for i in 0..10 {
+        let new_value = preset.auction_values_min
+            + rng.next_u32() % (preset.auction_values_max - preset.auction_values_min + 1);
+
+        objects.bits_checks.modified[i] = new_value;
+        objects.bits_subtracts.modified[i] = new_value;
+    }
 }
 
 pub fn patch(
@@ -620,8 +659,12 @@ pub fn patch(
         auction_items(preset, objects, rng);
     }
 
-    if preset.auction_items {
-        auction_text(objects)?;
+    if preset.auction_values {
+        auction_values(preset, objects, rng);
+    }
+
+    if preset.auction_items || preset.auction_items {
+        auction_text(preset, objects)?;
     }
 
     Ok(())

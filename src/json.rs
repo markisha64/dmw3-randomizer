@@ -207,6 +207,12 @@ pub struct Auction {
     pub auction_items: bool,
     #[serde(default = "ShopItems::default")]
     pub auction_items_pool: ShopItems,
+    #[serde(default = "default_bool_true")]
+    pub auction_values: bool,
+    #[serde(default = "default_min_auction_values")]
+    pub auction_values_min: u32,
+    #[serde(default = "default_max_auction_values")]
+    pub auction_values_max: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -414,6 +420,14 @@ fn default_min_starting_mp() -> u8 {
 
 fn default_max_starting_mp() -> u8 {
     200
+}
+
+fn default_min_auction_values() -> u32 {
+    800
+}
+
+fn default_max_auction_values() -> u32 {
+    10000
 }
 
 fn default_music_pool_overworld() -> MusicPool {

@@ -7,6 +7,7 @@ use async_std::stream::StreamExt;
 use binread::BinRead;
 use binwrite::BinWrite;
 use boolinator::Boolinator;
+use dmw3_consts::BITS_SUBTRACTS;
 use dmw3_consts::SCREEN_NAME_MAPPING;
 use dmw3_model::Header;
 use dmw3_pack::Packed;
@@ -262,6 +263,10 @@ pub struct Objects {
     pub items: TextFileGroup,
 
     pub auction_items: ObjectArray<AuctionSet>,
+
+    pub bits_checks: ObjectArray<u32>,
+    pub bits_adds: ObjectArray<u32>,
+    pub bits_subtracts: ObjectArray<u32>,
 }
 
 pub enum Executable {
@@ -1898,6 +1903,54 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         slen: 0,
     };
 
+    let mut bits_checks = Vec::new();
+    let mut bits_adds = Vec::new();
+    let mut bits_subtracts = Vec::new();
+
+    let bits_checks_index = bufs
+        .main_buf
+        .windows(BITS_SUBTRACTS.len())
+        .position(|x| x == BITS_SUBTRACTS)
+        .context("can't find bits checks")?;
+
+    let mut bits_reader = Cursor::new(&bufs.main_buf[bits_checks_index..]);
+
+    for _ in 0..10 {
+        bits_checks.push(u32::read(&mut bits_reader)?);
+    }
+
+    for _ in 0..8 {
+        bits_adds.push(u32::read(&mut bits_reader)?);
+    }
+
+    for _ in 0..10 {
+        bits_subtracts.push(u32::read(&mut bits_reader)?);
+    }
+
+    let bits_checks_len = bits_checks.len();
+    let bits_adds_len = bits_adds.len();
+
+    let bits_checks_object = ObjectArray {
+        original: bits_checks.clone(),
+        modified: bits_checks,
+        index: bits_checks_index,
+        slen: 0x4,
+    };
+
+    let bits_adds_object = ObjectArray {
+        original: bits_adds.clone(),
+        modified: bits_adds,
+        index: bits_checks_index + bits_checks_len * 0x4,
+        slen: 0x4,
+    };
+
+    let bits_subtracts_object = ObjectArray {
+        original: bits_subtracts.clone(),
+        modified: bits_subtracts,
+        index: bits_checks_index + bits_checks_len * 0x4 + bits_adds_len * 0x4,
+        slen: 0x4,
+    };
+
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
     let encounter_data_arr_copy = encounter_data_arr.clone();
     let enemy_party_data_arr_copy = enemy_party_data_arr.clone();
@@ -2120,6 +2173,10 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         items,
 
         auction_items,
+
+        bits_checks: bits_checks_object,
+        bits_adds: bits_adds_object,
+        bits_subtracts: bits_subtracts_object,
     })
 }
 
@@ -2314,6 +2371,11 @@ pub async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Res
         .party_exp_bits
         .write_buf(&mut objects.bufs.exp_buf)?;
     objects.auction_items.write_buf(&mut objects.bufs.map_buf)?;
+    objects.bits_checks.write_buf(&mut objects.bufs.main_buf)?;
+    objects.bits_adds.write_buf(&mut objects.bufs.main_buf)?;
+    objects
+        .bits_subtracts
+        .write_buf(&mut objects.bufs.main_buf)?;
 
     let rom_name = path
         .file_name()

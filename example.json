@@ -84,7 +84,10 @@
 		"auctions": {
 			"enabled": true,
 			"auction_items": true,
-			"auction_items_pool": "sellable"
+			"auction_items_pool": "sellable",
+			"auction_values": true,
+			"auction_values_min": 800,
+			"auction_values_max": 10000
 		}
 	},
 	"scaling": {
