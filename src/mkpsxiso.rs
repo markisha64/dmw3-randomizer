@@ -14,6 +14,16 @@ pub struct IsoProject {
     track: Vec<Track>,
 }
 
+impl Default for IsoProject {
+    fn default() -> Self {
+        IsoProject {
+            image_name: String::new(),
+            cue_sheet: String::new(),
+            track: Vec::new(),
+        }
+    }
+}
+
 impl IsoProject {
     pub fn flatten(&self) -> anyhow::Result<Vec<File>> {
         let mut result: Vec<File> = Vec::new();

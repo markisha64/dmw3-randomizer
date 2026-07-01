@@ -24,6 +24,8 @@ use dmw3_structs::StageEncounter;
 use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
 use dmw3_structs::StageOverride;
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::{Cursor, Seek, Write};
@@ -41,7 +43,7 @@ use dmw3_structs::{
     Environmental, ItemShopData, MapColor, MoveData, PartyData, Pointer, Shop, StageLoadData,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Object<T> {
     pub original: T,
     pub modified: T,
@@ -59,7 +61,17 @@ pub struct TextFileGroup {
     pub overwritten: HashSet<u32>,
 }
 
-#[derive(Clone, Copy)]
+impl Default for TextFileGroup {
+    fn default() -> Self {
+        TextFileGroup {
+            files: HashMap::new(),
+            mapped_items: HashMap::new(),
+            overwritten: HashSet::new(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct MusicSet {
     pub sep_track: u16,
     pub sep_file: u16,
@@ -71,13 +83,13 @@ pub const AUCTION_ITEMS_SETS: [u16; 16] = [
     0x8b01, 0x8b0d, 0x8b02, 0x8b0f,
 ];
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct AuctionSet {
     pub item: u16,
     pub index: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ObjectArray<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,
@@ -165,17 +177,34 @@ pub struct Bufs {
     pub map_buf: Vec<u8>,
 }
 
+impl Default for Bufs {
+    fn default() -> Self {
+        Bufs {
+            stats_buf: Vec::new(),
+            main_buf: Vec::new(),
+            shops_buf: Vec::new(),
+            card_shops_buf: Vec::new(),
+            exp_buf: Vec::new(),
+            pack_select_buf: Vec::new(),
+            map_buf: Vec::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct StageEncountersObject {
     pub stage_encounters_object: Object<StageEncounters>,
     pub stage_encounter_areas: Vec<Option<Object<StageEncounterArea>>>,
     pub stage_encounters: Vec<Option<ObjectArray<StageEncounter>>>,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct StageOverridesObject {
     pub stage_overrides: Vec<Object<StageOverride>>,
     pub environmental_overrides: Vec<Vec<Object<EnvironmentalOverride>>>,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct MapEntities {
     pub entities: ObjectArray<EntityData>,
     pub entity_logics: ObjectArray<EntityLogic>,
@@ -183,8 +212,10 @@ pub struct MapEntities {
     pub entity_conditions: ObjectArray<ScriptConditionStep>,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct MapObject {
     pub file_name: String,
+    #[serde(skip)]
     pub buf: Vec<u8>,
     pub mask_objects: Option<ObjectArray<MaskObject>>,
     pub environmentals: Option<ObjectArray<Environmental>>,
@@ -204,14 +235,20 @@ pub struct ModelObject {
     pub header: Header,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct Objects {
+    #[serde(skip)]
     pub bufs: Bufs,
+    #[serde(skip)]
     pub executable: Executable,
+    #[serde(skip)]
     pub iso_project: IsoProject,
 
+    #[serde(skip)]
     pub cargo_tower_text: HashMap<Language, Vec<Packed>>,
 
     // hard coded data
+    #[serde(skip)]
     pub file_map: Vec<mkpsxiso::File>,
     pub sector_offsets: ObjectArray<u32>,
     pub file_sizes: ObjectArray<u16>,
@@ -244,12 +281,16 @@ pub struct Objects {
     pub move_data: ObjectArray<MoveData>,
     pub dv_cond: ObjectArray<DigivolutionConditions>,
     pub map_objects: Vec<MapObject>,
+    #[serde(skip)]
     pub model_objects: Vec<ModelObject>,
+    #[serde(skip)]
     pub stage_model_objects: Vec<ModelObject>,
 
     pub screen_name_mapping: Vec<ScreenNameMapping>,
 
+    #[serde(skip)]
     pub text_files: HashMap<String, TextFileGroup>,
+    #[serde(skip)]
     pub items: TextFileGroup,
 
     pub auction_items: ObjectArray<AuctionSet>,
@@ -263,6 +304,12 @@ pub enum Executable {
     PAL,
     USA,
     JAP,
+}
+
+impl Default for Executable {
+    fn default() -> Self {
+        Executable::USA
+    }
 }
 
 impl Executable {
