@@ -3,7 +3,8 @@ use std::{fs, io::Write};
 use anyhow::Context;
 use async_std::fs::{create_dir_all, File};
 use async_std::prelude::*;
-use binwrite::BinWrite;
+use binrw::BinWrite;
+use std::io::Cursor;
 use dmw3_structs::{Pointer, StageEncounter, StageEncounterArea};
 use tar::{Builder, Header};
 
@@ -102,83 +103,83 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
     let mut quest_ranges_bytes = Vec::new();
     let mut complex_steps_bytes = Vec::new();
 
-    objects.enemy_stats.original.write(&mut enemy_stats_bytes)?;
+    objects.enemy_stats.original.write_le(&mut Cursor::new(&mut enemy_stats_bytes))?;
 
-    objects.encounters.original.write(&mut encounter_bytes)?;
+    objects.encounters.original.write_le(&mut Cursor::new(&mut encounter_bytes))?;
 
     objects
         .enemy_parties
         .original
-        .write(&mut enemy_party_bytes)?;
+        .write_le(&mut Cursor::new(&mut enemy_party_bytes))?;
 
     objects
         .digivolution_data
         .original
-        .write(&mut digivolution_bytes)?;
+        .write_le(&mut Cursor::new(&mut digivolution_bytes))?;
 
-    objects.rookie_data.original.write(&mut rookie_bytes)?;
+    objects.rookie_data.original.write_le(&mut Cursor::new(&mut rookie_bytes))?;
 
     objects
         .item_shop_data
         .original
-        .write(&mut item_shop_bytes)?;
+        .write_le(&mut Cursor::new(&mut item_shop_bytes))?;
 
     objects
         .dv_cond
         .original
-        .write(&mut digivolution_condition_bytes)?;
+        .write_le(&mut Cursor::new(&mut digivolution_condition_bytes))?;
 
-    objects.move_data.original.write(&mut move_data_bytes)?;
+    objects.move_data.original.write_le(&mut Cursor::new(&mut move_data_bytes))?;
 
-    objects.shops.original.write(&mut shop_bytes)?;
+    objects.shops.original.write_le(&mut Cursor::new(&mut shop_bytes))?;
 
-    objects.shop_items.original.write(&mut shop_item_bytes)?;
+    objects.shop_items.original.write_le(&mut Cursor::new(&mut shop_item_bytes))?;
 
-    objects.card_shops.original.write(&mut card_shops_bytes)?;
+    objects.card_shops.original.write_le(&mut Cursor::new(&mut card_shops_bytes))?;
 
     objects
         .party_exp_bits
         .original
-        .write(&mut party_exp_bits_bytes)?;
+        .write_le(&mut Cursor::new(&mut party_exp_bits_bytes))?;
 
     objects
         .card_shop_items
         .original
-        .write(&mut card_shop_items_bytes)?;
+        .write_le(&mut Cursor::new(&mut card_shop_items_bytes))?;
 
     objects
         .card_pricing
         .original
-        .write(&mut card_pricing_bytes)?;
+        .write_le(&mut Cursor::new(&mut card_pricing_bytes))?;
 
     objects
         .booster_data
         .original
-        .write(&mut booster_data_bytes)?;
+        .write_le(&mut Cursor::new(&mut booster_data_bytes))?;
 
     objects
         .booster_data_items
         .original
-        .write(&mut booster_data_items_bytes)?;
+        .write_le(&mut Cursor::new(&mut booster_data_items_bytes))?;
 
     objects
         .starting_folder
         .original
-        .write(&mut starting_folder_bytes)?;
+        .write_le(&mut Cursor::new(&mut starting_folder_bytes))?;
 
     objects
         .screen_name_mapping
-        .write(&mut screen_name_mapping_bytes)?;
+        .write_le(&mut Cursor::new(&mut screen_name_mapping_bytes))?;
 
     objects
         .quest_ranges
         .original
-        .write(&mut quest_ranges_bytes)?;
+        .write_le(&mut Cursor::new(&mut quest_ranges_bytes))?;
 
     objects
         .complex_steps
         .original
-        .write(&mut complex_steps_bytes)?;
+        .write_le(&mut Cursor::new(&mut complex_steps_bytes))?;
 
     fs::write(format!("dump/{rom_name}/enemy_stats"), enemy_stats_bytes)?;
 
@@ -246,29 +247,29 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
         let mut scripts_conditions = Vec::new();
         let mut entity_conditions = Vec::new();
 
-        map_obj.stage_id.write(&mut stage_id)?;
-        map_obj.talk_file.write(&mut talk_file)?;
+        map_obj.stage_id.write_le(&mut Cursor::new(&mut stage_id))?;
+        map_obj.talk_file.write_le(&mut Cursor::new(&mut talk_file))?;
 
         fs::create_dir_all(format!("dump/{}/maps/{}", rom_name, &map_obj.file_name))?;
 
         if let Some(map_entities) = &map_obj.entities {
-            map_entities.entities.original.write(&mut entities)?;
+            map_entities.entities.original.write_le(&mut Cursor::new(&mut entities))?;
             map_entities
                 .entity_logics
                 .original
-                .write(&mut entity_logics)?;
+                .write_le(&mut Cursor::new(&mut entity_logics))?;
             map_entities
                 .scripts_conditions
                 .original
-                .write(&mut scripts_conditions)?;
+                .write_le(&mut Cursor::new(&mut scripts_conditions))?;
             map_entities
                 .entity_conditions
                 .original
-                .write(&mut entity_conditions)?;
+                .write_le(&mut Cursor::new(&mut entity_conditions))?;
         }
 
         if let Some(obj) = &map_obj.mask_objects {
-            obj.original.write(&mut mask_objects)?;
+            obj.original.write_le(&mut Cursor::new(&mut mask_objects))?;
         }
 
         for stage_encounters_obj in &map_obj.stage_encounters {
@@ -278,7 +279,7 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
                     None => &DEFAULT_AREA.clone(),
                 };
 
-                warea.write(&mut areas)?;
+                warea.write_le(&mut Cursor::new(&mut areas))?;
             }
 
             for encounter in &stage_encounters_obj.stage_encounters {
@@ -287,7 +288,7 @@ pub async fn dump(path: &std::path::PathBuf) -> anyhow::Result<()> {
                     None => &Vec::from(DEFAULT_ENCOUNTERS.clone()),
                 };
 
-                wencounter.write(&mut encounters)?;
+                wencounter.write_le(&mut Cursor::new(&mut encounters))?;
             }
         }
 
@@ -394,93 +395,93 @@ pub async fn create_spoiler(
     let mut charisma_reqs_bytes = Vec::new();
     let mut complex_steps_bytes = Vec::new();
 
-    objects.enemy_stats.modified.write(&mut enemy_stats_bytes)?;
+    objects.enemy_stats.modified.write_le(&mut Cursor::new(&mut enemy_stats_bytes))?;
 
-    objects.encounters.modified.write(&mut encounter_bytes)?;
+    objects.encounters.modified.write_le(&mut Cursor::new(&mut encounter_bytes))?;
 
     objects
         .enemy_parties
         .modified
-        .write(&mut enemy_party_bytes)?;
+        .write_le(&mut Cursor::new(&mut enemy_party_bytes))?;
 
     objects
         .digivolution_data
         .modified
-        .write(&mut digivolution_bytes)?;
+        .write_le(&mut Cursor::new(&mut digivolution_bytes))?;
 
-    objects.rookie_data.modified.write(&mut rookie_bytes)?;
+    objects.rookie_data.modified.write_le(&mut Cursor::new(&mut rookie_bytes))?;
 
     objects
         .item_shop_data
         .modified
-        .write(&mut item_shop_bytes)?;
+        .write_le(&mut Cursor::new(&mut item_shop_bytes))?;
 
     objects
         .dv_cond
         .modified
-        .write(&mut digivolution_condition_bytes)?;
+        .write_le(&mut Cursor::new(&mut digivolution_condition_bytes))?;
 
-    objects.move_data.modified.write(&mut move_data_bytes)?;
+    objects.move_data.modified.write_le(&mut Cursor::new(&mut move_data_bytes))?;
 
-    objects.shops.modified.write(&mut shop_bytes)?;
+    objects.shops.modified.write_le(&mut Cursor::new(&mut shop_bytes))?;
 
-    objects.shop_items.modified.write(&mut shop_item_bytes)?;
-
-    objects
-        .party_exp_bits
-        .modified
-        .write(&mut party_exp_bits_bytes)?;
-
-    objects.card_shops.modified.write(&mut card_shops_bytes)?;
+    objects.shop_items.modified.write_le(&mut Cursor::new(&mut shop_item_bytes))?;
 
     objects
         .party_exp_bits
         .modified
-        .write(&mut party_exp_bits_bytes)?;
+        .write_le(&mut Cursor::new(&mut party_exp_bits_bytes))?;
+
+    objects.card_shops.modified.write_le(&mut Cursor::new(&mut card_shops_bytes))?;
+
+    objects
+        .party_exp_bits
+        .modified
+        .write_le(&mut Cursor::new(&mut party_exp_bits_bytes))?;
 
     objects
         .card_shop_items
         .modified
-        .write(&mut card_shop_items_bytes)?;
+        .write_le(&mut Cursor::new(&mut card_shop_items_bytes))?;
 
     objects
         .card_pricing
         .modified
-        .write(&mut card_pricing_bytes)?;
+        .write_le(&mut Cursor::new(&mut card_pricing_bytes))?;
 
     objects
         .booster_data
         .modified
-        .write(&mut booster_data_bytes)?;
+        .write_le(&mut Cursor::new(&mut booster_data_bytes))?;
 
     objects
         .booster_data_items
         .modified
-        .write(&mut booster_data_items_bytes)?;
+        .write_le(&mut Cursor::new(&mut booster_data_items_bytes))?;
 
     objects
         .starting_folder
         .modified
-        .write(&mut starting_folder_bytes)?;
+        .write_le(&mut Cursor::new(&mut starting_folder_bytes))?;
 
     objects
         .screen_name_mapping
-        .write(&mut screen_name_mapping_bytes)?;
+        .write_le(&mut Cursor::new(&mut screen_name_mapping_bytes))?;
 
     objects
         .quest_ranges
         .modified
-        .write(&mut quest_ranges_bytes)?;
+        .write_le(&mut Cursor::new(&mut quest_ranges_bytes))?;
 
     objects
         .charisma_reqs
         .modified
-        .write(&mut charisma_reqs_bytes)?;
+        .write_le(&mut Cursor::new(&mut charisma_reqs_bytes))?;
 
     objects
         .complex_steps
         .modified
-        .write(&mut complex_steps_bytes)?;
+        .write_le(&mut Cursor::new(&mut complex_steps_bytes))?;
 
     let mut buffer = Vec::new();
     let mut tar_builder = Builder::new(&mut buffer);
@@ -532,23 +533,23 @@ pub async fn create_spoiler(
         let mut scripts_conditions = Vec::new();
         let mut entity_conditions = Vec::new();
 
-        map_obj.stage_id.write(&mut stage_id)?;
-        map_obj.talk_file.write(&mut talk_file)?;
+        map_obj.stage_id.write_le(&mut Cursor::new(&mut stage_id))?;
+        map_obj.talk_file.write_le(&mut Cursor::new(&mut talk_file))?;
 
         if let Some(map_entities) = &map_obj.entities {
-            map_entities.entities.modified.write(&mut entities)?;
+            map_entities.entities.modified.write_le(&mut Cursor::new(&mut entities))?;
             map_entities
                 .entity_logics
                 .modified
-                .write(&mut entity_logics)?;
+                .write_le(&mut Cursor::new(&mut entity_logics))?;
             map_entities
                 .scripts_conditions
                 .modified
-                .write(&mut scripts_conditions)?;
+                .write_le(&mut Cursor::new(&mut scripts_conditions))?;
             map_entities
                 .entity_conditions
                 .modified
-                .write(&mut entity_conditions)?;
+                .write_le(&mut Cursor::new(&mut entity_conditions))?;
         }
 
         for stage_encounters_obj in &map_obj.stage_encounters {
@@ -558,7 +559,7 @@ pub async fn create_spoiler(
                     None => &DEFAULT_AREA.clone(),
                 };
 
-                warea.write(&mut areas)?;
+                warea.write_le(&mut Cursor::new(&mut areas))?;
             }
 
             for encounter in &stage_encounters_obj.stage_encounters {
@@ -567,7 +568,7 @@ pub async fn create_spoiler(
                     None => &Vec::from(DEFAULT_ENCOUNTERS.clone()),
                 };
 
-                wencounter.write(&mut encounters)?;
+                wencounter.write_le(&mut Cursor::new(&mut encounters))?;
             }
         }
 

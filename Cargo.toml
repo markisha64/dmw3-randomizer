@@ -7,8 +7,7 @@ description = "Digimon World 3 Randomizer"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-binread = { version = "2.2.0", default-features = false }
-binwrite = "0.2.1"
+binrw = "0.14"
 chrono = { version = "0.4.26", features = ["clock"], default-features = false }
 clap = { version = "4.0", features = ["derive"], default-features = false }
 dioxus = { version = "0.5.1", features = ["desktop", "hooks", "launch", "signals", "html", "macro"], default-features = false }

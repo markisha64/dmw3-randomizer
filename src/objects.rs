@@ -4,8 +4,7 @@ use async_std::fs;
 use async_std::fs::File;
 use async_std::io::WriteExt;
 use async_std::stream::StreamExt;
-use binread::BinRead;
-use binwrite::BinWrite;
+use binrw::{BinRead, BinReaderExt, BinWrite};
 use boolinator::Boolinator;
 use dmw3_consts::BITS_SUBTRACTS;
 use dmw3_consts::SCREEN_NAME_MAPPING;
@@ -27,7 +26,7 @@ use dmw3_structs::StageEncounters;
 use dmw3_structs::StageOverride;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::io::Cursor;
+use std::io::{Cursor, Seek, Write};
 use std::path::PathBuf;
 
 use crate::lang::Language;
@@ -47,7 +46,6 @@ pub struct Object<T> {
     pub original: T,
     pub modified: T,
     pub index: usize,
-    pub slen: usize,
 }
 
 pub struct TextFile {
@@ -84,67 +82,59 @@ pub struct ObjectArray<T> {
     pub original: Vec<T>,
     pub modified: Vec<T>,
     pub index: usize,
-    pub slen: usize,
 }
 
 pub trait WriteObjects {
     fn write_buf(&self, source_buf: &mut Vec<u8>) -> anyhow::Result<()>;
 }
 
-impl<T: BinWrite> WriteObjects for Object<T> {
+impl<T: BinWrite> WriteObjects for Object<T>
+where
+    for<'a> <T as BinWrite>::Args<'a>: Default,
+{
     fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
-        let mut buf = vec![];
-
-        self.modified.write(&mut buf)?;
-        write_buf[self.index..(self.index + self.slen)].copy_from_slice(&mut buf);
-
+        let mut cursor = std::io::Cursor::new(write_buf);
+        cursor.seek(std::io::SeekFrom::Start(self.index as u64))?;
+        self.modified.write_le(&mut cursor)?;
         Ok(())
     }
 }
 
-impl<T: BinWrite> WriteObjects for ObjectArray<T> {
+impl<T: BinWrite + 'static> WriteObjects for ObjectArray<T>
+where
+    for<'a> <T as BinWrite>::Args<'a>: Default + Clone,
+{
     fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
-        let mut buf = vec![];
-
-        self.modified.write(&mut buf)?;
-        write_buf[self.index..(self.index + self.slen * self.original.len())]
-            .copy_from_slice(&mut buf);
-
+        let mut cursor = std::io::Cursor::new(write_buf);
+        cursor.seek(std::io::SeekFrom::Start(self.index as u64))?;
+        self.modified.write_le(&mut cursor)?;
         Ok(())
     }
 }
 
 impl WriteObjects for ObjectArray<MusicSet> {
     fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
+        let mut cursor = std::io::Cursor::new(write_buf);
         for set in &self.modified {
-            let mut sep_track_buf = vec![];
-            let mut sep_file_buf = vec![];
-
-            set.sep_track.write(&mut sep_track_buf)?;
-            set.sep_file.write(&mut sep_file_buf)?;
-
-            write_buf[set.index..set.index + 2].copy_from_slice(&mut sep_track_buf);
-            write_buf[set.index + 8..set.index + 10].copy_from_slice(&mut sep_file_buf);
+            cursor.seek(std::io::SeekFrom::Start(set.index as u64))?;
+            set.sep_track.write_le(&mut cursor)?;
+            cursor.seek(std::io::SeekFrom::Start((set.index + 8) as u64))?;
+            set.sep_file.write_le(&mut cursor)?;
         }
-
         Ok(())
     }
 }
 
 impl WriteObjects for ObjectArray<AuctionSet> {
     fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
-        let mut buf = [0x00, 0x00, 0x04, 0x34];
-
+        let mut cursor = std::io::Cursor::new(write_buf);
         for set in &self.modified {
             let bitfield = 0x8a00 | set.item;
             let bytes = bitfield.to_le_bytes();
-
-            buf[0] = bytes[0];
-            buf[1] = bytes[1];
-
-            write_buf[set.index..set.index + 4].copy_from_slice(&mut buf);
+            let buf = [bytes[0], bytes[1], 0x04, 0x34];
+            cursor.seek(std::io::SeekFrom::Start(set.index as u64))?;
+            cursor.write_all(&buf)?;
         }
-
         Ok(())
     }
 }
@@ -427,7 +417,6 @@ fn read_map_color(
         original: color.clone(),
         modified: color.clone(),
         index: idx,
-        slen: 0x4,
     })
 }
 
@@ -592,7 +581,6 @@ fn read_entities(
         original: entities_raw.clone(),
         modified: entities_raw.clone(),
         index: real_idx as usize,
-        slen: 0x14,
     };
 
     let entity_logics = ObjectArray {
@@ -603,7 +591,6 @@ fn read_entities(
             .find(|x| !x.logic.null())
             .map(|x| x.logic.to_index_overlay(stage.value) as usize)
             .unwrap_or(0),
-        slen: 0xc,
     };
 
     let scripts_conditions = ObjectArray {
@@ -612,7 +599,6 @@ fn read_entities(
         index: min_script_cond
             .map(|x| x.to_index_overlay(stage.value) as usize)
             .unwrap_or(0),
-        slen: 0x4,
     };
 
     let entity_conditions = ObjectArray {
@@ -624,7 +610,6 @@ fn read_entities(
             .min_by(|a, b| a.conditions.value.cmp(&b.conditions.value))
             .map(|x| x.conditions.to_index_overlay(stage.value) as usize)
             .unwrap_or(0),
-        slen: 0x4,
     };
 
     Some(MapEntities {
@@ -678,7 +663,6 @@ fn read_environmentals(
         original: environmentals.clone(),
         modified: environmentals.clone(),
         index,
-        slen: 0x18,
     })
 }
 
@@ -722,7 +706,6 @@ fn read_mask_objects(
         original: mask_objects.clone(),
         modified: mask_objects.clone(),
         index,
-        slen: 0x18,
     })
 }
 
@@ -810,7 +793,6 @@ fn read_stage_overrides(
                 original: environmental_override.clone(),
                 modified: environmental_override,
                 index: idx,
-                slen: 0x10,
             });
 
             if ptr_next.null() {
@@ -822,7 +804,6 @@ fn read_stage_overrides(
             original: stage_override.clone(),
             modified: stage_override,
             index: stage_override_idx,
-            slen: 0x8,
         });
         environmental_overrides.push(environmentals);
     }
@@ -943,7 +924,6 @@ async fn read_map_objects(
             let background_object = Object {
                 original: background_file_index,
                 modified: background_file_index,
-                slen: 0x2,
                 index: background_file_index_index as usize,
             };
 
@@ -1069,7 +1049,6 @@ async fn read_map_objects(
                                     original: area.clone(),
                                     modified: area,
                                     index,
-                                    slen: 0x24,
                                 })
                             })
                             .collect();
@@ -1099,7 +1078,6 @@ async fn read_map_objects(
                                     original: stage_encounters.clone(),
                                     modified: stage_encounters,
                                     index,
-                                    slen: 0xc,
                                 })
                             })
                             .collect();
@@ -1109,7 +1087,6 @@ async fn read_map_objects(
                                 original: stage_encounters_obj.clone(),
                                 modified: stage_encounters_obj,
                                 index: (index + i * 0x1c) as usize,
-                                slen: 0x1c,
                             },
                             stage_encounter_areas: areas,
                             stage_encounters: encounters,
@@ -1159,7 +1136,6 @@ async fn read_map_objects(
                 original: music.clone(),
                 modified: music,
                 index: 0,
-                slen: 0,
             };
 
             let stage_overrides = read_stage_overrides(&buf, stage, &stage_encounters_objects);
@@ -1411,13 +1387,11 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         original: sector_offsets.clone(),
         modified: sector_offsets.clone(),
         index: sector_offsets_index,
-        slen: 0x4,
     };
     let file_sizes_object = ObjectArray {
         original: file_sizes.clone(),
         modified: file_sizes.clone(),
         index: sector_offsets_index + files_len * 4,
-        slen: 0x2,
     };
 
     let mut enemy_stats_reader = Cursor::new(&bufs.stats_buf);
@@ -1699,7 +1673,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         Cursor::new(&bufs.main_buf[starting_folder_index..starting_folder_index + 4 * 40]);
     let mut starting_folder = Vec::new();
     for _ in 0..40 {
-        let card = u32::read(&mut starting_folder_reader)?;
+        let card = starting_folder_reader.read_le::<u32>()?;
         starting_folder.push(card);
     }
 
@@ -1858,7 +1832,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let mut charisma_reqs = Vec::new();
 
     for _ in 0..15 {
-        charisma_reqs.push(u32::read(&mut charisma_reqs_reader)?);
+        charisma_reqs.push(charisma_reqs_reader.read_le::<u32>()?);
     }
 
     let complex_steps_index = bufs
@@ -1900,7 +1874,6 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         original: auction_sets.clone(),
         modified: auction_sets,
         index: 0,
-        slen: 0,
     };
 
     let mut bits_checks = Vec::new();
@@ -1916,15 +1889,15 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let mut bits_reader = Cursor::new(&bufs.main_buf[bits_checks_index..]);
 
     for _ in 0..10 {
-        bits_checks.push(u32::read(&mut bits_reader)?);
+        bits_checks.push(bits_reader.read_le::<u32>()?);
     }
 
     for _ in 0..8 {
-        bits_adds.push(u32::read(&mut bits_reader)?);
+        bits_adds.push(bits_reader.read_le::<u32>()?);
     }
 
     for _ in 0..10 {
-        bits_subtracts.push(u32::read(&mut bits_reader)?);
+        bits_subtracts.push(bits_reader.read_le::<u32>()?);
     }
 
     let bits_checks_len = bits_checks.len();
@@ -1934,21 +1907,18 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         original: bits_checks.clone(),
         modified: bits_checks,
         index: bits_checks_index,
-        slen: 0x4,
     };
 
     let bits_adds_object = ObjectArray {
         original: bits_adds.clone(),
         modified: bits_adds,
         index: bits_checks_index + bits_checks_len * 0x4,
-        slen: 0x4,
     };
 
     let bits_subtracts_object = ObjectArray {
         original: bits_subtracts.clone(),
         modified: bits_subtracts,
         index: bits_checks_index + bits_checks_len * 0x4 + bits_adds_len * 0x4,
-        slen: 0x4,
     };
 
     let enemy_stats_arr_copy = enemy_stats_arr.clone();
@@ -1962,154 +1932,132 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         original: enemy_stats_arr,
         modified: enemy_stats_arr_copy,
         index: 0,
-        slen: 0x46,
     };
 
     let encounters_object = ObjectArray {
         original: encounter_data_arr,
         modified: encounter_data_arr_copy,
         index: encounter_data_index,
-        slen: 0xc,
     };
 
     let enemy_parties_object = ObjectArray {
         original: enemy_party_data_arr,
         modified: enemy_party_data_arr_copy,
         index: enemy_party_data_index,
-        slen: 0x1c,
     };
 
     let party_exp_bits_object = ObjectArray {
         original: party_exp_bits_arr.clone(),
         modified: party_exp_bits_arr,
         index: party_exp_bits,
-        slen: 0xc,
     };
 
     let parties_object: ObjectArray<u8> = ObjectArray {
         original: dmw3_consts::PACKS.into(),
         modified: dmw3_consts::PACKS.into(),
         index: parties_index,
-        slen: 0x1,
     };
 
     let party_previewes_object: ObjectArray<u32> = ObjectArray {
         original: default_packs.clone(),
         modified: default_packs.clone(),
         index: pack_select_preview_index,
-        slen: 0x4,
     };
 
     let quest_ranges_object: ObjectArray<_> = ObjectArray {
         original: quest_ranges.clone(),
         modified: quest_ranges,
         index: quest_ranges_index,
-        slen: 0x2,
     };
 
     let charisma_reqs_object: ObjectArray<u32> = ObjectArray {
         original: charisma_reqs.clone(),
         modified: charisma_reqs,
         index: charisma_reqs_index,
-        slen: 0x4,
     };
 
     let complex_steps_object: ObjectArray<_> = ObjectArray {
         original: complex_steps.clone(),
         modified: complex_steps,
         index: complex_steps_index,
-        slen: 0x3,
     };
 
     let starting_folder_object = ObjectArray {
         original: starting_folder.clone(),
         modified: starting_folder.clone(),
         index: starting_folder_index,
-        slen: 0x4,
     };
 
     let rookie_data_object: ObjectArray<DigivolutionData> = ObjectArray {
         original: rookie_data_arr,
         modified: rookie_data_copy,
         index: digivolution_data_index,
-        slen: 0x58,
     };
 
     let digivolution_data_object: ObjectArray<DigivolutionData> = ObjectArray {
         original: digivolution_data_arr,
         modified: digivolution_data_copy,
         index: digivolution_data_index + 0x58 * 8,
-        slen: 0x58,
     };
 
     let shops_object: ObjectArray<Shop> = ObjectArray {
         original: shops_arr.clone(),
         modified: shops_arr.clone(),
         index: shops_index,
-        slen: 0x8,
     };
 
     let shop_items_object: ObjectArray<u16> = ObjectArray {
         original: shop_items_arr.clone(),
         modified: shop_items_arr.clone(),
         index: front_index,
-        slen: 0x2,
     };
 
     let card_shops_object: ObjectArray<CardShopData> = ObjectArray {
         original: card_shops_arr.clone(),
         modified: card_shops_arr.clone(),
         index: card_shops_index,
-        slen: 0xc,
     };
 
     let card_shop_items_object: ObjectArray<u16> = ObjectArray {
         original: card_shop_items_arr.clone(),
         modified: card_shop_items_arr.clone(),
         index: card_shops_items_index,
-        slen: 0x2,
     };
 
     let card_pricing_object: ObjectArray<CardPricing> = ObjectArray {
         original: card_pricing_arr.clone(),
         modified: card_pricing_arr.clone(),
         index: card_pricing_index,
-        slen: 0x4,
     };
 
     let booster_data_object: ObjectArray<BoosterData> = ObjectArray {
         original: booster_data_arr.clone(),
         modified: booster_data_arr.clone(),
         index: booster_data_index,
-        slen: 0x1c,
     };
 
     let booster_data_items_object: ObjectArray<u32> = ObjectArray {
         original: booster_data_items.clone(),
         modified: booster_data_items.clone(),
         index: booster_data_items_index,
-        slen: 0x4,
     };
 
     let item_shop_data_object: ObjectArray<ItemShopData> = ObjectArray {
         original: item_shop_data_arr.clone(),
         modified: item_shop_data_arr.clone(),
         index: item_shop_data_index,
-        slen: 0xc,
     };
 
     let move_data_object: ObjectArray<MoveData> = ObjectArray {
         original: move_data_arr.clone(),
         modified: move_data_arr.clone(),
         index: move_data_index,
-        slen: 0x12,
     };
 
     let dv_cond_object: ObjectArray<DigivolutionConditions> = ObjectArray {
         original: dv_cond_arr,
         modified: dv_cond_copy,
         index: dv_cond_index,
-        slen: 0x2c0,
     };
 
     let map_objects = read_map_objects(
