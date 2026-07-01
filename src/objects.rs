@@ -481,7 +481,7 @@ fn read_entities(
             let mut condition_reader = Cursor::new(&buf[condition_idx as usize..]);
 
             loop {
-                let condition_result = ScriptConditionStep::read(&mut condition_reader).ok()?;
+                let condition_result = condition_reader.read_le::<ScriptConditionStep>().ok()?;
 
                 entity_conditions_raw.push(condition_result.clone());
 
@@ -532,7 +532,7 @@ fn read_entities(
                 let mut condition_reader = Cursor::new(&buf[condition_idx as usize..]);
 
                 loop {
-                    let condition = ScriptConditionStep::read(&mut condition_reader).ok()?;
+                    let condition = condition_reader.read_le::<ScriptConditionStep>().ok()?;
 
                     scripts_condition_raw.push(condition.clone());
 
@@ -556,7 +556,7 @@ fn read_entities(
                 let mut script_reader = Cursor::new(&buf[script_idx as usize..]);
 
                 loop {
-                    let script_result = ScriptConditionStep::read(&mut script_reader);
+                    let script_result = script_reader.read_le::<ScriptConditionStep>();
 
                     match script_result {
                         Ok(script) => {

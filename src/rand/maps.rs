@@ -12,8 +12,8 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::Randomizer;
 
-pub fn type_script_add_item(value: u16) -> bool {
-    (value >= 0x80) && (value - 0x80) < 0xf
+pub fn type_script_add_item(condition_type: dmw3_structs::ScriptConditionType) -> bool {
+    matches!(condition_type, dmw3_structs::ScriptConditionType::Item(_))
 }
 
 pub fn patch(
@@ -224,15 +224,13 @@ fn item_boxes(
                                 break;
                             }
 
-                            let t = (script.bitfield & 0xfffe) >> 8;
-
-                            if !type_script_add_item(t) {
+                            if !type_script_add_item(script.condition_type) {
                                 continue;
                             }
 
                             let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
 
-                            script.bitfield = nv | ((script.bitfield >> 9) << 9);
+                            script.value = nv;
 
                             let real_file = objects
                                 .file_map
