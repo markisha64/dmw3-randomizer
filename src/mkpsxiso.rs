@@ -241,7 +241,7 @@ pub async fn extract(path: &std::path::PathBuf) -> anyhow::Result<()> {
         .arg("-x")
         .arg(format!("extract/{}/", file_name))
         .arg("-s")
-        .arg("extract/out.xml")
+        .arg(format!("extract/{}/out.xml", file_name))
         .arg("-pt")
         .arg("-l")
         .arg(path)
@@ -294,8 +294,16 @@ pub struct LbaLog {
     pub cue_file: String,
     pub entries: Vec<Entry>,
 }
-async fn parse_lba_log() -> anyhow::Result<LbaLog> {
-    let content = fs::read_to_string("extract/lba.txt").await?;
+
+async fn parse_lba_log(path: &std::path::PathBuf) -> anyhow::Result<LbaLog> {
+    let path_to_lba = path
+        .file_name()
+        .context("failed to get file_name")?
+        .to_str()
+        .map(|x| format!("extract/{}/lba.txt", x))
+        .context("failed to convert file name to string")?;
+
+    let content = fs::read_to_string(path_to_lba).await?;
     let mut log = LbaLog {
         bin_file: String::new(),
         cue_file: String::new(),
@@ -399,20 +407,33 @@ async fn parse_lba_log() -> anyhow::Result<LbaLog> {
     Ok(log)
 }
 
-pub async fn xml_file() -> anyhow::Result<IsoProject> {
-    let xml = fs::read_to_string("extract/out.xml").await?;
+pub async fn xml_file(path: &std::path::PathBuf) -> anyhow::Result<IsoProject> {
+    let path_to_xml = path
+        .file_name()
+        .context("failed to get file_name")?
+        .to_str()
+        .map(|x| format!("extract/{}/out.xml", x))
+        .context("failed to convert file name to string")?;
+
+    let xml = fs::read_to_string(path_to_xml).await?;
 
     Ok(from_str(&xml)?)
 }
 
-pub async fn get_lba() -> anyhow::Result<LbaLog> {
+pub async fn get_lba(path: &std::path::PathBuf) -> anyhow::Result<LbaLog> {
     let binf = find_bin("mkpsxiso").await?;
 
+    let file_name = path
+        .file_name()
+        .context("failed to get file_name")?
+        .to_str()
+        .context("failed to convert file name to string")?;
+
     let output = Command::new(binf)
-        .arg("extract/new.xml")
+        .arg(format!("extract/{}/new.xml", file_name))
         .arg("-y")
         .arg("-lba")
-        .arg("extract/lba.txt")
+        .arg(format!("extract/{}/lba.txt", file_name))
         .arg("-noisogen")
         .output()
         .await?;
@@ -421,7 +442,7 @@ pub async fn get_lba() -> anyhow::Result<LbaLog> {
         return Err(anyhow!(String::from_utf8_lossy(&output.stdout).to_string()));
     }
 
-    parse_lba_log().await
+    parse_lba_log(path).await
 }
 
 pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<()> {
@@ -435,7 +456,7 @@ pub async fn build(rom_name: &str, file_name: &str) -> anyhow::Result<()> {
         .arg(&bin)
         .arg("-c")
         .arg(&cue)
-        .arg("extract/new.xml")
+        .arg(format!("extract/{}/new.xml", rom_name))
         .arg("-y")
         .output()
         .await?;

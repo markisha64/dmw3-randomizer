@@ -1353,7 +1353,7 @@ async fn read_bufs(rom_name: &str, executable: &Executable) -> anyhow::Result<Bu
 }
 
 pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
-    let iso_project = xml_file().await?;
+    let iso_project = xml_file(path).await?;
 
     let rom_name = path
         .file_name()
@@ -2240,11 +2240,18 @@ pub async fn fix_lba(path: &PathBuf, objects: &mut Objects) -> anyhow::Result<()
 
     let xml_string = quick_xml::se::to_string(&new_xml)?;
 
-    let mut new_xml = async_std::fs::File::create("extract/new.xml").await?;
+    let xml_path = path
+        .file_name()
+        .context("failed to get file_name")?
+        .to_str()
+        .map(|x| format!("extract/{}/new.xml", x))
+        .context("failed to convert file name to string")?;
+
+    let mut new_xml = async_std::fs::File::create(xml_path).await?;
     new_xml.write_all(&xml_string.into_bytes()[..]).await?;
     new_xml.sync_all().await?;
 
-    let lba = get_lba().await?;
+    let lba = get_lba(path).await?;
 
     for i in 0..objects.sector_offsets.modified.len() {
         let offset = objects.sector_offsets.modified[i];
