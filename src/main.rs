@@ -21,9 +21,32 @@ mod gui;
 fn main() -> anyhow::Result<()> {
     db::init()?;
 
-    let args = cli::Arguments::parse();
+    let cli = cli::Cli::parse();
 
     let rt = Runtime::new()?;
+
+    if let Some(cli::Command::Mod { action }) = &cli.command {
+        return rt.block_on(async {
+            match action {
+                cli::ModAction::Extract { path } => {
+                    mkpsxiso::extract(path).await?;
+                    println!("extracted to {}", path.display());
+                }
+                cli::ModAction::Rebuild { path } => {
+                    let rom_name = path
+                        .file_name()
+                        .context("Failed file name get")?
+                        .to_str()
+                        .context("Failed to_str conversion")?;
+                    mkpsxiso::build(rom_name, rom_name).await?;
+                    println!("rebuilt from {}", path.display());
+                }
+            }
+            Ok(())
+        });
+    }
+
+    let args = cli.args;
 
     rt.block_on(async {
         if let Some(path) = &args.path {
