@@ -14,9 +14,10 @@ mod util;
 use rand::patch;
 use tokio::runtime::Runtime;
 
-use crate::dump::create_spoiler;
+use crate::{dump::create_spoiler, modding::handle_mod};
 
 mod gui;
+mod modding;
 
 fn main() -> anyhow::Result<()> {
     db::init()?;
@@ -26,24 +27,7 @@ fn main() -> anyhow::Result<()> {
     let rt = Runtime::new()?;
 
     if let Some(cli::Command::Mod { action }) = &cli.command {
-        return rt.block_on(async {
-            match action {
-                cli::ModAction::Extract { path } => {
-                    mkpsxiso::extract(path).await?;
-                    println!("extracted to {}", path.display());
-                }
-                cli::ModAction::Rebuild { path } => {
-                    let rom_name = path
-                        .file_name()
-                        .context("Failed file name get")?
-                        .to_str()
-                        .context("Failed to_str conversion")?;
-                    mkpsxiso::build(rom_name, rom_name).await?;
-                    println!("rebuilt from {}", path.display());
-                }
-            }
-            Ok(())
-        });
+        return rt.block_on(handle_mod(action));
     }
 
     let args = cli.args;
