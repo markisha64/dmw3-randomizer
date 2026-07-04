@@ -96,6 +96,16 @@ pub struct ObjectArray<T> {
     pub index: usize,
 }
 
+impl<T> Default for ObjectArray<T> {
+    fn default() -> Self {
+        ObjectArray {
+            original: Vec::new(),
+            modified: Vec::new(),
+            index: 0,
+        }
+    }
+}
+
 pub trait WriteObjects {
     fn write_buf(&self, source_buf: &mut Vec<u8>) -> anyhow::Result<()>;
 }
@@ -250,7 +260,9 @@ pub struct Objects {
     // hard coded data
     #[serde(skip)]
     pub file_map: Vec<mkpsxiso::File>,
+    #[serde(skip)]
     pub sector_offsets: ObjectArray<u32>,
+    #[serde(skip)]
     pub file_sizes: ObjectArray<u16>,
 
     pub parties: ObjectArray<u8>,
@@ -1240,7 +1252,7 @@ async fn write_model_objects(
     Ok(())
 }
 
-async fn read_model_objects(
+pub async fn read_model_objects(
     path: &PathBuf,
     model_path: &str,
     start_str: &str,
@@ -1322,7 +1334,7 @@ async fn read_model_objects(
     Ok(r)
 }
 
-async fn read_bufs(rom_name: &str, executable: &Executable) -> anyhow::Result<Bufs> {
+pub async fn read_bufs(rom_name: &str, executable: &Executable) -> anyhow::Result<Bufs> {
     let (stats_buf, map_buf, main_buf, shops_buf, card_shops_buf, exp_buf, pack_select_buf) = tokio::try_join!(
         fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::STATS_FILE)),
         fs::read(format!("extract/{}/{}", rom_name, dmw3_consts::MAP_FILE)),
@@ -1352,59 +1364,10 @@ async fn read_bufs(rom_name: &str, executable: &Executable) -> anyhow::Result<Bu
     })
 }
 
-pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
-    let iso_project = xml_file(path).await?;
-
-    let rom_name = path
-        .file_name()
-        .context("Failed file name get")?
-        .to_str()
-        .context("Failed to_str conversion")?;
-
-    let mut itr = fs::read_dir(format!("extract/{}/", rom_name)).await?;
-
-    let mut executable_opt = None;
-    while let Some(x) = itr.next().await {
-        let dir_entry = x?;
-
-        match Executable::from_str(
-            dir_entry
-                .file_name()
-                .into_string()
-                .map_err(|_| anyhow!("failed to convert to string"))?
-                .as_str(),
-        ) {
-            Some(exec) => {
-                executable_opt = Some(exec);
-                break;
-            }
-            None => {}
-        }
-    }
-
-    let executable = executable_opt.context("Can't find extracted executable")?;
-
-    let bufs = read_bufs(rom_name, &executable).await?;
-
-    let overlay_address = Pointer {
-        value: dmw3_consts::OVERLAY_ADDRESS,
-    };
-
-    let overlay = Pointer::from(
-        &bufs.main_buf
-            [overlay_address.to_index() as usize..overlay_address.to_index() as usize + 4],
-    );
-
-    let stage_address = Pointer {
-        value: dmw3_consts::STAGE_ADDRESS,
-    };
-
-    let stage = Pointer::from(
-        &bufs.main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
-    );
-
-    let file_map = iso_project.flatten()?;
-
+pub fn read_sector_offsets(
+    bufs: &Bufs,
+    executable: &Executable,
+) -> anyhow::Result<(ObjectArray<u32>, ObjectArray<u16>, Vec<u32>)> {
     let files_len = executable.to_sector_offsets_len();
 
     let mut sector_offsets: Vec<u32> = Vec::new();
@@ -1440,6 +1403,166 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         modified: file_sizes.clone(),
         index: sector_offsets_index + files_len * 4,
     };
+
+    Ok((sector_offsets_object, file_sizes_object, sector_offsets))
+}
+
+pub async fn read_executable(rom_name: &str) -> anyhow::Result<Executable> {
+    let mut itr = fs::read_dir(format!("extract/{}/", rom_name)).await?;
+
+    let mut executable_opt = None;
+    while let Some(x) = itr.next().await {
+        let dir_entry = x?;
+
+        match Executable::from_str(
+            dir_entry
+                .file_name()
+                .into_string()
+                .map_err(|_| anyhow!("failed to convert to string"))?
+                .as_str(),
+        ) {
+            Some(exec) => {
+                executable_opt = Some(exec);
+                break;
+            }
+            None => {}
+        }
+    }
+
+    executable_opt.context("Can't find extracted executable")
+}
+
+pub async fn read_iso_project(path: &PathBuf) -> anyhow::Result<(IsoProject, Vec<mkpsxiso::File>)> {
+    let iso_project = xml_file(path).await?;
+    let file_map = iso_project.flatten()?;
+    Ok((iso_project, file_map))
+}
+
+pub async fn read_cargo_tower_text(
+    rom_name: &str,
+    executable: &Executable,
+) -> anyhow::Result<HashMap<Language, Vec<Packed>>> {
+    let mut cargo_tower_text = HashMap::new();
+    for lang in executable.languages() {
+        let file = fs::read(format!(
+            "extract/{}/{}",
+            rom_name,
+            lang.to_path("SDMG260.BIN")
+        ))
+        .await?;
+
+        let unpacked_cutscenes = Packed::from(file);
+
+        cargo_tower_text.insert(
+            *lang,
+            unpacked_cutscenes
+                .files
+                .into_iter()
+                .map(|x| Packed::from_text(x))
+                .collect::<Vec<_>>(),
+        );
+    }
+    Ok(cargo_tower_text)
+}
+
+pub async fn read_text_files(
+    rom_name: &str,
+    executable: &Executable,
+) -> anyhow::Result<HashMap<String, TextFileGroup>> {
+    let mut text_files: HashMap<String, TextFileGroup> = HashMap::new();
+    for sname in executable.text_files() {
+        let mut files: HashMap<Language, TextFile> = HashMap::new();
+
+        for lang in executable.languages() {
+            let fsname = lang.to_file_name(sname);
+
+            let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).await?;
+
+            let packed = Packed::from_text(file);
+
+            files.insert(
+                *lang,
+                TextFile {
+                    file: packed,
+                    _file_name: fsname,
+                },
+            );
+        }
+
+        let group = TextFileGroup {
+            files,
+            mapped_items: HashMap::new(),
+            overwritten: HashSet::new(),
+        };
+
+        text_files.insert(String::from(*sname), group);
+    }
+    Ok(text_files)
+}
+
+pub async fn read_items(rom_name: &str, executable: &Executable) -> anyhow::Result<TextFileGroup> {
+    let mut item_files: HashMap<Language, TextFile> = HashMap::new();
+
+    for lang in executable.languages() {
+        let fsname = lang.to_file_name(dmw3_consts::ITEM_NAMES);
+
+        let file = fs::read(format!(
+            "extract/{}/{}",
+            rom_name,
+            lang.to_path(dmw3_consts::ITEM_NAMES)
+        ))
+        .await?;
+
+        let packed = Packed::from_text(file);
+
+        item_files.insert(
+            *lang,
+            TextFile {
+                file: packed,
+                _file_name: fsname,
+            },
+        );
+    }
+
+    Ok(TextFileGroup {
+        files: item_files,
+        mapped_items: HashMap::new(),
+        overwritten: HashSet::new(),
+    })
+}
+
+pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
+    let rom_name = path
+        .file_name()
+        .context("Failed file name get")?
+        .to_str()
+        .context("Failed to_str conversion")?;
+
+    let (iso_project, file_map) = read_iso_project(path).await?;
+
+    let executable = read_executable(rom_name).await?;
+
+    let bufs = read_bufs(rom_name, &executable).await?;
+
+    let overlay_address = Pointer {
+        value: dmw3_consts::OVERLAY_ADDRESS,
+    };
+
+    let overlay = Pointer::from(
+        &bufs.main_buf
+            [overlay_address.to_index() as usize..overlay_address.to_index() as usize + 4],
+    );
+
+    let stage_address = Pointer {
+        value: dmw3_consts::STAGE_ADDRESS,
+    };
+
+    let stage = Pointer::from(
+        &bufs.main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
+    );
+
+    let (sector_offsets_object, file_sizes_object, sector_offsets) =
+        read_sector_offsets(&bufs, &executable)?;
 
     let mut enemy_stats_reader = Cursor::new(&bufs.stats_buf);
 
@@ -1756,84 +1879,11 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         stage_load_data_arr.push(stage_load_data);
     }
 
-    let mut item_files: HashMap<Language, TextFile> = HashMap::new();
+    let items = read_items(rom_name, &executable).await?;
 
-    for lang in executable.languages() {
-        let fsname = lang.to_file_name(dmw3_consts::ITEM_NAMES);
+    let text_files = read_text_files(rom_name, &executable).await?;
 
-        let file = fs::read(format!(
-            "extract/{}/{}",
-            rom_name,
-            lang.to_path(dmw3_consts::ITEM_NAMES)
-        ))
-        .await?;
-
-        let packed = Packed::from_text(file);
-
-        item_files.insert(
-            *lang,
-            TextFile {
-                file: packed,
-                _file_name: fsname,
-            },
-        );
-    }
-
-    let items = TextFileGroup {
-        files: item_files,
-        mapped_items: HashMap::new(),
-        overwritten: HashSet::new(),
-    };
-
-    let mut text_files: HashMap<String, TextFileGroup> = HashMap::new();
-    for sname in executable.text_files() {
-        let mut files: HashMap<Language, TextFile> = HashMap::new();
-
-        for lang in executable.languages() {
-            let fsname = lang.to_file_name(sname);
-
-            let file = fs::read(format!("extract/{}/{}", rom_name, lang.to_path(sname))).await?;
-
-            let packed = Packed::from_text(file);
-
-            files.insert(
-                *lang,
-                TextFile {
-                    file: packed,
-                    _file_name: fsname,
-                },
-            );
-        }
-
-        let group = TextFileGroup {
-            files,
-            mapped_items: HashMap::new(),
-            overwritten: HashSet::new(),
-        };
-
-        text_files.insert(String::from(*sname), group);
-    }
-
-    let mut cargo_tower_text = HashMap::new();
-    for lang in executable.languages() {
-        let file = fs::read(format!(
-            "extract/{}/{}",
-            rom_name,
-            lang.to_path("SDMG260.BIN")
-        ))
-        .await?;
-
-        let unpacked_cutscenes = Packed::from(file);
-
-        cargo_tower_text.insert(
-            *lang,
-            unpacked_cutscenes
-                .files
-                .into_iter()
-                .map(|x| Packed::from_text(x))
-                .collect::<Vec<_>>(),
-        );
-    }
+    let cargo_tower_text = read_cargo_tower_text(rom_name, &executable).await?;
 
     let screen_name_mapping_index = bufs
         .map_buf
