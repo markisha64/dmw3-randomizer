@@ -593,7 +593,7 @@ fn read_entities(
 
                 entity_conditions_raw.push(condition_result.clone());
 
-                if matches!(condition_result, ScriptConditionStep::EndStep) {
+                if condition_result.is_last_step() {
                     break;
                 }
             }
@@ -644,7 +644,7 @@ fn read_entities(
 
                     scripts_condition_raw.push(condition.clone());
 
-                    if matches!(condition, ScriptConditionStep::EndStep) {
+                    if condition.is_last_step() {
                         break;
                     }
                 }
@@ -670,7 +670,7 @@ fn read_entities(
                         Ok(script) => {
                             scripts_condition_raw.push(script.clone());
 
-                            if matches!(script, ScriptConditionStep::EndStep) {
+                            if script.is_last_step() {
                                 break;
                             }
                         }
@@ -757,8 +757,8 @@ fn read_environmentals(
     loop {
         let environmental = Environmental::read(&mut environmentals_reader).ok()?;
 
-        if matches!(environmental.conditions[0], ScriptConditionStep::EndStep)
-            && matches!(environmental.conditions[1], ScriptConditionStep::EndStep)
+        if environmental.conditions[0].is_last_step()
+            && environmental.conditions[1].is_last_step()
             && environmental.next_stage_id == 0
         {
             break;

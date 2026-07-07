@@ -1369,12 +1369,12 @@ dependencies = [
 [[package]]
 name = "dmw3_consts"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#cbc265d9c6b6f49940e8d57ff22e1429e3b3e46e"
+source = "git+https://github.com/markisha64/dmw3-util#ff6068862a8474f9afd7573646bb57febd8c90c0"
 
 [[package]]
 name = "dmw3_lang"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#cbc265d9c6b6f49940e8d57ff22e1429e3b3e46e"
+source = "git+https://github.com/markisha64/dmw3-util#ff6068862a8474f9afd7573646bb57febd8c90c0"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -1385,7 +1385,7 @@ dependencies = [
 [[package]]
 name = "dmw3_model"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#cbc265d9c6b6f49940e8d57ff22e1429e3b3e46e"
+source = "git+https://github.com/markisha64/dmw3-util#ff6068862a8474f9afd7573646bb57febd8c90c0"
 dependencies = [
  "binrw",
 ]
@@ -1393,7 +1393,7 @@ dependencies = [
 [[package]]
 name = "dmw3_pack"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#cbc265d9c6b6f49940e8d57ff22e1429e3b3e46e"
+source = "git+https://github.com/markisha64/dmw3-util#ff6068862a8474f9afd7573646bb57febd8c90c0"
 dependencies = [
  "anyhow",
  "binrw",
@@ -1431,7 +1431,7 @@ dependencies = [
 [[package]]
 name = "dmw3_structs"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#cbc265d9c6b6f49940e8d57ff22e1429e3b3e46e"
+source = "git+https://github.com/markisha64/dmw3-util#ff6068862a8474f9afd7573646bb57febd8c90c0"
 dependencies = [
  "binrw",
  "dmw3_consts",
@@ -3602,7 +3602,7 @@ dependencies = [
 [[package]]
 name = "rlen"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#cbc265d9c6b6f49940e8d57ff22e1429e3b3e46e"
+source = "git+https://github.com/markisha64/dmw3-util#ff6068862a8474f9afd7573646bb57febd8c90c0"
 dependencies = [
  "clap",
 ]
@@ -4339,7 +4339,7 @@ dependencies = [
 [[package]]
 name = "tim"
 version = "0.1.0"
-source = "git+https://github.com/markisha64/dmw3-util#cbc265d9c6b6f49940e8d57ff22e1429e3b3e46e"
+source = "git+https://github.com/markisha64/dmw3-util#ff6068862a8474f9afd7573646bb57febd8c90c0"
 dependencies = [
  "clap",
 ]
