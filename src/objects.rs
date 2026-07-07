@@ -25,6 +25,7 @@ use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
 use dmw3_structs::StageOverride;
 use serde::Deserialize;
+use serde::Deserializer;
 use serde::Serialize;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -43,11 +44,35 @@ use dmw3_structs::{
     Environmental, ItemShopData, MapColor, MoveData, PartyData, Pointer, Shop, StageLoadData,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct Object<T> {
+    #[serde(skip)]
     pub original: T,
     pub modified: T,
     pub index: usize,
+}
+
+impl<'de, T> Deserialize<'de> for Object<T>
+where
+    T: Deserialize<'de> + Clone,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper<T> {
+            modified: T,
+            index: usize,
+        }
+
+        let helper = Helper::<T>::deserialize(deserializer)?;
+        Ok(Object {
+            original: helper.modified.clone(),
+            modified: helper.modified,
+            index: helper.index,
+        })
+    }
 }
 
 pub struct TextFile {
@@ -89,11 +114,35 @@ pub struct AuctionSet {
     pub index: usize,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 pub struct ObjectArray<T> {
+    #[serde(skip)]
     pub original: Vec<T>,
     pub modified: Vec<T>,
     pub index: usize,
+}
+
+impl<'de, T> Deserialize<'de> for ObjectArray<T>
+where
+    T: Deserialize<'de> + Clone,
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        #[derive(Deserialize)]
+        struct Helper<T> {
+            modified: Vec<T>,
+            index: usize,
+        }
+
+        let helper = Helper::<T>::deserialize(deserializer)?;
+        Ok(ObjectArray {
+            original: helper.modified.clone(),
+            modified: helper.modified,
+            index: helper.index,
+        })
+    }
 }
 
 impl<T> Default for ObjectArray<T> {
@@ -544,7 +593,7 @@ fn read_entities(
 
                 entity_conditions_raw.push(condition_result.clone());
 
-                if condition_result.is_last_step() {
+                if matches!(condition_result, ScriptConditionStep::EndStep) {
                     break;
                 }
             }
@@ -595,7 +644,7 @@ fn read_entities(
 
                     scripts_condition_raw.push(condition.clone());
 
-                    if condition.is_last_step() {
+                    if matches!(condition, ScriptConditionStep::EndStep) {
                         break;
                     }
                 }
@@ -621,7 +670,7 @@ fn read_entities(
                         Ok(script) => {
                             scripts_condition_raw.push(script.clone());
 
-                            if script.is_last_step() {
+                            if matches!(script, ScriptConditionStep::EndStep) {
                                 break;
                             }
                         }
@@ -708,8 +757,8 @@ fn read_environmentals(
     loop {
         let environmental = Environmental::read(&mut environmentals_reader).ok()?;
 
-        if environmental.conditions[0] == 0x0000ffff
-            && environmental.conditions[1] == 0x0000ffff
+        if matches!(environmental.conditions[0], ScriptConditionStep::EndStep)
+            && matches!(environmental.conditions[1], ScriptConditionStep::EndStep)
             && environmental.next_stage_id == 0
         {
             break;

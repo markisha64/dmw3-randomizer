@@ -7,6 +7,7 @@ use crate::{
     util::{self, shuffle, uniform_random_vector},
 };
 use anyhow::{anyhow, Context};
+use dmw3_structs::ScriptConditionStep;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -220,17 +221,22 @@ fn item_boxes(
                             ((logic.script.value - min_script_cond.value) / 0x4) as usize;
 
                         for script in &mut entities.scripts_conditions.modified[script_idx..] {
-                            if script.is_last_step() {
-                                break;
-                            }
+                            let (value, condition_type, _) = match script {
+                                ScriptConditionStep::EndStep => break,
+                                ScriptConditionStep::Step {
+                                    value,
+                                    condition_type,
+                                    flag,
+                                } => (value, condition_type, flag),
+                            };
 
-                            if !type_script_add_item(script.condition_type) {
+                            if !type_script_add_item(*condition_type) {
                                 continue;
                             }
 
                             let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
 
-                            script.value = nv;
+                            *value = nv;
 
                             let real_file = objects
                                 .file_map
