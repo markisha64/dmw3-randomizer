@@ -32,17 +32,17 @@ fn main() -> anyhow::Result<()> {
 
     let args = cli.args;
 
-    rt.block_on(async {
-        if let Some(path) = &args.path {
+    if let Some(path) = &args.path {
+        rt.block_on(async {
             if args.dump {
                 mkpsxiso::extract(path).await?;
 
                 dump::dump(path).await?;
             }
-        }
 
-        Ok::<(), anyhow::Error>(())
-    })?;
+            Ok::<(), anyhow::Error>(())
+        })?;
+    }
 
     match &args.path {
         Some(path) => rt.block_on(async {
