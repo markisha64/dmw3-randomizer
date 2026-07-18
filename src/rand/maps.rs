@@ -169,148 +169,106 @@ fn item_boxes(
 
     for map in &mut objects.map_objects {
         if let Some(entities) = &mut map.entities {
-            // println!("name {}", map.file_name);
-            let logic_min = entities
-                .entities
-                .modified
-                .iter()
-                .find(|x| !x.logic.null())
-                .map(|x| x.logic);
+            for mapped_entity in &mut entities.mapped {
+                if !dmw3_consts::ITEM_BOX_SPRITES.contains(&mapped_entity.data.sprite)
+                    || mapped_entity.logics.is_empty()
+                {
+                    continue;
+                }
 
-            let scripts = entities
-                .entity_logics
-                .modified
-                .iter()
-                .filter(|x| !x.script.null())
-                .map(|x| x.script);
-
-            let conditions = entities
-                .entity_logics
-                .modified
-                .iter()
-                .filter(|x| !x.conditions.null())
-                .map(|x| x.conditions);
-
-            let mut script_cond = Vec::from_iter(scripts);
-            script_cond.extend(conditions);
-
-            let script_cond_min = script_cond.iter().min_by(|a, b| a.value.cmp(&b.value));
-
-            let minn = logic_min.zip(script_cond_min);
-
-            if let Some((min_logic, min_script_cond)) = minn {
-                for entity in &mut entities.entities.modified {
-                    if !dmw3_consts::ITEM_BOX_SPRITES.contains(&entity.sprite)
-                        || entity.logic.null()
-                    {
-                        continue;
+                for logic in &mut mapped_entity.logics {
+                    if logic.conversation == 0 {
+                        break;
                     }
 
-                    let logic_idx = ((entity.logic.value - min_logic.value) / 0xc) as usize;
+                    for script in &mut logic.scripts {
+                        let (value, condition_type, _) = match script {
+                            ScriptConditionStep::EndStep => break,
+                            ScriptConditionStep::Step {
+                                value,
+                                condition_type,
+                                flag,
+                            } => (value, condition_type, flag),
+                        };
 
-                    for logic in &mut entities.entity_logics.modified[logic_idx..] {
-                        if logic.text_index == 0 {
-                            break;
-                        }
-
-                        if logic.script.null() {
+                        if !type_script_add_item(*condition_type) {
                             continue;
                         }
 
-                        let script_idx =
-                            ((logic.script.value - min_script_cond.value) / 0x4) as usize;
+                        let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
 
-                        for script in &mut entities.scripts_conditions.modified[script_idx..] {
-                            let (value, condition_type, _) = match script {
-                                ScriptConditionStep::EndStep => break,
-                                ScriptConditionStep::Step {
-                                    value,
-                                    condition_type,
-                                    flag,
-                                } => (value, condition_type, flag),
-                            };
+                        *value = nv;
 
-                            if !type_script_add_item(*condition_type) {
-                                continue;
-                            }
+                        let real_file = objects
+                            .file_map
+                            .iter()
+                            .find(|x| {
+                                x.offs
+                                    == Some(objects.sector_offsets.original[map.talk_file as usize])
+                            })
+                            .context("failed to find real file")?;
 
-                            let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
+                        let sname = &real_file.name[1..];
 
-                            *value = nv;
+                        let group = objects
+                            .text_files
+                            .get_mut(sname)
+                            .context("failed to get mut")?;
 
-                            let real_file = objects
-                                .file_map
-                                .iter()
-                                .find(|x| {
-                                    x.offs
-                                        == Some(
-                                            objects.sector_offsets.original[map.talk_file as usize],
-                                        )
-                                })
-                                .context("failed to find real file")?;
-
-                            let sname = &real_file.name[1..];
-
-                            let group = objects
-                                .text_files
-                                .get_mut(sname)
-                                .context("failed to get mut")?;
-
-                            // alrady exists (rare)
-                            if let Some(idx) = group.mapped_items.get(&nv) {
-                                logic.text_index = (*idx) as u32;
-
-                                break;
-                            }
-
-                            if group.overwritten.contains(&logic.text_index) {
-                                // index already overwritten
-                                let idx = group
-                                    .files
-                                    .get(language)
-                                    .context("missing lang")?
-                                    .file
-                                    .files
-                                    .len();
-
-                                for (lang, talk_file) in &mut group.files {
-                                    let item_name = objects
-                                        .items
-                                        .files
-                                        .get(lang)
-                                        .context("failed to get by lang")?
-                                        .file
-                                        .files[nv as usize]
-                                        .clone();
-
-                                    talk_file.file.files.push(lang.to_received_item(item_name));
-                                }
-
-                                logic.text_index = idx as u32;
-
-                                group.mapped_items.insert(nv, idx as u16);
-                            } else {
-                                // index is safe for overwrite
-                                for (lang, talk_file) in &mut group.files {
-                                    let item_name = objects
-                                        .items
-                                        .files
-                                        .get(lang)
-                                        .context("failed to get by lang")?
-                                        .file
-                                        .files[nv as usize]
-                                        .clone();
-
-                                    talk_file.file.files[logic.text_index as usize] =
-                                        lang.to_received_item(item_name);
-                                }
-
-                                group.overwritten.insert(logic.text_index);
-                                group.mapped_items.insert(nv, logic.text_index as u16);
-                            }
+                        // alrady exists (rare)
+                        if let Some(idx) = group.mapped_items.get(&nv) {
+                            logic.conversation = *idx as usize;
 
                             break;
                         }
+
+                        if group.overwritten.contains(&(logic.conversation as u32)) {
+                            // index already overwritten
+                            let idx = group
+                                .files
+                                .get(language)
+                                .context("missing lang")?
+                                .file
+                                .files
+                                .len();
+
+                            for (lang, talk_file) in &mut group.files {
+                                let item_name = objects
+                                    .items
+                                    .files
+                                    .get(lang)
+                                    .context("failed to get by lang")?
+                                    .file
+                                    .files[nv as usize]
+                                    .clone();
+
+                                talk_file.file.files.push(lang.to_received_item(item_name));
+                            }
+
+                            logic.conversation = idx;
+
+                            group.mapped_items.insert(nv, idx as u16);
+                        } else {
+                            // index is safe for overwrite
+                            for (lang, talk_file) in &mut group.files {
+                                let item_name = objects
+                                    .items
+                                    .files
+                                    .get(lang)
+                                    .context("failed to get by lang")?
+                                    .file
+                                    .files[nv as usize]
+                                    .clone();
+
+                                talk_file.file.files[logic.conversation as usize] =
+                                    lang.to_received_item(item_name);
+                            }
+
+                            group.overwritten.insert(logic.conversation as u32);
+                            group.mapped_items.insert(nv, logic.conversation as u16);
+                        }
+
+                        break;
                     }
                 }
             }
