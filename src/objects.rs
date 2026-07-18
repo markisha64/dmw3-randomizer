@@ -265,10 +265,37 @@ pub struct StageOverridesObject {
 
 #[derive(Serialize, Deserialize)]
 pub struct MapEntities {
+    #[serde(skip)]
     pub entities: ObjectArray<EntityData>,
+    #[serde(skip)]
     pub entity_logics: ObjectArray<EntityLogic>,
+    #[serde(skip)]
     pub scripts_conditions: ObjectArray<ScriptConditionStep>,
+    #[serde(skip)]
     pub entity_conditions: ObjectArray<ScriptConditionStep>,
+
+    // anoying indices since we aren't writing things above
+    pub entities_idx: usize,
+    pub entity_logics_idx: usize,
+    pub scripts_conditions_idx: usize,
+    pub entity_conditions_idx: usize,
+
+    // mapped
+    pub mapped: Vec<MappedEntity>,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct MappedEntityLogic {
+    pub conditions: Vec<ScriptConditionStep>,
+    pub scripts: Vec<ScriptConditionStep>,
+    pub conversation: usize,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct MappedEntity {
+    pub data: EntityData,
+    pub conditions: Vec<ScriptConditionStep>,
+    pub logics: Vec<MappedEntityLogic>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -302,6 +329,8 @@ pub struct Objects {
     pub executable: Executable,
     #[serde(skip)]
     pub iso_project: IsoProject,
+    #[serde(skip)]
+    pub stage: Pointer,
 
     #[serde(skip)]
     pub cargo_tower_text: HashMap<Language, Vec<Packed>>,
@@ -720,12 +749,188 @@ fn read_entities(
             .unwrap_or(0),
     };
 
+    let first_logic = entities_obj
+        .original
+        .iter()
+        .find(|x| !x.logic.null())
+        .map(|x| x.logic.value)
+        .unwrap_or(0);
+
+    let first_entity_conditions = entities_obj
+        .original
+        .iter()
+        .find(|x| !x.conditions.null())
+        .map(|x| x.conditions.value)
+        .unwrap_or(0);
+
+    let scripts = entity_logics
+        .original
+        .iter()
+        .filter(|x| !x.script.null())
+        .map(|x| x.script);
+
+    let conditions = entity_logics
+        .original
+        .iter()
+        .filter(|x| !x.conditions.null())
+        .map(|x| x.conditions);
+
+    let mut script_cond = Vec::from_iter(scripts);
+    script_cond.extend(conditions);
+
+    let script_cond_min = script_cond
+        .iter()
+        .min_by(|a, b| a.value.cmp(&b.value))
+        .map(|x| x.value)
+        .unwrap_or(0);
+
+    let mapped = entities_obj
+        .original
+        .iter()
+        .map(|entity| {
+            let mut logics = Vec::new();
+            let mut conditions = Vec::new();
+
+            if !entity.logic.null() {
+                let logics_idx = ((entity.logic.value - first_logic) / 0xc) as usize;
+
+                for logic in &entity_logics.original[logics_idx..] {
+                    let mut conditions = Vec::new();
+                    let mut scripts = Vec::new();
+
+                    if logic.text_index == 0 {
+                        break;
+                    }
+
+                    if !logic.conditions.null() {
+                        let conditions_idx =
+                            ((logic.conditions.value - script_cond_min) / 0x4) as usize;
+
+                        for condition in &scripts_conditions.original[conditions_idx..] {
+                            conditions.push(*condition);
+
+                            if condition.is_last_step() {
+                                break;
+                            }
+                        }
+                    }
+
+                    if !logic.script.null() {
+                        let scripts_idx = ((logic.script.value - script_cond_min) / 0x4) as usize;
+
+                        for script in &scripts_conditions.original[scripts_idx..] {
+                            scripts.push(*script);
+
+                            if script.is_last_step() {
+                                break;
+                            }
+                        }
+                    }
+
+                    logics.push(MappedEntityLogic {
+                        conditions,
+                        scripts,
+                        conversation: logic.text_index as usize,
+                    });
+                }
+            }
+
+            if !entity.conditions.null() {
+                let conditions_idx =
+                    ((entity.conditions.value - first_entity_conditions) / 0x4) as usize;
+
+                for condition in &entity_conditions.original[conditions_idx..] {
+                    conditions.push(*condition);
+
+                    if condition.is_last_step() {
+                        break;
+                    }
+                }
+            }
+
+            return MappedEntity {
+                data: entity.clone(),
+                conditions,
+                logics,
+            };
+        })
+        .collect::<Vec<_>>();
+
+    let entities_idx = entities_obj.index;
+    let entity_logics_idx = entity_logics.index;
+    let scripts_conditions_idx = scripts_conditions.index;
+    let entity_conditions_idx = entity_conditions.index;
+
     Some(MapEntities {
         entities: entities_obj,
         entity_logics,
         scripts_conditions,
         entity_conditions,
+        entities_idx,
+        entity_logics_idx,
+        scripts_conditions_idx,
+        entity_conditions_idx,
+        mapped,
     })
+}
+
+fn rebuild_entities(entities: &mut MapEntities, stage: &Pointer) {
+    let mut entity_objects = Vec::new();
+    let mut entity_logics = Vec::new();
+    let mut entity_logics_idx = entities.entity_logics.index;
+    let mut scripts_conditions = Vec::new();
+    let mut scripts_conditions_idx = entities.scripts_conditions.index;
+    let mut entity_conditions = Vec::new();
+    let mut entity_conditions_idx = entities.entity_conditions.index;
+
+    for entity in entities.mapped.iter_mut() {
+        if !entity.logics.is_empty() {
+            entity.data.logic = Pointer::from_index_overlay(entity_logics_idx as u32, stage.value);
+
+            for logic in &entity.logics {
+                let mut new_logic = EntityLogic {
+                    conditions: Pointer { value: 0 },
+                    script: Pointer { value: 0 },
+                    text_index: logic.conversation as u32,
+                };
+
+                if !logic.conditions.is_empty() {
+                    new_logic.conditions =
+                        Pointer::from_index_overlay(scripts_conditions_idx as u32, stage.value);
+
+                    scripts_conditions.extend(logic.conditions.iter());
+                    scripts_conditions_idx += 4 * logic.conditions.len();
+                }
+
+                if !logic.scripts.is_empty() {
+                    new_logic.script =
+                        Pointer::from_index_overlay(scripts_conditions_idx as u32, stage.value);
+
+                    scripts_conditions.extend(logic.scripts.iter());
+                    scripts_conditions_idx += 4 * logic.scripts.len();
+                }
+
+                entity_logics.push(new_logic);
+            }
+
+            entity_logics_idx += 12 * entity.logics.len();
+        }
+
+        if !entity.conditions.is_empty() {
+            entity.data.conditions =
+                Pointer::from_index_overlay(entity_conditions_idx as u32, stage.value);
+
+            entity_conditions.extend(entity.conditions.iter());
+            entity_conditions_idx += 4 * entity.conditions.len();
+        }
+
+        entity_objects.push(entity.data.clone());
+    }
+
+    entities.entities.modified = entity_objects;
+    entities.entity_logics.modified = entity_logics;
+    entities.scripts_conditions.modified = scripts_conditions;
+    entities.entity_conditions.modified = entity_conditions;
 }
 
 fn read_environmentals(
@@ -1580,6 +1785,16 @@ pub async fn read_items(rom_name: &str, executable: &Executable) -> anyhow::Resu
     })
 }
 
+pub fn read_stage_pointer(bufs: &Bufs) -> Pointer {
+    let stage_address = Pointer {
+        value: dmw3_consts::STAGE_ADDRESS,
+    };
+
+    Pointer::from(
+        &bufs.main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
+    )
+}
+
 pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     let rom_name = path
         .file_name()
@@ -1602,13 +1817,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
             [overlay_address.to_index() as usize..overlay_address.to_index() as usize + 4],
     );
 
-    let stage_address = Pointer {
-        value: dmw3_consts::STAGE_ADDRESS,
-    };
-
-    let stage = Pointer::from(
-        &bufs.main_buf[stage_address.to_index() as usize..stage_address.to_index() as usize + 4],
-    );
+    let stage = read_stage_pointer(&bufs);
 
     let (sector_offsets_object, file_sizes_object, sector_offsets) =
         read_sector_offsets(&bufs, &executable)?;
@@ -2224,6 +2433,7 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
         executable,
         file_map,
         iso_project,
+        stage,
         cargo_tower_text,
         model_objects,
         stage_model_objects,
@@ -2274,7 +2484,11 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
     })
 }
 
-async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyhow::Result<()> {
+async fn write_map_objects(
+    path: &PathBuf,
+    objects: &mut Vec<MapObject>,
+    stage: &Pointer,
+) -> anyhow::Result<()> {
     let rom_name = path
         .file_name()
         .context("Failed to get file name")?
@@ -2289,6 +2503,8 @@ async fn write_map_objects(path: &PathBuf, objects: &mut Vec<MapObject>) -> anyh
         }
 
         if let Some(map_entities) = &mut object.entities {
+            rebuild_entities(map_entities, stage);
+
             map_entities.entities.write_buf(buf)?;
             map_entities.entity_logics.write_buf(buf)?;
             map_entities.scripts_conditions.write_buf(buf)?;
@@ -2579,7 +2795,7 @@ pub async fn write_objects(path: &PathBuf, objects: &mut Objects) -> anyhow::Res
         .write_all(&objects.bufs.pack_select_buf)
         .await?;
 
-    write_map_objects(path, &mut objects.map_objects).await?;
+    write_map_objects(path, &mut objects.map_objects, &objects.stage).await?;
 
     write_model_objects(
         path,

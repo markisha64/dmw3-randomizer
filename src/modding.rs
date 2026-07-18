@@ -11,8 +11,8 @@ use crate::{
     mkpsxiso,
     objects::{
         fix_lba, read_bufs, read_cargo_tower_text, read_executable, read_iso_project, read_items,
-        read_model_objects, read_objects, read_sector_offsets, read_text_files, write_objects,
-        Objects,
+        read_model_objects, read_objects, read_sector_offsets, read_stage_pointer, read_text_files,
+        write_objects, Objects,
     },
 };
 
@@ -49,6 +49,7 @@ async fn rebuild(path: &PathBuf) -> anyhow::Result<()> {
 
     objects.executable = read_executable(rom_name).await?;
     objects.bufs = read_bufs(rom_name, &objects.executable).await?;
+    objects.stage = read_stage_pointer(&objects.bufs);
     (objects.sector_offsets, objects.file_sizes, _) =
         read_sector_offsets(&objects.bufs, &objects.executable)?;
     (objects.iso_project, objects.file_map) = read_iso_project(path).await?;
@@ -67,6 +68,13 @@ async fn rebuild(path: &PathBuf) -> anyhow::Result<()> {
             rom_name, map_object.file_name
         ))
         .await?;
+
+        if let Some(map_entities) = &mut map_object.entities {
+            map_entities.entities.index = map_entities.entities_idx;
+            map_entities.entity_logics.index = map_entities.entity_logics_idx;
+            map_entities.scripts_conditions.index = map_entities.scripts_conditions_idx;
+            map_entities.entity_conditions.index = map_entities.entity_conditions_idx;
+        }
     }
 
     write_objects(path, &mut objects).await?;
