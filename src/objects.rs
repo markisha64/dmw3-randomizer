@@ -20,6 +20,7 @@ use dmw3_structs::PartyExpBits;
 use dmw3_structs::QuestRange;
 use dmw3_structs::ScreenNameMapping;
 use dmw3_structs::ScriptConditionStep;
+use dmw3_structs::ScriptConditionType;
 use dmw3_structs::StageEncounter;
 use dmw3_structs::StageEncounterArea;
 use dmw3_structs::StageEncounters;
@@ -108,9 +109,9 @@ pub const AUCTION_ITEMS_SETS: [u16; 16] = [
     0x8b01, 0x8b0d, 0x8b02, 0x8b0f,
 ];
 
-#[derive(Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Serialize, Deserialize, Debug)]
 pub struct AuctionSet {
-    pub item: u16,
+    pub item: ScriptConditionStep,
     pub index: usize,
 }
 
@@ -200,8 +201,8 @@ impl WriteObjects for ObjectArray<AuctionSet> {
     fn write_buf(&self, write_buf: &mut Vec<u8>) -> anyhow::Result<()> {
         let mut cursor = std::io::Cursor::new(write_buf);
         for set in &self.modified {
-            let bitfield = 0x8a00 | set.item;
-            let bytes = bitfield.to_le_bytes();
+            let raw: u32 = set.item.into();
+            let bytes = raw.to_le_bytes();
             let buf = [bytes[0], bytes[1], 0x04, 0x34];
             cursor.seek(std::io::SeekFrom::Start(set.index as u64))?;
             cursor.write_all(&buf)?;
@@ -2221,8 +2222,17 @@ pub async fn read_objects(path: &PathBuf) -> anyhow::Result<Objects> {
             * 4;
 
         let item = item_set & 0x1ff;
+        let c_type = item_set >> 8 & 0xfffe;
 
-        auction_sets.push(AuctionSet { item, index });
+        auction_sets.push(AuctionSet {
+            item: ScriptConditionStep::Step {
+                value: item,
+                condition_type: ScriptConditionType::Item(c_type as u8),
+                // flag here doesn't matter
+                flag: 0,
+            },
+            index,
+        });
     }
 
     let auction_items = ObjectArray {

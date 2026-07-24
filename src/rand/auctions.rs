@@ -2,6 +2,7 @@ use std::iter;
 
 use anyhow::Context;
 use dmw3_consts::{AUCTION_COUNT, OINKMON_AUCTION_IDX};
+use dmw3_structs::ScriptConditionStep;
 use rand_xoshiro::{rand_core::RngCore, Xoshiro256StarStar};
 
 use crate::{json::Auction, lang::Language, objects::Objects, rand::shops::shoppable};
@@ -565,7 +566,14 @@ fn auction_items(preset: &Auction, objects: &mut Objects, rng: &mut Xoshiro256St
     let mut pool = shoppable(objects, &preset.auction_items_pool);
 
     for auction_set in &mut objects.auction_items.modified {
-        auction_set.item = pool.remove((rng.next_u64() % pool.len() as u64) as usize);
+        match &mut auction_set.item {
+            ScriptConditionStep::Step {
+                value,
+                condition_type: _condition_type,
+                flag: _flag,
+            } => *value = pool.remove((rng.next_u64() % pool.len() as u64) as usize),
+            _ => unreachable!(),
+        };
     }
 }
 
@@ -603,7 +611,14 @@ fn auction_text(preset: &Auction, objects: &mut Objects) -> anyhow::Result<()> {
     for lang in objects.executable.languages() {
         // 15 normal and 1 Oinkmon
         for i in 0..AUCTION_COUNT {
-            let item = objects.auction_items.modified[i].item;
+            let item = match objects.auction_items.modified[i].item {
+                ScriptConditionStep::Step {
+                    value,
+                    condition_type: _condition_type,
+                    flag: _flag,
+                } => value,
+                _ => unreachable!(),
+            };
 
             let item_name = &objects
                 .items
