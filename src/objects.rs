@@ -264,7 +264,7 @@ pub struct StageOverridesObject {
     pub environmental_overrides: Vec<Vec<Object<EnvironmentalOverride>>>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct MapEntities {
     #[serde(skip)]
     pub entities: ObjectArray<EntityData>,
@@ -285,14 +285,14 @@ pub struct MapEntities {
     pub mapped: Vec<MappedEntity>,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct MappedEntityLogic {
     pub conditions: Vec<ScriptConditionStep>,
     pub scripts: Vec<ScriptConditionStep>,
     pub conversation: usize,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct MappedEntity {
     pub data: EntityData,
     pub conditions: Vec<ScriptConditionStep>,
@@ -808,11 +808,11 @@ fn read_entities(
                             ((logic.conditions.value - script_cond_min) / 0x4) as usize;
 
                         for condition in &scripts_conditions.original[conditions_idx..] {
-                            conditions.push(*condition);
-
                             if condition.is_last_step() {
                                 break;
                             }
+
+                            conditions.push(*condition);
                         }
                     }
 
@@ -820,11 +820,11 @@ fn read_entities(
                         let scripts_idx = ((logic.script.value - script_cond_min) / 0x4) as usize;
 
                         for script in &scripts_conditions.original[scripts_idx..] {
-                            scripts.push(*script);
-
                             if script.is_last_step() {
                                 break;
                             }
+
+                            scripts.push(*script);
                         }
                     }
 
@@ -841,11 +841,11 @@ fn read_entities(
                     ((entity.conditions.value - first_entity_conditions) / 0x4) as usize;
 
                 for condition in &entity_conditions.original[conditions_idx..] {
-                    conditions.push(*condition);
-
                     if condition.is_last_step() {
                         break;
                     }
+
+                    conditions.push(*condition);
                 }
             }
 
@@ -900,7 +900,8 @@ fn rebuild_entities(entities: &mut MapEntities, stage: &Pointer) {
                         Pointer::from_index_overlay(scripts_conditions_idx as u32, stage.value);
 
                     scripts_conditions.extend(logic.conditions.iter());
-                    scripts_conditions_idx += 4 * logic.conditions.len();
+                    scripts_conditions.push(ScriptConditionStep::EndStep);
+                    scripts_conditions_idx += 4 * (logic.conditions.len() + 1);
                 }
 
                 if !logic.scripts.is_empty() {
@@ -908,13 +909,19 @@ fn rebuild_entities(entities: &mut MapEntities, stage: &Pointer) {
                         Pointer::from_index_overlay(scripts_conditions_idx as u32, stage.value);
 
                     scripts_conditions.extend(logic.scripts.iter());
-                    scripts_conditions_idx += 4 * logic.scripts.len();
+                    scripts_conditions.push(ScriptConditionStep::EndStep);
+                    scripts_conditions_idx += 4 * (logic.scripts.len() + 1);
                 }
 
                 entity_logics.push(new_logic);
             }
 
-            entity_logics_idx += 12 * entity.logics.len();
+            entity_logics.push(EntityLogic {
+                conditions: Pointer { value: 0 },
+                script: Pointer { value: 0 },
+                text_index: 0,
+            });
+            entity_logics_idx += 12 * (entity.logics.len() + 1);
         }
 
         if !entity.conditions.is_empty() {
@@ -922,7 +929,8 @@ fn rebuild_entities(entities: &mut MapEntities, stage: &Pointer) {
                 Pointer::from_index_overlay(entity_conditions_idx as u32, stage.value);
 
             entity_conditions.extend(entity.conditions.iter());
-            entity_conditions_idx += 4 * entity.conditions.len();
+            entity_conditions.push(ScriptConditionStep::EndStep);
+            entity_conditions_idx += 4 * (entity.conditions.len() + 1);
         }
 
         entity_objects.push(entity.data.clone());
