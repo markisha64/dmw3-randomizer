@@ -572,7 +572,7 @@ fn auction_items(preset: &Auction, objects: &mut Objects, rng: &mut Xoshiro256St
                 condition_type: _condition_type,
                 flag: _flag,
             } => *value = pool.remove((rng.next_u64() % pool.len() as u64) as usize),
-            _ => unreachable!(),
+            ScriptConditionStep::EndStep => unreachable!("EndStep shouldn't be in mapped"),
         };
     }
 }
@@ -617,7 +617,7 @@ fn auction_text(preset: &Auction, objects: &mut Objects) -> anyhow::Result<()> {
                     condition_type: _condition_type,
                     flag: _flag,
                 } => value,
-                _ => unreachable!(),
+                ScriptConditionStep::EndStep => unreachable!("EndStep shouldn't be in mapped"),
             };
 
             let item_name = &objects

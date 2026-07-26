@@ -183,12 +183,14 @@ fn item_boxes(
 
                     for script in &mut logic.scripts {
                         let (value, condition_type, _) = match script {
-                            ScriptConditionStep::EndStep => break,
                             ScriptConditionStep::Step {
                                 value,
                                 condition_type,
                                 flag,
                             } => (value, condition_type, flag),
+                            ScriptConditionStep::EndStep => {
+                                unreachable!("EndStep shouldn't be in mapped")
+                            }
                         };
 
                         if !type_script_add_item(*condition_type) {
