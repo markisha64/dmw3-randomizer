@@ -1,8 +1,8 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use crate::json::{Encounters, Randomizer, TNTStrategy};
 use crate::rand::{dmw3_structs::EncounterData, Objects};
-use crate::util::{self, uniform_random_vector};
+use crate::util::{self, uniform_random_vector, unique_vec};
 use anyhow::Context;
 use rand_xoshiro::Xoshiro256StarStar;
 
@@ -31,7 +31,7 @@ pub fn patch(
     let modified_enemy_stats = &mut objects.enemy_stats.modified;
     let encounters = &objects.encounters.original;
 
-    let possible_ids: HashSet<u32> = HashSet::from_iter(
+    let possible_arr = unique_vec(
         encounters
             .iter()
             .filter(|x| !skip(x, &preset.encounters))
@@ -45,20 +45,16 @@ pub fn patch(
 
     let mut shuffled_encounters_digimon: HashMap<u32, Vec<EncounterData>> = HashMap::new();
 
-    let possible_arr = Vec::from_iter(possible_ids);
     let mut shuffled_ids =
         util::uniform_random_vector(&possible_arr, len - skipped_count, preset.shuffles, rng);
 
     for digimon_id in possible_arr {
-        let possible_encounters: Vec<&EncounterData> = encounters
-            .iter()
-            .filter(|x| x.digimon_id == digimon_id)
-            .collect();
-
-        let possible_encounters: HashSet<EncounterData> =
-            HashSet::from_iter(possible_encounters.iter().map(|x| **x));
-
-        let possible_encounters_arr = Vec::from_iter(possible_encounters.into_iter());
+        let possible_encounters_arr = unique_vec(
+            encounters
+                .iter()
+                .filter(|x| x.digimon_id == digimon_id)
+                .map(|x| x.clone()),
+        );
 
         let count = shuffled_ids.iter().filter(|x| **x == digimon_id).count();
 

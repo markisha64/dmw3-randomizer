@@ -4,7 +4,7 @@ use crate::{
     json::{GroupStrategy, MusicPool},
     objects::StageOverridesObject,
     rand::{shops::shoppable, Objects},
-    util::{self, shuffle, uniform_random_vector},
+    util::{self, shuffle, uniform_random_vector, unique_vec},
 };
 use anyhow::{anyhow, Context};
 use dmw3_structs::ScriptConditionStep;
@@ -133,7 +133,7 @@ fn backgrounds(
     objects: &mut Objects,
     rng: &mut Xoshiro256StarStar,
 ) -> anyhow::Result<()> {
-    let possible_indices: HashSet<u16> = HashSet::from_iter(
+    let possible_arr = unique_vec(
         objects
             .map_objects
             .iter()
@@ -142,7 +142,6 @@ fn backgrounds(
 
     let maps_with_bgs = objects.map_objects.len();
 
-    let possible_arr = Vec::from_iter(possible_indices);
     let mut shuffled_bgs =
         util::uniform_random_vector(&possible_arr, maps_with_bgs, preset.shuffles, rng);
 
@@ -288,12 +287,12 @@ fn ironmon_charisma(objects: &mut Objects) {
 }
 
 pub fn music_pool(objects: &mut Objects, music_pool: MusicPool) -> Vec<(u16, u16)> {
-    let mut pool = HashSet::new();
+    let mut pool = Vec::new();
 
     for map_object in &mut objects.map_objects {
         if music_pool != MusicPool::Battle {
             for music_set in &mut map_object.music.original {
-                pool.insert((music_set.sep_track, music_set.sep_file));
+                pool.push((music_set.sep_track, music_set.sep_file));
             }
         }
 
@@ -306,7 +305,7 @@ pub fn music_pool(objects: &mut Objects, music_pool: MusicPool) -> Vec<(u16, u16
                                 let sep_file = (encounter.music >> 16) as u16;
                                 let sep_track = (encounter.music >> 18) as u16 & 0x7f;
 
-                                pool.insert((sep_track, sep_file));
+                                pool.push((sep_track, sep_file));
                             }
                         }
                     }
@@ -315,7 +314,7 @@ pub fn music_pool(objects: &mut Objects, music_pool: MusicPool) -> Vec<(u16, u16
         }
     }
 
-    Vec::from_iter(pool.into_iter())
+    unique_vec(pool)
 }
 
 fn music(

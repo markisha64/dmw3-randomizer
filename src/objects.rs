@@ -1486,6 +1486,8 @@ async fn read_map_objects(
         }
     }
 
+    result.sort_by(|a, b| a.file_name.cmp(&b.file_name));
+
     Ok(result)
 }
 
@@ -1528,7 +1530,7 @@ pub async fn read_model_objects(
 
     let mut model_itr = fs::read_dir(format!("extract/{}/{}/", rom_name, model_path)).await?;
 
-    let mut r = Vec::new();
+    let mut result = Vec::new();
 
     while let Some(modelr) = model_itr.next().await {
         let model = modelr?;
@@ -1587,14 +1589,16 @@ pub async fn read_model_objects(
 
         let header = Header::read(&mut Cursor::new(&packed.files[header_buf]))?;
 
-        r.push(ModelObject {
+        result.push(ModelObject {
             packed,
             file_name,
             header,
         })
     }
 
-    Ok(r)
+    result.sort_by(|a, b| a.file_name.cmp(&b.file_name));
+
+    Ok(result)
 }
 
 pub async fn read_bufs(rom_name: &str, executable: &Executable) -> anyhow::Result<Bufs> {

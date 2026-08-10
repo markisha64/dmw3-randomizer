@@ -1,10 +1,9 @@
-use crate::rand::Objects;
+use crate::{rand::Objects, util::unique_vec};
 use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::{ShopItems, Shops};
-use std::collections::HashSet;
 
 pub fn tnt_ironmon(objects: &mut Objects) {
     let f_ptr = objects.shops.modified[0].items;
@@ -102,33 +101,33 @@ fn randomize_sell_price(preset: &Shops, objects: &mut Objects, rng: &mut Xoshiro
 pub fn shoppable(objects: &mut Objects, pool: &ShopItems) -> Vec<u16> {
     let len = objects.item_shop_data.original.len();
 
-    let mut shoppable: HashSet<u16> = HashSet::new();
+    let mut shoppable = Vec::new();
 
     match pool {
         ShopItems::Buyable => {
             for i in 1..len {
                 if objects.item_shop_data.original[i].buy_price > 0 {
-                    shoppable.insert(i as u16);
+                    shoppable.push(i as u16);
                 }
             }
         }
         ShopItems::Sellable => {
             for i in 1..len {
                 if objects.item_shop_data.original[i].sell_price > 0 {
-                    shoppable.insert(i as u16);
+                    shoppable.push(i as u16);
                 }
             }
         }
         ShopItems::Ironmon => {
             for i in 1..len {
                 if objects.item_shop_data.original[i].sell_price > 0 && item_in_ironmon(i) {
-                    shoppable.insert(i as u16);
+                    shoppable.push(i as u16);
                 }
             }
         }
     }
 
-    shoppable.into_iter().collect()
+    unique_vec(shoppable)
 }
 
 fn randomize_limited(

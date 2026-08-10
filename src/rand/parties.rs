@@ -2,9 +2,8 @@ use anyhow::Context;
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
-use crate::json::Randomizer;
 use crate::rand::Objects;
-use std::collections::HashSet;
+use crate::{json::Randomizer, util::unique_vec};
 
 use super::dmw3_structs::DigivolutionData;
 use crate::util::{self, uniform_random_vector};
@@ -258,20 +257,21 @@ fn hp_mp_balanced(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &
 }
 
 fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
-    let mut learnable: HashSet<u16> = HashSet::new();
+    let mut learnable = Vec::new();
 
     for digivolution in &objects.digivolution_data.original {
         for tech in digivolution.tech.iter() {
             let deref = *tech;
 
             if deref != 0 {
-                learnable.insert(deref);
+                learnable.push(deref);
             }
         }
     }
 
+    let learnable_arr = unique_vec(learnable);
     for digivolution in &mut objects.digivolution_data.modified {
-        let mut learnable_arr = Vec::from_iter(learnable.clone().into_iter());
+        let mut learnable_arr = learnable_arr.clone();
 
         for tech in &mut digivolution.tech {
             if *tech == 0 {
@@ -287,19 +287,20 @@ fn learned_moves(objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
 }
 
 fn signatues(objects: &mut Objects, rng: &mut Xoshiro256StarStar, preset: &Randomizer) {
-    let mut learnable_rookie: HashSet<u16> = HashSet::new();
-    let mut learnable: HashSet<u16> = HashSet::new();
-
-    for rookie in &objects.rookie_data.original {
-        learnable_rookie.insert(rookie.ori_tech);
-    }
-
-    for digivolution in &objects.digivolution_data.original {
-        learnable.insert(digivolution.ori_tech);
-    }
-
-    let mut learnable_rookie_arr = Vec::from_iter(learnable_rookie);
-    let mut learnable_arr = Vec::from_iter(learnable);
+    let mut learnable_rookie_arr = unique_vec(
+        objects
+            .rookie_data
+            .original
+            .iter()
+            .map(|rookie| rookie.ori_tech),
+    );
+    let mut learnable_arr = unique_vec(
+        objects
+            .digivolution_data
+            .original
+            .iter()
+            .map(|rookie| rookie.ori_tech),
+    );
 
     util::shuffle(&mut learnable_rookie_arr, preset.shuffles, rng);
     util::shuffle(&mut learnable_arr, preset.shuffles, rng);

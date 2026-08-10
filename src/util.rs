@@ -1,5 +1,8 @@
+use std::collections::HashSet;
+
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
+use std::hash::Hash;
 
 pub fn uniform_random_vector<T: Clone>(
     alphabet: &Vec<T>,
@@ -39,4 +42,21 @@ pub fn shuffle<T>(array: &mut Vec<T>, shuffles: u8, rng: &mut Xoshiro256StarStar
             }
         }
     }
+}
+
+pub fn unique_vec<V>(array: V) -> Vec<V::Item>
+where
+    V: IntoIterator,
+    V::Item: Eq + Hash + Clone,
+{
+    let mut mapped: HashSet<V::Item> = HashSet::new();
+    let mut rv = Vec::new();
+
+    for item in array {
+        if mapped.insert(item.clone()) {
+            rv.push(item);
+        }
+    }
+
+    rv
 }
