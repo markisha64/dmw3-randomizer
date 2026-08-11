@@ -72,8 +72,6 @@ pub async fn patch(path: &PathBuf, preset: &Preset) -> anyhow::Result<Objects> {
         party_exp_bits::patch(&preset.party_exp_bits, &mut objects)?;
     }
 
-    dbg!(rng.next_u64());
-
     // update all files on disk
     write_objects(path, &mut objects).await?;
 
