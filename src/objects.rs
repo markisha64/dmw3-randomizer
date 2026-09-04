@@ -1172,17 +1172,47 @@ async fn read_map_objects(
                 .position(|x| x[0..4] == [0xff; 4] && x[4..20] == [0x0; 16]);
 
             let init_stage_pointers: Pointer = match cutscene_idx {
-                Some(cutscene_idx) => (0..10).find_map(|i| {
-                    let ptr =
-                        Pointer::from(&buf[cutscene_idx - 4 - i * 0x14..cutscene_idx - i * 0x14]);
+                Some(cutscene_idx) => (0..30).find_map(|i| {
+                    // idx of assumed cutscene start
+                    let cutscene_start = cutscene_idx - i * 0x14;
 
-                    let talk = u32::from_be_bytes(
-                        buf[cutscene_idx - 12 - i * 0x14..cutscene_idx - 8 - i * 0x14]
-                            .try_into()
-                            .ok()?,
-                    );
+                    let ptr = Pointer::from(&buf[cutscene_start - 4..cutscene_start]);
 
-                    (ptr.is_valid() && talk == 0).as_option().and(Some(ptr))
+                    // -0x4 for pointer -0x18 environmental len (looking for empty environmental)
+                    let mut environmental_reader =
+                        Cursor::new(&buf[cutscene_start - 0x4 - 0x18..cutscene_start]);
+
+                    let environmental = Environmental::read(&mut environmental_reader).ok();
+
+                    // -0x4 for pointer -0x12 mask_object len (looking for empty mask_object)
+                    let mut mask_object_reader =
+                        Cursor::new(&buf[cutscene_start - 0x4 - 0x12..cutscene_start]);
+
+                    let mask_object = MaskObject::read(&mut mask_object_reader).ok();
+
+                    let empty_obj = environmental
+                        .zip(mask_object)
+                        .map(|(environmental, mask_object)| {
+                            (environmental.conditions[0].is_last_step()
+                                && environmental.conditions[1].is_last_step()
+                                && environmental.environmental_type == 0)
+                                || (mask_object.show == 0
+                                    && mask_object.instance_id == 0
+                                    && mask_object.z == 0
+                                    && mask_object.type1 == 0
+                                    && mask_object.id == 0
+                                    && mask_object.type2 == 0
+                                    && mask_object.min_frame == 0
+                                    && mask_object.max_frame == 0
+                                    && mask_object.animation_speed == 0
+                                    && mask_object.current_frame == 0
+                                    && mask_object.x == 0
+                                    && mask_object.y == 0)
+                        })
+                        .map(|x| x.as_option())
+                        .flatten();
+
+                    ptr.is_valid().as_option().and(empty_obj).and(Some(ptr))
                 }),
                 None => {
                     let idx = buf.len() - 4;
