@@ -14,12 +14,16 @@ target/
 
 /target
 
+# Added by npm
+node_modules
+
 # generated files
 *.bin
 *.cue
 out.xml
 extract/*
 preset.json
+assets/tailwind.css
 
 # dioxus
 dist/

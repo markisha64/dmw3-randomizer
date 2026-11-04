@@ -1,0 +1,45 @@
+@import "tailwindcss";
+@source "./src/**/*.{rs,html,css}";
+
+@keyframes fadeInGreenBorder {
+  0% {
+    border-color: transparent;
+  }
+
+  100% {
+    border-color: green;
+  }
+}
+
+.animate-fadeInGreenBorder {
+  animation: fadeInGreenBorder 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeOutGreenBorder {
+  0% {
+    border-color: green;
+  }
+
+  100% {
+    border-color: transparent;
+  }
+}
+
+.animate-fadeOutGreenBorder {
+  animation: fadeOutGreenBorder 0.5s ease-in-out forwards;
+}
+
+
+@keyframes copyCodeSuccess {
+  0% {}
+
+  50% {
+    background-color: var(--color-green-300);
+  }
+
+  100% {}
+}
+
+.animate-copyCodeSuccess {
+  animation: copyCodeSuccess 1s ease-in-out forwards;
+}
