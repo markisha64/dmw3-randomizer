@@ -1,5 +1,5 @@
 use crate::dump::create_spoiler;
-use crate::gui::preset::history::{get_mapped, HistoryMapped};
+use crate::gui::theme;
 use crate::{cli::Arguments, db, json::Preset, mkpsxiso, patch};
 
 use anyhow::{anyhow, Context};
@@ -30,6 +30,15 @@ impl Steps {
             Steps::Packaging => 100,
         }
     }
+
+    fn label(&self) -> &'static str {
+        match self {
+            Steps::Input => "Randomize",
+            Steps::Extracting => "Extracting ROM",
+            Steps::Randomizing => "Randomizing",
+            Steps::Packaging => "Packaging ROM",
+        }
+    }
 }
 
 #[component]
@@ -37,31 +46,20 @@ pub fn randomize() -> Element {
     let mut state = use_signal::<Steps>(Steps::default);
     let args_state = use_context::<Signal<Arguments>>();
     let preset_state = use_context::<Signal<Preset>>();
-    let mut history_state = use_context::<Signal<Vec<HistoryMapped>>>();
 
-    let percent = state().to_percent();
+    let current = state();
+    let percent = current.to_percent();
+    let label = current.label();
+    let is_randomizing = current.randomizing();
 
     let args = args_state();
     let preset = preset_state();
 
     rsx! {
-        label {
-            r#for: "randomize",
-            class: "randomize",
-            if state().randomizing()  {
-                div {
-                    r#style: "height: 100%; width:{percent}%;",
-                    div {
-                        class: "progress"
-                    }
-                }
-            } else {
-                "Randomize"
-            }
-        },
-        input {
+        button {
             r#type: "button",
-            id: "randomize",
+            class: theme::BTN_PRIMARY,
+            disabled: is_randomizing,
             onclick: move |_| {
                 to_owned!(preset, args);
                 let current_state = state();
@@ -79,7 +77,6 @@ pub fn randomize() -> Element {
                             };
 
                             db::insert(&preset, &args).map_err(|_| anyhow!("failed to insert to db"))?;
-                            history_state.set(get_mapped());
 
                             let file_name = args.output.unwrap_or(format!("{}", preset.randomizer.seed));
 
@@ -113,7 +110,23 @@ pub fn randomize() -> Element {
                         state.set(Steps::Input);
                     });
                 }
+            },
+            if is_randomizing {
+                div {
+                    class: "absolute inset-x-0 bottom-0 h-1 bg-slate-950/20",
+                    div {
+                        class: "h-full bg-slate-950/80 transition-all duration-500",
+                        style: "width:{percent}%;",
+                    }
+                }
+                span {
+                    class: "relative flex items-center gap-2",
+                    "{label}"
+                    span { class: "font-mono text-xs opacity-70", "{percent}%" }
+                }
+            } else {
+                span { class: "relative", "Randomize" }
             }
-        },
+        }
     }
 }

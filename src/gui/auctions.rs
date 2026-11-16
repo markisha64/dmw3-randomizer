@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 
 use crate::{
-    gui::{checkbox, number_field},
+    gui::{checkbox, help, number_field, theme},
     json::{Preset, ShopItems},
 };
 
@@ -21,18 +21,21 @@ pub fn auctions() -> Element {
 
     rsx! {
         div {
-            class: "segment",
-            checkbox::checkbox {
-                label: "Auctions",
-                id: "auctions.enabled",
-                checked: enabled,
-                tooltip: "Auctions",
-                onchange: move |x: bool| {
-                    state.write().randomizer.auctions.enabled = x;
+            class: "space-y-3",
+            div {
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                checkbox::checkbox {
+                    label: "Auctions",
+                    id: "auctions.enabled",
+                    checked: enabled,
+                    tooltip: "Auctions",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.auctions.enabled = x;
+                    }
                 }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     id: "auctions.auction_items",
                     label: "Auction Items",
@@ -43,47 +46,40 @@ pub fn auctions() -> Element {
                         state.write().randomizer.auctions.auction_items = x;
                     },
                 }
-                div {
-                    class: "tooltip",
-                    span {
-                        class: "tooltiptext",
-                        style: "width: 200px;",
-                        "Buyable => all buyable items",
-                        br {},
-                        "Sellable => all sellable items",
-                        br {},
-                        "Ironmon => special pool",
+                label {
+                    r#for: "auctions.auction_items_pool",
+                    class: theme::LABEL,
+                    "Auction Pool"
+                }
+                select {
+                    id: "auctions.auction_items_pool",
+                    class: theme::SELECT,
+                    disabled: !enabled || !auction_items,
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.auctions.auction_items_pool = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
                     },
-                    label {
-                        r#for: "auctions.auction_items_pool",
-                        "Auction Pool"
-                    },
-                    select {
-                        id: "auctions.auction_items_pool",
-                        disabled: !enabled || !auction_items,
-                        onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.auctions.auction_items_pool = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
-                        },
-                        option {
-                            value: "0",
-                            selected: auction_selected == ShopItems::Buyable,
-                            "Buyable"
-                        },
-                        option {
-                            value: "1",
-                            selected: auction_selected == ShopItems::Sellable,
-                            "Sellable"
-                        },
-                        option {
-                            value: "2",
-                            selected: auction_selected == ShopItems::Ironmon,
-                            "Ironmon"
-                        },
+                    option {
+                        value: "0",
+                        selected: auction_selected == ShopItems::Buyable,
+                        "Buyable"
                     }
-                },
+                    option {
+                        value: "1",
+                        selected: auction_selected == ShopItems::Sellable,
+                        "Sellable"
+                    }
+                    option {
+                        value: "2",
+                        selected: auction_selected == ShopItems::Ironmon,
+                        "Ironmon"
+                    },
+                }
+                help::help {
+                    text: "Buyable => all buyable items\nSellable => all sellable items\nIronmon => special pool"
+                }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     id: "auctions.auction_values",
                     label: "Auction Values",
@@ -96,7 +92,7 @@ pub fn auctions() -> Element {
                 }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field::number_field {
                     id: "auctions.auction_values_min",
                     label: "Min",

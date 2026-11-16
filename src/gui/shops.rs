@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::number_field;
+use crate::gui::{help, number_field, theme};
 use crate::json::{Preset, ShopItems};
 
 use crate::gui::checkbox;
@@ -25,9 +25,9 @@ pub fn shops() -> Element {
 
     rsx! {
         div {
-            class: "segment",
+            class: "space-y-3",
             div {
-                class: "center",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Shops",
                     id: "shops.enabled",
@@ -37,88 +37,75 @@ pub fn shops() -> Element {
                         preset_state.write().randomizer.shops.enabled = x;
                     }
                 },
-                div {
-                    class: "tooltip",
-                    span {
-                        class: "tooltiptext",
-                        style: "width: 200px;",
-                        "Buyable => shops contain all buyable items",
-                        br {},
-                        "Sellable => shops contain all sellable items",
+                label {
+                    r#for: "shops.items_only",
+                    class: theme::LABEL,
+                    "Items"
+                }
+                select {
+                    id: "shops.items_only",
+                    class: theme::SELECT,
+                    disabled: !enabled,
+                    onchange: move |x: Event<FormData>| {
+                        preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
                     },
-                    label {
-                        r#for: "shops.items_only",
-                        "Items"
+                    option {
+                        value: "0",
+                        selected: selected == ShopItems::Buyable,
+                        "Buyable"
+                    }
+                    option {
+                        value: "1",
+                        selected: selected == ShopItems::Sellable,
+                        "Sellable"
+                    }
+                    option {
+                        value: "2",
+                        selected: selected == ShopItems::Ironmon,
+                        "Ironmon"
                     },
-                    select {
-                        id: "shops.items_only",
-                        disabled: !enabled,
-                        onchange: move |x: Event<FormData>| {
-                            preset_state.write().randomizer.shops.items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
-                        },
-                        option {
-                            value: "0",
-                            selected: selected == ShopItems::Buyable,
-                            "Buyable"
-                        },
-                        option {
-                            value: "1",
-                            selected: selected == ShopItems::Sellable,
-                            "Sellable"
-                        },
-                        option {
-                            value: "2",
-                            selected: selected == ShopItems::Ironmon,
-                            "Ironmon"
-                        },
+                }
+                help::help {
+                    text: "Buyable => shops contain all buyable items\nSellable => shops contain all sellable items"
+                }
+            }
+            div {
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                checkbox::checkbox {
+                    label: "Limit shop items",
+                    id: "shops.checkbox",
+                    checked: limit_enabled,
+                    disabled: !enabled,
+                    onchange: move |x: bool| {
+                        preset_state.write().randomizer.shops.limit_shop_items_enabled = x;
+                    },
+                },
+                input {
+                    class: theme::INPUT_SHORT,
+                    r#type: "number",
+                    r#value: "{limit}",
+                    disabled: "{!limit_enabled || !enabled}",
+                    min: dmw3_consts::MIN_SHOP_ITEMS,
+                    max: dmw3_consts::MAX_SHOP_ITEMS,
+                    onchange: move |x| {
+                        let limit = match x.data.value().parse::<u8>() {
+                            Ok(vl) => {
+                                if vl <= 37 {
+                                    vl
+                                } else {
+                                    limit
+                                }
+                            },
+                            _ => limit
+                        };
+
+                        preset_state.write().randomizer.shops.limit_shop_items = limit;
                     }
                 },
-            },
+                help::help { text: "Force shop item count" }
+            }
             div {
-                div {
-                    class: "tooltip",
-                    span {
-                        class: "tooltiptext",
-                        "Force shop item count",
-                    },
-                    div {
-                        class: "left",
-                        checkbox::checkbox {
-                            label: "Limit shop items",
-                            id: "shops.checkbox",
-                            checked: limit_enabled,
-                            disabled: !enabled,
-                            onchange: move |x: bool| {
-                                preset_state.write().randomizer.shops.limit_shop_items_enabled = x;
-                            },
-                        },
-                        input {
-                            class: "short_number",
-                            r#type: "number",
-                            r#value: "{limit}",
-                            disabled: "{!limit_enabled || !enabled}",
-                            min: dmw3_consts::MIN_SHOP_ITEMS,
-                            max: dmw3_consts::MAX_SHOP_ITEMS,
-                            onchange: move |x| {
-                                let limit = match x.data.value().parse::<u8>() {
-                                    Ok(vl) => {
-                                        if vl <= 37 {
-                                            vl
-                                        } else {
-                                            limit
-                                        }
-                                    },
-                                    _ => limit
-                                };
-
-                                preset_state.write().randomizer.shops.limit_shop_items = limit;
-                            }
-                        },
-                    },
-                },
-            },
-            div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     id: "shops.min_sell_price",
                     label: "Sell price",
@@ -138,9 +125,9 @@ pub fn shops() -> Element {
                         preset_state.write().randomizer.shops.keep_tnt = x;
                     },
                 },
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field::number_field {
                     id: "shops.min_sell_price",
                     label: "Min",
@@ -165,7 +152,7 @@ pub fn shops() -> Element {
                 },
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     id: "shops.healing_ironmon",
                     label: "Ironmon healing prices",

@@ -8,14 +8,10 @@ mod import;
 pub fn preset() -> Element {
     rsx! {
         div {
-            class: "segment",
-            div {
-                class: "center",
-                "Preset",
-                import::import {},
-                export::export {},
-                history::history {}
-            }
+            class: "flex flex-wrap items-center gap-2",
+            import::import {},
+            export::export {},
+            history::history {}
         }
     }
 }

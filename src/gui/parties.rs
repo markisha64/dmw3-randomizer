@@ -2,7 +2,7 @@ use dioxus::prelude::*;
 
 use crate::json::Preset;
 
-use crate::gui::{checkbox, number_field};
+use crate::gui::{checkbox, help, number_field, theme};
 
 #[component]
 pub fn parties() -> Element {
@@ -47,9 +47,9 @@ pub fn parties() -> Element {
 
     rsx! {
         div {
-            class: "segment",
+            class: "space-y-3",
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Party",
                     id: "party.enabled",
@@ -68,9 +68,9 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.parties = x;
                     }
                 },
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Stat distribution",
                     id: "parties.stat_distribution",
@@ -105,9 +105,9 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.total_starting_stats = x as u16
                     }
                 }
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Res distribution",
                     id: "parties.res_distribution",
@@ -142,9 +142,9 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.total_starting_res = x as u16
                     }
                 }
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Learned Tech",
                     checked: learned_tech,
@@ -165,9 +165,9 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.signatures = x;
                     }
                 }
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Digivolutions",
                     checked: digivolutions,
@@ -188,53 +188,44 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.keep_stages = x;
                     }
                 }
-            },
+            }
             div {
-                class: "left",
-                div {
-                    class: "tooltip",
-                    span {
-                        class: "tooltiptext",
-                        "Randomize leveling speed"
-                    },
-                    div {
-                        class: "left",
-                        checkbox::checkbox {
-                            label: "EXP affinity",
-                            checked: exp_modifier,
-                            id: "parties.exp_modifier",
-                            disabled: !enabled,
-                  onchange: move |x: bool| {
-                                state.write().randomizer.parties.exp_modifier = x;
-                            }
-                        },
-                        number_field::number_field {
-                            label: "Min",
-                            id: "parties.min_exp_modifier",
-                            value: min_exp_mod as i64,
-                            disabled: !exp_modifier|| !enabled,
-                            min: 1,
-                            max: max_exp_mod as i64,
-                            onchange: move |x: i64| {
-                                state.write().randomizer.parties.min_exp_modifier = x as u8
-                            }
-                        },
-                        number_field::number_field {
-                            label: "Max",
-                            id: "parties.max_exp_modifier",
-                            value: max_exp_mod as i64,
-                            disabled: !exp_modifier|| !enabled,
-                            min: min_exp_mod as i64,
-                            max: 255,
-                            onchange: move |x: i64| {
-                                state.write().randomizer.parties.max_exp_modifier = x as u8
-                            }
-                        }
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                checkbox::checkbox {
+                    label: "EXP affinity",
+                    checked: exp_modifier,
+                    id: "parties.exp_modifier",
+                    disabled: !enabled,
+                    onchange: move |x: bool| {
+                        state.write().randomizer.parties.exp_modifier = x;
                     }
-                }
-            },
+                },
+                number_field::number_field {
+                    label: "Min",
+                    id: "parties.min_exp_modifier",
+                    value: min_exp_mod as i64,
+                    disabled: !exp_modifier || !enabled,
+                    min: 1,
+                    max: max_exp_mod as i64,
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.min_exp_modifier = x as u8
+                    }
+                },
+                number_field::number_field {
+                    label: "Max",
+                    id: "parties.max_exp_modifier",
+                    value: max_exp_mod as i64,
+                    disabled: !exp_modifier || !enabled,
+                    min: min_exp_mod as i64,
+                    max: 255,
+                    onchange: move |x: i64| {
+                        state.write().randomizer.parties.max_exp_modifier = x as u8
+                    }
+                },
+                help::help { text: "Randomize leveling speed" }
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Starting HP/MP",
                     tooltip: "Randomize starting HP/MP and HP/MP affinity",
@@ -255,15 +246,15 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.balance_hp_mp = x;
                     }
                 },
-            },
+            }
             div {
-                class: "left",
-                div { style: "margin-right: 10px;", "HP Range" }
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                span { class: theme::LABEL, "HP Range" }
                 number_field::number_field {
                     label: "Min",
                     id: "parties.min_starting_hp",
                     value: min_start_hp as i64,
-                    disabled: !starting_hp_mp|| !enabled,
+                    disabled: !starting_hp_mp || !enabled,
                     min: 1,
                     max: max_start_hp as i64,
                     onchange: move |x: i64| {
@@ -274,17 +265,17 @@ pub fn parties() -> Element {
                     label: "Max",
                     id: "parties.max_starting_hp",
                     value: max_start_hp as i64,
-                    disabled: !starting_hp_mp|| !enabled,
+                    disabled: !starting_hp_mp || !enabled,
                     min: min_start_hp as i64,
                     max: 255,
                     onchange: move |x: i64| {
                         state.write().randomizer.parties.max_starting_hp = x as u8
                     }
                 }
-            },
+            }
             div {
-                class: "left",
-                div { style: "margin-right: 10px;", "MP Range" }
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                span { class: theme::LABEL, "MP Range" }
                 number_field::number_field {
                     label: "Min",
                     id: "parties.min_starting_mp",
@@ -307,10 +298,10 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.max_starting_mp = x as u8
                     }
                 }
-            },
+            }
             div {
-                class: "left",
-                div { style: "margin-right: 10px;", "HP Affinity Range" }
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                span { class: theme::LABEL, "HP Affinity Range" }
                 number_field::number_field {
                     label: "Min",
                     id: "parties.min_hp_modifier",
@@ -333,10 +324,10 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.max_hp_modifier = x as u8
                     }
                 }
-            },
+            }
             div {
-                class: "left",
-                div { style: "margin-right: 10px;", "MP Affinity Range" }
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                span { class: theme::LABEL, "MP Affinity Range" }
                 number_field::number_field {
                     label: "Min",
                     id: "parties.min_mp_modifier",
@@ -359,9 +350,9 @@ pub fn parties() -> Element {
                         state.write().randomizer.parties.max_mp_modifier = x as u8
                     }
                 }
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Ironmon Multihits",
                     tooltip: "Makes Hammer Rush and Impact Rush more expensive",

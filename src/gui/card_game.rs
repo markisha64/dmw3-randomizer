@@ -20,9 +20,9 @@ pub fn card_game() -> Element {
 
     rsx! {
         div {
-            class: "segment",
+            class: "space-y-3",
             div {
-                class: "center",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Card Game",
                     id: "card_game.enabled",
@@ -30,10 +30,10 @@ pub fn card_game() -> Element {
                     onchange: move |x: bool| {
                         preset_state.write().randomizer.card_game.enabled = x;
                     }
-                },
-            },
+                }
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     id: "card_game.buy_price",
                     label: "Buy price",
@@ -42,7 +42,7 @@ pub fn card_game() -> Element {
                     onchange: move |x: bool| {
                         preset_state.write().randomizer.card_game.buy_price = x;
                     },
-                },
+                }
                 checkbox::checkbox {
                     id: "card_game.boosters",
                     label: "Boosters",
@@ -51,10 +51,10 @@ pub fn card_game() -> Element {
                     onchange: move |x: bool| {
                         preset_state.write().randomizer.card_game.boosters = x;
                     },
-                },
-            },
+                }
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field::number_field {
                     id: "card_game.min_card_buy_price",
                     label: "Min",
@@ -77,9 +77,9 @@ pub fn card_game() -> Element {
                     min: min_card_buy_price,
                     max: dmw3_consts::MAX_SELL_PRICE
                 },
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     id: "card_game.starting_folder",
                     label: "Starting folder",
@@ -88,8 +88,8 @@ pub fn card_game() -> Element {
                     onchange: move |x: bool| {
                         preset_state.write().randomizer.card_game.starting_folder = x;
                     },
-                },
-            },
-        },
+                }
+            }
+        }
     }
 }

@@ -1,45 +1,62 @@
 @import "tailwindcss";
 @source "./src/**/*.{rs,html,css}";
 
-@keyframes fadeInGreenBorder {
-  0% {
-    border-color: transparent;
+@theme {
+  --color-dmw: #000021;
+  --color-dmw-panel: #050522;
+  --color-dmw-accent: #67e8f9;
+}
+
+@layer base {
+  html {
+    min-height: 100%;
+    background-color: #000021;
+    background-image: url("./bg.png");
+    background-repeat: repeat;
+    animation: bg 3s linear infinite;
+    color: white;
+    color-scheme: dark;
   }
 
-  100% {
-    border-color: green;
+  body {
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: rgba(103, 232, 249, 0.35);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+  }
+
+  dialog::backdrop {
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+  }
+
+  input[type="range"] {
+    accent-color: #67e8f9;
+  }
+
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23ffffff' stroke-opacity='0.5' stroke-width='2'%3E%3Cpath d='M5 7l5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    background-size: 0.7rem;
+    padding-right: 2rem;
   }
 }
 
-.animate-fadeInGreenBorder {
-  animation: fadeInGreenBorder 0.5s ease-in-out forwards;
-}
-
-@keyframes fadeOutGreenBorder {
-  0% {
-    border-color: green;
+@keyframes bg {
+  from {
+    background-position: 0 0;
   }
 
-  100% {
-    border-color: transparent;
+  to {
+    background-position: 217px 217px;
   }
-}
-
-.animate-fadeOutGreenBorder {
-  animation: fadeOutGreenBorder 0.5s ease-in-out forwards;
-}
-
-
-@keyframes copyCodeSuccess {
-  0% {}
-
-  50% {
-    background-color: var(--color-green-300);
-  }
-
-  100% {}
-}
-
-.animate-copyCodeSuccess {
-  animation: copyCodeSuccess 1s ease-in-out forwards;
 }

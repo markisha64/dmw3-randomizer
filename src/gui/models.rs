@@ -15,9 +15,9 @@ pub fn models() -> Element {
 
     rsx! {
         div {
-            class: "segment",
+            class: "space-y-3",
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Models",
                     id: "models.enabled",
@@ -27,36 +27,30 @@ pub fn models() -> Element {
                         state.write().randomizer.models.enabled = x;
                     }
                 }
-            },
+            }
             div {
-                class: "left",
-                div {
-                    class: "left",
-                    checkbox::checkbox {
-                        label: "Model hue",
-                        id: "models.hue",
-                        checked: model_hue,
-                        disabled: !enabled,
-                        tooltip: "Randomize model hue",
-                        onchange: move |x: bool| {
-                            state.write().randomizer.models.hue_enabled = x;
-                        }
-                    },
-                },
-                div {
-                    class: "left",
-                    checkbox::checkbox {
-                        label: "Stage model hue",
-                        id: "models.stage_hue",
-                        checked: stage_model_hue,
-                        disabled: !enabled,
-                        tooltip: "Randomize stage model hue",
-                        onchange: move |x: bool| {
-                            state.write().randomizer.models.stage_hue_enabled = x;
-                        }
-                    },
-                },
-            },
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                checkbox::checkbox {
+                    label: "Model hue",
+                    id: "models.hue",
+                    checked: model_hue,
+                    disabled: !enabled,
+                    tooltip: "Randomize model hue",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.models.hue_enabled = x;
+                    }
+                }
+                checkbox::checkbox {
+                    label: "Stage model hue",
+                    id: "models.stage_hue",
+                    checked: stage_model_hue,
+                    disabled: !enabled,
+                    tooltip: "Randomize stage model hue",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.models.stage_hue_enabled = x;
+                    }
+                }
+            }
         }
     }
 }

@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::checkbox;
+use crate::gui::{checkbox, help, theme};
 use crate::json::{GroupStrategy, MusicPool, Preset, ShopItems};
 
 #[component]
@@ -31,11 +31,13 @@ pub fn maps() -> Element {
     let battle_music_group_strategy = read_state.randomizer.maps.battle_music_group_strategy;
     let selected_battle_music_pool = read_state.randomizer.maps.battle_music_pool.clone();
 
+    let group_help = "None => fully random\nMap => group based on overworld map\nParty => group based on party id";
+
     rsx! {
         div {
-            class: "segment",
+            class: "space-y-3",
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Maps",
                     id: "maps.enabled",
@@ -45,91 +47,74 @@ pub fn maps() -> Element {
                         state.write().randomizer.maps.enabled = x;
                     }
                 }
-            },
+            }
             div {
-                class: "left",
-                div {
-                    class: "left",
-                    checkbox::checkbox {
-                        label: "Color",
-                        id: "maps.color",
-                        checked: color,
-                        disabled: !enabled,
-                        tooltip: "Randomize map colorations",
-                        onchange: move |x: bool| {
-                            state.write().randomizer.maps.color = x;
-                        }
-                    },
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                checkbox::checkbox {
+                    label: "Color",
+                    id: "maps.color",
+                    checked: color,
+                    disabled: !enabled,
+                    tooltip: "Randomize map colorations",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.color = x;
+                    }
                 },
-                div {
-                    class: "left",
-                    checkbox::checkbox {
-                        label: "Backgrounds",
-                        id: "maps.backgrounds",
-                        checked: backgrounds,
-                        disabled: !enabled,
-                        tooltip: "Randomize map colorations (can crash)",
-                        onchange: move |x: bool| {
-                            state.write().randomizer.maps.backgrounds = x;
-                        }
-                    },
-                }
-            },
-            div {
-                class: "left",
-                div {
-                    checkbox::checkbox {
-                        label: "Fight Backgrounds",
-                        id: "maps.fight_backgrounds",
-                        checked: fight_backgrounds,
-                        disabled: !enabled,
-                        tooltip: "Randomize fight backgrounds",
-                        onchange: move |x: bool| {
-                            state.write().randomizer.maps.fight_backgrounds = x;
-                        }
-                    },
-                },
-                div {
-                    class: "tooltip",
-                    span {
-                        class: "tooltiptext",
-                        style: "width: 200px",
-                        "None => fully random",
-                        br {},
-                        "Map => group based on overworld map",
-                        br {},
-                        "Party => group based on party id"
-                    },
-                    label {
-                        r#for: "maps.group_strategy",
-                        "Group Strategy"
-                    },
-                    select {
-                        id: "maps.group_strategy",
-                        disabled: !enabled || !fight_backgrounds,
-                        onchange: move |x: Event<FormData>| {
-                            state.write().randomizer.maps.group_strategy = GroupStrategy::from(x.data.value().parse::<u8>().unwrap_or(0));
-                        },
-                        option {
-                            value: "0",
-                            selected: selected_group_strategy == GroupStrategy::None,
-                            "None"
-                        },
-                        option {
-                            value: "1",
-                            selected: selected_group_strategy == GroupStrategy::Map,
-                            "Map"
-                        },
-                        option {
-                            value: "2",
-                            selected: selected_group_strategy == GroupStrategy::Party,
-                            "Party"
-                        },
+                checkbox::checkbox {
+                    label: "Backgrounds",
+                    id: "maps.backgrounds",
+                    checked: backgrounds,
+                    disabled: !enabled,
+                    tooltip: "Randomize map colorations (can crash)",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.backgrounds = x;
                     }
                 }
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                checkbox::checkbox {
+                    label: "Fight Backgrounds",
+                    id: "maps.fight_backgrounds",
+                    checked: fight_backgrounds,
+                    disabled: !enabled,
+                    tooltip: "Randomize fight backgrounds",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.fight_backgrounds = x;
+                    }
+                }
+                label {
+                    r#for: "maps.group_strategy",
+                    class: theme::LABEL,
+                    "Group Strategy"
+                }
+                select {
+                    id: "maps.group_strategy",
+                    class: theme::SELECT,
+                    disabled: !enabled || !fight_backgrounds,
+                    onchange: move |x: Event<FormData>| {
+                        state.write().randomizer.maps.group_strategy = GroupStrategy::from(x.data.value().parse::<u8>().unwrap_or(0));
+                    },
+                    option {
+                        value: "0",
+                        selected: selected_group_strategy == GroupStrategy::None,
+                        "None"
+                    }
+                    option {
+                        value: "1",
+                        selected: selected_group_strategy == GroupStrategy::Map,
+                        "Map"
+                    }
+                    option {
+                        value: "2",
+                        selected: selected_group_strategy == GroupStrategy::Party,
+                        "Party"
+                    }
+                }
+                help::help { text: group_help }
+            }
+            div {
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Item boxes",
                     id: "maps.item_boxes",
@@ -139,13 +124,15 @@ pub fn maps() -> Element {
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.item_boxes = x;
                     }
-                },
+                }
                 label {
                     r#for: "maps.item_boxes_items_only",
+                    class: theme::LABEL,
                     "Items"
-                },
+                }
                 select {
                     id: "maps.item_boxes_items_only",
+                    class: theme::SELECT,
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.maps.item_boxes_items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
@@ -154,21 +141,21 @@ pub fn maps() -> Element {
                         value: "0",
                         selected: selected == ShopItems::Buyable,
                         "Buyable"
-                    },
+                    }
                     option {
                         value: "1",
                         selected: selected == ShopItems::Sellable,
                         "Sellable"
-                    },
+                    }
                     option {
                         value: "2",
                         selected: selected == ShopItems::Ironmon,
                         "Ironmon"
-                    },
+                    }
                 }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Ironmon charisma",
                     id: "maps.ironmon_charisma",
@@ -178,10 +165,10 @@ pub fn maps() -> Element {
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.ironmon_charisma = x;
                     }
-                },
+                }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Music",
                     id: "maps.randomize_music",
@@ -191,13 +178,15 @@ pub fn maps() -> Element {
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.music = x;
                     }
-                },
+                }
                 label {
                     r#for: "maps.music_pool",
+                    class: theme::LABEL,
                     "Music Pool"
-                },
+                }
                 select {
                     id: "maps.music_pool",
+                    class: theme::SELECT,
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.maps.music_pool = MusicPool::from(x.data.value().parse::<u8>().unwrap_or(0));
@@ -206,21 +195,21 @@ pub fn maps() -> Element {
                         value: "0",
                         selected: selected_music_pool == MusicPool::Overworld,
                         "Overworld"
-                    },
+                    }
                     option {
                         value: "1",
                         selected: selected_music_pool == MusicPool::Battle,
                         "Battle"
-                    },
+                    }
                     option {
                         value: "2",
                         selected: selected_music_pool == MusicPool::Both,
                         "Both"
-                    },
+                    }
                 }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Battle Music",
                     id: "maps.randomize_battle_music",
@@ -230,13 +219,15 @@ pub fn maps() -> Element {
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.battle_music = x;
                     }
-                },
+                }
                 label {
                     r#for: "maps.battle_music_pool",
+                    class: theme::LABEL,
                     "Music Pool"
-                },
+                }
                 select {
                     id: "maps.battle_music_pool",
+                    class: theme::SELECT,
                     disabled: !enabled,
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.maps.battle_music_pool = MusicPool::from(x.data.value().parse::<u8>().unwrap_or(0));
@@ -245,36 +236,29 @@ pub fn maps() -> Element {
                         value: "0",
                         selected: selected_battle_music_pool == MusicPool::Overworld,
                         "Overworld"
-                    },
+                    }
                     option {
                         value: "1",
                         selected: selected_battle_music_pool == MusicPool::Battle,
                         "Battle"
-                    },
+                    }
                     option {
                         value: "2",
                         selected: selected_battle_music_pool == MusicPool::Both,
                         "Both"
-                    },
+                    }
                 }
             }
             div {
-                class: "tooltip",
-                span {
-                    class: "tooltiptext",
-                    style: "width: 200px",
-                    "None => fully random",
-                    br {},
-                    "Map => group based on overworld map",
-                    br {},
-                    "Party => group based on party id"
-                },
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 label {
                     r#for: "maps.battle_music_group_strategy",
+                    class: theme::LABEL,
                     "Group Strategy"
-                },
+                }
                 select {
                     id: "maps.battle_music_group_strategy",
+                    class: theme::SELECT,
                     disabled: !enabled || !battle_music,
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.maps.battle_music_group_strategy = GroupStrategy::from(x.data.value().parse::<u8>().unwrap_or(0));
@@ -283,21 +267,22 @@ pub fn maps() -> Element {
                         value: "0",
                         selected: battle_music_group_strategy == GroupStrategy::None,
                         "None"
-                    },
+                    }
                     option {
                         value: "1",
                         selected: battle_music_group_strategy == GroupStrategy::Map,
                         "Map"
-                    },
+                    }
                     option {
                         value: "2",
                         selected: battle_music_group_strategy == GroupStrategy::Party,
                         "Party"
-                    },
+                    }
                 }
+                help::help { text: group_help }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Mobius Desert",
                     id: "maps.randomize_mobius_desert",
@@ -307,10 +292,10 @@ pub fn maps() -> Element {
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.mobius_desert = x;
                     }
-                },
+                }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Single Exit",
                     id: "maps.randomize_mobius_desert_single_exit",
@@ -320,7 +305,7 @@ pub fn maps() -> Element {
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.mobius_desert_single_exit = x;
                     }
-                },
+                }
                 checkbox::checkbox {
                     label: "Mirror Servers",
                     id: "maps.randomize_mobius_desert_mirror_servers",
@@ -330,7 +315,7 @@ pub fn maps() -> Element {
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.mobius_desert_mirror_servers = x;
                     }
-                },
+                }
             }
         }
     }

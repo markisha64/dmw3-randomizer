@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::gui::help;
+
 #[component]
 pub fn file_upload(
     label: ReadOnlySignal<String>,
@@ -10,27 +12,23 @@ pub fn file_upload(
     onchange: EventHandler<FormEvent>,
     tooltip: Option<&'static str>,
 ) -> Element {
-    let class = match tooltip {
-        Some(_) => "center tooltip",
-        None => "center",
-    };
-
     rsx! {
         div {
-            class: class,
+            class: "group relative inline-flex items-center gap-2",
             label {
-                class: "file-upload",
+                class: "flex max-w-[20rem] cursor-pointer items-center gap-2 rounded-lg border border-dashed border-white/20 bg-dmw px-3 py-2 text-sm text-white/70 transition hover:border-sky-300/60 hover:bg-white/5 hover:text-white",
                 r#for: id,
-                "{label}"
-            },
-            if let Some(tt) = tooltip {
                 span {
-                    class: "tooltiptext",
-                    "{tt}"
+                    class: "truncate",
+                    "{label}"
                 }
+            }
+            if let Some(tt) = tooltip {
+                help::help { text: tt }
             }
             input {
                 id: id,
+                class: "hidden",
                 r#type: "file",
                 multiple: multiple,
                 accept: accept,

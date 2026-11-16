@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::gui::{help, theme};
+
 #[component]
 pub fn slider(
     label: &'static str,
@@ -11,42 +13,35 @@ pub fn slider(
     min: i64,
     max: i64,
 ) -> Element {
-    let class = match tooltip {
-        Some(_) => "tooltip",
-        None => "",
-    };
-
     rsx! {
         div {
-            class: class,
+            class: "flex items-center gap-3",
             label {
                 r#for: id,
+                class: theme::LABEL,
                 "{label}"
-            },
-            if let Some(tooltip) = tooltip {
-                span {
-                    class: "tooltiptext",
-                    "{tooltip}"
-                }
-            },
+            }
             input {
                 id: id,
                 r#type: "range",
-                class: "slider",
+                class: "w-32 accent-sky-300 disabled:cursor-not-allowed disabled:opacity-40",
                 disabled: disabled,
                 value: value,
                 min: min,
                 max: max,
                 oninput: move |evt| oninput.call(evt)
-            },
+            }
             input {
                 r#type: "number",
                 value: value,
-                class: "short_number",
+                class: theme::INPUT_SHORT,
                 min: min,
                 max: max,
                 disabled: disabled,
                 oninput: move |evt| oninput.call(evt)
+            }
+            if let Some(tooltip) = tooltip {
+                help::help { text: tooltip }
             }
         }
     }

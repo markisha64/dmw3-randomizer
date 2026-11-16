@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::gui::help;
+
 #[component]
 pub fn checkbox(
     label: &'static str,
@@ -9,31 +11,29 @@ pub fn checkbox(
     onchange: EventHandler<bool>,
     tooltip: Option<&'static str>,
 ) -> Element {
-    let class = match tooltip {
-        Some(_) => "tooltip",
-        None => "",
+    let label_class = match disabled {
+        true => "cursor-not-allowed select-none text-sm text-white/35",
+        false => "cursor-pointer select-none text-sm text-white/75",
     };
 
     rsx! {
         div {
-            class: class,
-            label {
-                r#for: id,
-                "{label}"
-            },
-            if let Some(tooltip) = tooltip {
-                span {
-                    class: "tooltiptext",
-                    "{tooltip}"
-                }
-            }
-
+            class: "flex items-center gap-2",
             input {
                 id: id,
+                class: "h-4 w-4 shrink-0 cursor-pointer accent-sky-300 disabled:cursor-not-allowed disabled:opacity-40",
                 r#type: "checkbox",
                 r#checked: checked,
                 disabled: disabled,
                 onchange: move |evt: Event<FormData>| onchange.call(evt.data.value() == "true")
+            }
+            label {
+                r#for: id,
+                class: label_class,
+                "{label}"
+            }
+            if let Some(tooltip) = tooltip {
+                help::help { text: tooltip }
             }
         }
     }

@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 
+use crate::gui::{help, theme};
+
 #[component]
 pub fn number_field(
     label: &'static str,
@@ -12,28 +14,19 @@ pub fn number_field(
     min: f64,
     max: f64,
 ) -> Element {
-    let class = match tooltip {
-        Some(_) => "tooltip",
-        None => "",
-    };
-
     rsx! {
         div {
-            class: class,
+            class: "flex items-center gap-2",
             label {
                 r#for: id,
+                class: theme::LABEL,
                 "{label}"
-            },
-            if let Some(tooltip) = tooltip {
-                span {
-                    class: "tooltiptext",
-                    "{tooltip}"
-                }
-            },
+            }
             input {
                 r#type: "number",
+                id: id,
                 value: value,
-                class: "short_number",
+                class: theme::INPUT_SHORT,
                 min: min,
                 max: max,
                 step: step,
@@ -46,6 +39,9 @@ pub fn number_field(
 
                     onchange.call(value.clamp(min, max))
                 }
+            }
+            if let Some(tooltip) = tooltip {
+                help::help { text: tooltip }
             }
         }
     }

@@ -1,4 +1,4 @@
-use crate::gui::{number_field, number_field_float, slider};
+use crate::gui::{help, number_field, number_field_float, slider};
 use crate::{gui::checkbox, json::Preset};
 
 use dioxus::prelude::*;
@@ -21,27 +21,20 @@ pub fn scaling() -> Element {
 
     rsx! {
         div {
-            class: "segment",
+            class: "space-y-3",
             div {
-                class: "left",
-                div {
-                    class: "tooltip",
-                    span {
-                        class: "tooltiptext",
-                        style: "width: 350px",
-                        "Total stats = Base stats + Stat modifier * level ± [0, Stat range]",
-                        br {},
-                        "Total res = Base res + Res modifier * level ± [0, Stat range]"
-                    },
-                    checkbox::checkbox {
-                        label: "Scaling",
-                        id: "scaling.enabled",
-                        checked: enabled,
-                        onchange: move |x: bool| {
-                            preset_state.write().scaling.enabled = x;
-                        }
-                    },
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                checkbox::checkbox {
+                    label: "Scaling",
+                    id: "scaling.enabled",
+                    checked: enabled,
+                    onchange: move |x: bool| {
+                        preset_state.write().scaling.enabled = x;
+                    }
                 },
+                help::help {
+                    text: "Total stats = Base stats + Stat modifier * level ± [0, Stat range]\nTotal res = Base res + Res modifier * level ± [0, Stat range]"
+                }
                 slider::slider {
                     label: "Stat range",
                     value: scaling_offset,
@@ -65,9 +58,9 @@ pub fn scaling() -> Element {
                     min: dmw3_consts::MIN_STAT_RANGE,
                     max: dmw3_consts::MAX_STAT_RANGE
                 },
-            },
+            }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Natural Scaling",
                     id: "scaling.natural_scaling",
@@ -77,9 +70,9 @@ pub fn scaling() -> Element {
                         preset_state.write().scaling.natural_scaling = x;
                     }
                 }
-            },
+            }
             div {
-                class: "center",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field::number_field {
                     label: "Base stats",
                     id: "scaling.base_stats",
@@ -102,9 +95,9 @@ pub fn scaling() -> Element {
                         preset_state.write().scaling.stat_modifier = x as i32;
                     },
                 },
-            },
+            }
             div {
-                class: "center",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field::number_field {
                     label: "Base res",
                     id: "scaling.base_res",
@@ -127,8 +120,9 @@ pub fn scaling() -> Element {
                         preset_state.write().scaling.res_modifier = x as i32;
                     },
                 },
-            },
+            }
             div {
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field_float::number_field {
                     min: 0.01,
                     max: 4.0,

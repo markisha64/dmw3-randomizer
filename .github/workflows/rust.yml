@@ -32,6 +32,16 @@ jobs:
           target
         key: linux-cargo-${{ hashFiles('Cargo.lock') }}
         restore-keys: linux-cargo-${{ hashFiles('Cargo.lock') }}
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+        cache-dependency-path: package-lock.json
+    - name: Build Tailwind CSS
+      run: |
+        npm ci --no-audit --no-fund
+        npm run build:css
     - name: Build
       run: cargo build --verbose --release --locked
     - name: Build mkpsxiso
@@ -70,6 +80,16 @@ jobs:
           target
         key: windows-cargo-${{ hashFiles('Cargo.lock') }}
         restore-keys: windows-cargo-${{ hashFiles('Cargo.lock') }}
+    - name: Setup Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: npm
+        cache-dependency-path: package-lock.json
+    - name: Build Tailwind CSS
+      run: |
+        npm ci --no-audit --no-fund
+        npm run build:css
     - name: Build
       run: cargo build --verbose --release --locked
     - name: Build mkpsxiso

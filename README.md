@@ -55,6 +55,7 @@ Support is added for all 3 versions, if you notice any problems, fill out an iss
    cd dmw3-randomizer
    cargo build --release
    ```
+   The GUI stylesheet is generated with Tailwind. If `assets/tailwind.css` is missing, generate it once with `npm ci && npm run build:css`, or run `npm run watch:css` while developing the GUI.
 
 5. **Usage**: Run the randomizer:
    ```shell

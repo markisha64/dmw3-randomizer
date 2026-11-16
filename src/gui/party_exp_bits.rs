@@ -18,9 +18,9 @@ pub fn party_exp_bits() -> Element {
 
     rsx! {
         div {
-            class: "segment",
+            class: "space-y-3",
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Party DV Exp/Exp/Bits",
                     tooltip: "DV Exp/Exp/Bits gains after battle",
@@ -32,7 +32,7 @@ pub fn party_exp_bits() -> Element {
                 },
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field_float::number_field {
                     min: 0.00,
                     max: 150.00,
@@ -47,7 +47,7 @@ pub fn party_exp_bits() -> Element {
                 }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field_float::number_field {
                     min: 0.00,
                     max: 150.00,
@@ -62,7 +62,7 @@ pub fn party_exp_bits() -> Element {
                 }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 number_field_float::number_field {
                     min: 0.00,
                     max: 150.00,
@@ -77,7 +77,7 @@ pub fn party_exp_bits() -> Element {
                 }
             }
             div {
-                class: "left",
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
                 checkbox::checkbox {
                     label: "Ironmon Genji",
                     tooltip: "Increases Genji Exp and Bits",
@@ -89,6 +89,6 @@ pub fn party_exp_bits() -> Element {
                     }
                 },
             }
-       }
+        }
     }
 }
