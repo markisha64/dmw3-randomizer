@@ -63,7 +63,6 @@ pub fn parties() -> Element {
                     id: "parties.random_parties",
                     checked: random_parties,
                     disabled: !enabled,
-                    tooltip: "Randomize parties (preview currently unavailable)",
                     onchange: move |x: bool| {
                         state.write().randomizer.parties.parties = x;
                     }
@@ -76,7 +75,6 @@ pub fn parties() -> Element {
                     id: "parties.stat_distribution",
                     checked: stat_distribution,
                     disabled: !enabled,
-                    tooltip: "Randomize player digimon stat distribution",
                     onchange: move |x: bool| {
                         state.write().randomizer.parties.stat_distribution = x;
                     }
@@ -88,7 +86,7 @@ pub fn parties() -> Element {
                     disabled: !stat_distribution || !enabled,
                     min: 1,
                     max: (total_start_stat / 5) as i64,
-                    tooltip: "Mininum points per stat",
+                    tooltip: "Minimum points per stat",
                     onchange: move |x: i64| {
                         state.write().randomizer.parties.min_starting_stat = x as u16
                     }
@@ -100,7 +98,6 @@ pub fn parties() -> Element {
                     disabled: !stat_distribution || !enabled,
                     min: (min_stat * 5) as i64,
                     max: 4995,
-                    tooltip: "Total starting stats",
                     onchange: move |x: i64| {
                         state.write().randomizer.parties.total_starting_stats = x as u16
                     }
@@ -113,7 +110,6 @@ pub fn parties() -> Element {
                     id: "parties.res_distribution",
                     checked: res_distribution,
                     disabled: !enabled,
-                    tooltip: "Randomize player digimon res distribution",
                     onchange: move |x: bool| {
                         state.write().randomizer.parties.res_distribution = x;
                     }
@@ -125,7 +121,7 @@ pub fn parties() -> Element {
                     disabled: !res_distribution || !enabled,
                     min: 1,
                     max: (total_start_res / 7) as i64,
-                    tooltip: "Mininum points per res",
+                    tooltip: "Minimum points per res",
                     onchange: move |x: i64| {
                         state.write().randomizer.parties.min_starting_res = x as u16
                     }
@@ -137,7 +133,6 @@ pub fn parties() -> Element {
                     disabled: !res_distribution || !enabled,
                     min: (min_res * 7) as i64,
                     max: 6993,
-                    tooltip: "Total starting res",
                     onchange: move |x: i64| {
                         state.write().randomizer.parties.total_starting_res = x as u16
                     }
@@ -150,7 +145,6 @@ pub fn parties() -> Element {
                     checked: learned_tech,
                     id: "parties.learned_tech",
                     disabled: !enabled,
-                    tooltip: "Randomize learned tech",
                     onchange: move |x: bool| {
                         state.write().randomizer.parties.learned_tech = x;
                     }
@@ -160,7 +154,6 @@ pub fn parties() -> Element {
                     checked: signatures,
                     id: "parties.signatures",
                     disabled: !enabled,
-                    tooltip: "Randomize signature moves",
                     onchange: move |x: bool| {
                         state.write().randomizer.parties.signatures = x;
                     }
@@ -173,7 +166,6 @@ pub fn parties() -> Element {
                     checked: digivolutions,
                     id: "parties.digivolutions",
                     disabled: !enabled,
-                    tooltip: "Randomize digivolutions",
                     onchange: move |x: bool| {
                         state.write().randomizer.parties.digivolutions = x;
                     }

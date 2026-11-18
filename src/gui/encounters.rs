@@ -40,7 +40,6 @@ pub fn encounters() -> Element {
                     id: "encounters.cardmon",
                     checked: cardmon,
                     disabled: !enabled,
-                    tooltip: "Shuffle cardmon",
                     onchange: move |x: bool| {
                         state.write().randomizer.encounters.cardmon = x;
                     }
@@ -50,7 +49,6 @@ pub fn encounters() -> Element {
                     id: "encounters.bosses",
                     checked: bosses,
                     disabled: !enabled,
-                    tooltip: "Shuffle bosses",
                     onchange: move |x: bool| {
                         state.write().randomizer.encounters.bosses = x;
                     }

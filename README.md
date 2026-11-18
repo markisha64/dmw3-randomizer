@@ -11,7 +11,7 @@ Support is added for all 3 versions, if you notice any problems, fill out an iss
 
 - Randomized wild Digimon encounters
 - Randomized bosses
-- Randomized starting parties (currently not previewable)
+- Randomized starting parties
 - Randomized shops and item prices
 - Randomized learned moves
 - Randomized digivolutions

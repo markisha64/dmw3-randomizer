@@ -202,19 +202,20 @@ fn app() -> Element {
                         scaling::scaling {}
                     }
                     drawer::drawer {
+                        title: "Encounters",
+                        subtitle: "Wild encounters, bosses and TNT",
+                        default_open: true,
+                        encounters::encounters {}
+                    }
+                    drawer::drawer {
+                        title: "Party DV Exp / Exp / Bits",
+                        subtitle: "Post-battle gains",
+                        party_exp_bits::party_exp_bits {}
+                    }
+                    drawer::drawer {
                         title: "Models",
                         subtitle: "Digimon and stage model colors",
                         models::models {}
-                    }
-                    drawer::drawer {
-                        title: "Card Game",
-                        subtitle: "Cards, boosters and prices",
-                        card_game::card_game {}
-                    }
-                    drawer::drawer {
-                        title: "Auctions",
-                        subtitle: "Auction stock and values",
-                        auctions::auctions {}
                     }
                 }
                 div {
@@ -225,20 +226,19 @@ fn app() -> Element {
                         shops::shops {}
                     }
                     drawer::drawer {
-                        title: "Encounters",
-                        subtitle: "Wild encounters, bosses and TNT",
-                        default_open: true,
-                        encounters::encounters {}
+                        title: "Auctions",
+                        subtitle: "Auction stock and values",
+                        auctions::auctions {}
+                    }
+                    drawer::drawer {
+                        title: "Card Game",
+                        subtitle: "Cards, boosters and prices",
+                        card_game::card_game {}
                     }
                     drawer::drawer {
                         title: "Maps",
                         subtitle: "Colors, music, item boxes and Mobius Desert",
                         maps::maps {}
-                    }
-                    drawer::drawer {
-                        title: "Party DV Exp / Exp / Bits",
-                        subtitle: "Post-battle gains",
-                        party_exp_bits::party_exp_bits {}
                     }
                     drawer::drawer {
                         title: "Preset",

@@ -42,7 +42,6 @@ pub fn maps() -> Element {
                     label: "Maps",
                     id: "maps.enabled",
                     checked: enabled,
-                    tooltip: "Maps",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.enabled = x;
                     }
@@ -55,7 +54,6 @@ pub fn maps() -> Element {
                     id: "maps.color",
                     checked: color,
                     disabled: !enabled,
-                    tooltip: "Randomize map colorations",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.color = x;
                     }
@@ -78,7 +76,6 @@ pub fn maps() -> Element {
                     id: "maps.fight_backgrounds",
                     checked: fight_backgrounds,
                     disabled: !enabled,
-                    tooltip: "Randomize fight backgrounds",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.fight_backgrounds = x;
                     }
@@ -120,7 +117,6 @@ pub fn maps() -> Element {
                     id: "maps.item_boxes",
                     checked: item_boxes,
                     disabled: !enabled,
-                    tooltip: "Randomize item boxes",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.item_boxes = x;
                     }
@@ -174,7 +170,6 @@ pub fn maps() -> Element {
                     id: "maps.randomize_music",
                     checked: music,
                     disabled: !enabled,
-                    tooltip: "Randomize Music",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.music = x;
                     }
@@ -215,7 +210,6 @@ pub fn maps() -> Element {
                     id: "maps.randomize_battle_music",
                     checked: battle_music,
                     disabled: !enabled,
-                    tooltip: "Randomize Battle Music",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.battle_music = x;
                     }
@@ -288,7 +282,6 @@ pub fn maps() -> Element {
                     id: "maps.randomize_mobius_desert",
                     checked: mobius_desert,
                     disabled: !enabled,
-                    tooltip: "Randomize Mobius Desert",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.mobius_desert = x;
                     }
@@ -311,7 +304,6 @@ pub fn maps() -> Element {
                     id: "maps.randomize_mobius_desert_mirror_servers",
                     checked: mobius_desert_mirror_servers,
                     disabled: !enabled || !mobius_desert,
-                    tooltip: "Mirror the servers mobius desert",
                     onchange: move |x: bool| {
                         state.write().randomizer.maps.mobius_desert_mirror_servers = x;
                     }

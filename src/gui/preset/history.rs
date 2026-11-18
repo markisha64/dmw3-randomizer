@@ -3,7 +3,7 @@ use std::{fs::File, io::Write};
 use crate::{
     cli::Arguments,
     db::{self},
-    gui::{help, theme},
+    gui::theme,
     json::Preset,
 };
 
@@ -84,7 +84,6 @@ pub fn history() -> Element {
                 },
                 "History"
             }
-            help::help { text: "Show previous randomizations" }
         }
         dialog {
             id: "history_dialog",

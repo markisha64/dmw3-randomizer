@@ -28,7 +28,6 @@ pub fn auctions() -> Element {
                     label: "Auctions",
                     id: "auctions.enabled",
                     checked: enabled,
-                    tooltip: "Auctions",
                     onchange: move |x: bool| {
                         state.write().randomizer.auctions.enabled = x;
                     }
@@ -41,7 +40,6 @@ pub fn auctions() -> Element {
                     label: "Auction Items",
                     disabled: !enabled,
                     checked: auction_items,
-                    tooltip: "Randomize Auction Items",
                     onchange: move |x: bool| {
                         state.write().randomizer.auctions.auction_items = x;
                     },
@@ -85,7 +83,6 @@ pub fn auctions() -> Element {
                     label: "Auction Values",
                     disabled: !enabled,
                     checked: auction_values,
-                    tooltip: "Randomize Auction Values",
                     onchange: move |x: bool| {
                         state.write().randomizer.auctions.auction_values = x;
                     },

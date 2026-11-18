@@ -32,7 +32,6 @@ pub fn shops() -> Element {
                     label: "Shops",
                     id: "shops.enabled",
                     checked: enabled,
-                    tooltip: "Randomize shop items (currently only buyable items)",
                     onchange: move |x: bool| {
                         preset_state.write().randomizer.shops.enabled = x;
                     }

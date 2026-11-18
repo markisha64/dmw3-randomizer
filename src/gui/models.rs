@@ -22,7 +22,6 @@ pub fn models() -> Element {
                     label: "Models",
                     id: "models.enabled",
                     checked: enabled,
-                    tooltip: "Models",
                     onchange: move |x: bool| {
                         state.write().randomizer.models.enabled = x;
                     }
@@ -35,7 +34,6 @@ pub fn models() -> Element {
                     id: "models.hue",
                     checked: model_hue,
                     disabled: !enabled,
-                    tooltip: "Randomize model hue",
                     onchange: move |x: bool| {
                         state.write().randomizer.models.hue_enabled = x;
                     }
@@ -45,7 +43,6 @@ pub fn models() -> Element {
                     id: "models.stage_hue",
                     checked: stage_model_hue,
                     disabled: !enabled,
-                    tooltip: "Randomize stage model hue",
                     onchange: move |x: bool| {
                         state.write().randomizer.models.stage_hue_enabled = x;
                     }
