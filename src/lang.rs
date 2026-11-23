@@ -164,13 +164,7 @@ impl Language {
     }
 
     pub fn to_received_item(&self, item: Vec<u8>) -> Vec<u8> {
-        let mut result = Vec::new();
-
-        let first_not_null = item.len() - item.iter().rev().position(|x| x != &0).unwrap();
-
-        let islice = &item[0..first_not_null];
-
-        let (prefix_str, suffix_str) = match self {
+        let (prefix, suffix) = match self {
             Language::Japanese => (
                 "[name][player_name][name]やった!\n「",
                 "」を\nてに，いれたぜ!![pause]",
@@ -183,22 +177,7 @@ impl Language {
             Language::Spanish => ("[name][player_name][name]¡Sí! Tengo\nuna ", "[pause]"),
         };
 
-        let prefix: dmw3_lang::String = prefix_str.parse().unwrap();
-        let suffix: dmw3_lang::String = suffix_str.parse().unwrap();
-
-        for codepoint in prefix.iter() {
-            codepoint.encode(&mut result).unwrap();
-        }
-
-        result.extend_from_slice(islice);
-        for codepoint in suffix.iter() {
-            codepoint.encode(&mut result).unwrap();
-        }
-
-        let pad_length = (result.len() / 4 + 1) * 4 - result.len();
-        result.extend(iter::repeat(0).take(pad_length));
-
-        result
+        encode_with_item(prefix, &item, suffix)
     }
 
     pub fn auction_intro_text(&self, item_name: &[u8], prices: &[u32; 5]) -> Packed {
