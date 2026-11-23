@@ -1,47 +1,9 @@
-use std::iter;
-
 use anyhow::Context;
 use dmw3_consts::{AUCTION_COUNT, OINKMON_AUCTION_IDX};
 use dmw3_structs::ScriptConditionStep;
 use rand_xoshiro::{rand_core::RngCore, Xoshiro256StarStar};
 
-use crate::{json::Auction, lang::Language, objects::Objects, rand::shops::shoppable};
-use dmw3_pack::Packed;
-
-fn encode_raw(s: &str) -> Vec<u8> {
-    let mut result = Vec::new();
-    let parsed: dmw3_lang::String = s.parse().unwrap();
-    for codepoint in parsed.iter() {
-        codepoint.encode(&mut result).unwrap();
-    }
-    result
-}
-
-fn pad(mut v: Vec<u8>) -> Vec<u8> {
-    let pad_length = (v.len() / 4 + 1) * 4 - v.len();
-    v.extend(iter::repeat(0).take(pad_length));
-    v
-}
-
-fn encode(s: &str) -> Vec<u8> {
-    pad(encode_raw(s))
-}
-
-fn encode_with_item(prefix: &str, item_name: &[u8], suffix: &str) -> Vec<u8> {
-    let trimmed = &item_name[..item_name.iter().rposition(|&b| b != 0).map_or(0, |i| i + 1)];
-    let mut result = encode_raw(prefix);
-    result.extend_from_slice(trimmed);
-    result.extend(encode_raw(suffix));
-
-    let pad_length = (result.len() / 4 + 1) * 4 - result.len();
-    result.extend(iter::repeat(0).take(pad_length));
-
-    result
-}
-
-fn packed(files: Vec<Vec<u8>>) -> Packed {
-    Packed { files }
-}
+use crate::{json::Auction, objects::Objects, rand::shops::shoppable};
 
 pub const DEFAULT_AUCTION_PRICES: [[u32; 5]; 16] = [
     [400, 500, 600, 700, 800],
