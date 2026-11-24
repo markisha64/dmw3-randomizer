@@ -229,7 +229,10 @@ fn item_boxes(
                             }
                         };
 
-                        if !type_script_add_item(*condition_type) {
+                        if !type_script_add_item(*condition_type)
+                            && type_script_add_bits(*condition_type, *value, &objects.complex_steps)
+                                .is_none()
+                        {
                             continue;
                         }
 
@@ -242,6 +245,7 @@ fn item_boxes(
                             *value =
                                 bits_steps[(rng.next_u64() % bits_steps.len() as u64) as usize];
                         } else {
+                            *condition_type = ScriptConditionType::Item(130);
                             *value = pool[(rng.next_u64() % pool.len() as u64) as usize];
                         }
 
