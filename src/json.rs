@@ -94,6 +94,14 @@ pub struct Maps {
     pub item_boxes: bool,
     #[serde(default = "ShopItems::default")]
     pub item_boxes_items_only: ShopItems,
+    #[serde(default = "default_bits_box_odds")]
+    pub bits_box_odds: u8,
+    #[serde(default = "default_bool_false")]
+    pub bits_box_randomization: bool,
+    #[serde(default = "default_min_bits_box")]
+    pub bits_box_min: u32,
+    #[serde(default = "default_max_bits_box")]
+    pub bits_box_max: u32,
     #[serde(default = "default_bool_true")]
     pub fight_backgrounds: bool,
     #[serde(default = "GroupStrategy::default")]
@@ -264,6 +272,18 @@ pub struct Scaling {
 
 fn default_shop_limit() -> u8 {
     8
+}
+
+fn default_bits_box_odds() -> u8 {
+    10
+}
+
+fn default_min_bits_box() -> u32 {
+    100
+}
+
+fn default_max_bits_box() -> u32 {
+    8500
 }
 
 fn default_randomizer() -> Randomizer {

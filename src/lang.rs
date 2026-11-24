@@ -180,6 +180,38 @@ impl Language {
         encode_with_item(prefix, &item, suffix)
     }
 
+    pub fn to_received_bits(&self, bits: u16) -> Vec<u8> {
+        let text = match self {
+            Language::Japanese => {
+                format!(
+                    "[name][player_name][name]やった!\n「{}BIT」を\nてに，いれたぜ!![pause]",
+                    bits
+                )
+            }
+            Language::US | Language::English => format!(
+                "[name][player_name][name]Yeah! I got \n{} BIT![pause]",
+                bits
+            ),
+            Language::French => {
+                format!(
+                    "[name][player_name][name]Ouais ! J'ai\n{} BIT ![pause]",
+                    bits
+                )
+            }
+            Language::Italian => {
+                format!("[name][player_name][name]Sì! Ho\n{} BIT![pause]", bits)
+            }
+            Language::German => {
+                format!("[name][player_name][name]Yeah! Hab'\n{} BIT![pause]", bits)
+            }
+            Language::Spanish => {
+                format!("[name][player_name][name]¡Sí! Tengo\n{} BIT.[pause]", bits)
+            }
+        };
+
+        encode(text.as_str())
+    }
+
     pub fn auction_intro_text(&self, item_name: &[u8], prices: &[u32; 5]) -> Packed {
         match self{
             Language::Japanese => packed(vec![
@@ -589,6 +621,7 @@ impl Language {
             ]),
         }
     }
+
     pub fn to_file_name(&self, file_name: &str) -> String {
         format!("{}{}", self.to_prefix(), file_name)
     }

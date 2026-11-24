@@ -1,20 +1,37 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{
-    json::{GroupStrategy, MusicPool},
-    objects::StageOverridesObject,
+    json::{GroupStrategy, Maps, MusicPool},
+    lang::Language,
+    objects::{ObjectArray, StageOverridesObject, TextFileGroup},
     rand::{shops::shoppable, Objects},
     util::{self, shuffle, uniform_random_vector, unique_vec},
 };
 use anyhow::{anyhow, Context};
-use dmw3_structs::ScriptConditionStep;
+use dmw3_structs::{ComplexScriptConditionStep, ScriptConditionStep, ScriptConditionType};
 use rand_xoshiro::rand_core::RngCore;
 use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::Randomizer;
 
-pub fn type_script_add_item(condition_type: dmw3_structs::ScriptConditionType) -> bool {
+pub fn type_script_add_item(condition_type: ScriptConditionType) -> bool {
     matches!(condition_type, dmw3_structs::ScriptConditionType::Item(_))
+}
+
+pub fn type_script_add_bits(
+    condition_type: ScriptConditionType,
+    value: u16,
+    complex_steps: &ObjectArray<ComplexScriptConditionStep>,
+) -> Option<u8> {
+    match condition_type {
+        ScriptConditionType::Complex => complex_steps.modified.iter().find_map(|x| {
+            let cs_op = x.operation_and_type & 0b00001111;
+            let cs_type = x.operation_and_type & 0b11110000;
+
+            (x.id == value as u8 && cs_type == 32 && cs_op == 1).then_some(x.value)
+        }),
+        _ => None,
+    }
 }
 
 pub fn patch(
@@ -34,6 +51,14 @@ pub fn patch(
 
     if maps.item_boxes {
         item_boxes(preset, objects, rng)?;
+    }
+
+    if maps.bits_box_randomization {
+        randomize_bits_box_amounts(maps, objects, rng);
+    }
+
+    if maps.item_boxes || maps.bits_box_randomization {
+        item_box_conversations(preset, objects)?;
     }
 
     if maps.fight_backgrounds {
@@ -160,11 +185,21 @@ fn item_boxes(
     let pool: Vec<_> = shoppable(objects, &preset.maps.item_boxes_items_only)
         .into_iter()
         .collect();
-    let language = objects
-        .executable
-        .languages()
-        .first()
-        .context("executable with no languages")?;
+
+    let bits_steps: Vec<u16> = objects
+        .complex_steps
+        .modified
+        .iter()
+        .filter(|x| {
+            let cs_op = x.operation_and_type & 0b00001111;
+            let cs_type = x.operation_and_type & 0b11110000;
+
+            cs_type == 32 && cs_op == 1
+        })
+        .map(|x| x.id as u16)
+        .collect();
+
+    let odds = preset.maps.bits_box_odds;
 
     for map in &mut objects.map_objects {
         if let Some(entities) = &mut map.entities {
@@ -196,77 +231,16 @@ fn item_boxes(
                             continue;
                         }
 
-                        let nv = pool[(rng.next_u64() % pool.len() as u64) as usize];
+                        let make_bits = odds > 0
+                            && rng.next_u64() % 100 < odds as u64
+                            && !bits_steps.is_empty();
 
-                        *value = nv;
-
-                        let real_file = objects
-                            .file_map
-                            .iter()
-                            .find(|x| {
-                                x.offs
-                                    == Some(objects.sector_offsets.original[map.talk_file as usize])
-                            })
-                            .context("failed to find real file")?;
-
-                        let sname = &real_file.name[1..];
-
-                        let group = objects
-                            .text_files
-                            .get_mut(sname)
-                            .context("failed to get mut")?;
-
-                        // alrady exists (rare)
-                        if let Some(idx) = group.mapped_items.get(&nv) {
-                            logic.conversation = *idx as usize;
-
-                            break;
-                        }
-
-                        if group.overwritten.contains(&(logic.conversation as u32)) {
-                            // index already overwritten
-                            let idx = group
-                                .files
-                                .get(language)
-                                .context("missing lang")?
-                                .file
-                                .files
-                                .len();
-
-                            for (lang, talk_file) in &mut group.files {
-                                let item_name = objects
-                                    .items
-                                    .files
-                                    .get(lang)
-                                    .context("failed to get by lang")?
-                                    .file
-                                    .files[nv as usize]
-                                    .clone();
-
-                                talk_file.file.files.push(lang.to_received_item(item_name));
-                            }
-
-                            logic.conversation = idx;
-
-                            group.mapped_items.insert(nv, idx as u16);
+                        if make_bits {
+                            *condition_type = ScriptConditionType::Complex;
+                            *value =
+                                bits_steps[(rng.next_u64() % bits_steps.len() as u64) as usize];
                         } else {
-                            // index is safe for overwrite
-                            for (lang, talk_file) in &mut group.files {
-                                let item_name = objects
-                                    .items
-                                    .files
-                                    .get(lang)
-                                    .context("failed to get by lang")?
-                                    .file
-                                    .files[nv as usize]
-                                    .clone();
-
-                                talk_file.file.files[logic.conversation as usize] =
-                                    lang.to_received_item(item_name);
-                            }
-
-                            group.overwritten.insert(logic.conversation as u32);
-                            group.mapped_items.insert(nv, logic.conversation as u16);
+                            *value = pool[(rng.next_u64() % pool.len() as u64) as usize];
                         }
 
                         break;
@@ -274,6 +248,208 @@ fn item_boxes(
                 }
             }
         }
+    }
+
+    Ok(())
+}
+
+fn item_box_conversations(preset: &Randomizer, objects: &mut Objects) -> anyhow::Result<()> {
+    let maps = &preset.maps;
+
+    for map in &mut objects.map_objects {
+        if let Some(entities) = &mut map.entities {
+            for mapped_entity in &mut entities.mapped {
+                if !dmw3_consts::ITEM_BOX_SPRITES.contains(&mapped_entity.data.sprite)
+                    || mapped_entity.logics.is_empty()
+                {
+                    continue;
+                }
+
+                for logic in &mut mapped_entity.logics {
+                    if logic.conversation == 0 {
+                        break;
+                    }
+
+                    for script in &mut logic.scripts {
+                        let (value, condition_type, _) = match script {
+                            ScriptConditionStep::Step {
+                                value,
+                                condition_type,
+                                flag,
+                            } => (value, condition_type, flag),
+                            ScriptConditionStep::EndStep => {
+                                unreachable!("EndStep shouldn't be in mapped")
+                            }
+                        };
+
+                        let bits_index =
+                            type_script_add_bits(*condition_type, *value, &objects.complex_steps);
+
+                        let (key, bits, texts) = if let Some(index) = bits_index {
+                            let index = index as usize;
+
+                            let amount = *objects
+                                .bits_adds
+                                .modified
+                                .get(index)
+                                .context("missing bits add amount")?;
+
+                            let texts = objects
+                                .executable
+                                .languages()
+                                .iter()
+                                .map(|lang| {
+                                    (
+                                        *lang,
+                                        lang.to_received_bits(amount.min(u16::MAX as u32) as u16),
+                                    )
+                                })
+                                .collect::<Vec<_>>();
+
+                            (index as u16, true, texts)
+                        } else if maps.item_boxes && type_script_add_item(*condition_type) {
+                            let item = *value;
+
+                            let texts = objects
+                                .items
+                                .files
+                                .iter()
+                                .map(|(lang, file)| {
+                                    (
+                                        *lang,
+                                        lang.to_received_item(
+                                            file.file.files[item as usize].clone(),
+                                        ),
+                                    )
+                                })
+                                .collect::<Vec<_>>();
+
+                            (item, false, texts)
+                        } else {
+                            continue;
+                        };
+
+                        overwrite_conversation(
+                            &mut objects.text_files,
+                            &objects.file_map,
+                            &objects.sector_offsets.original,
+                            map.talk_file,
+                            &mut logic.conversation,
+                            key,
+                            &texts,
+                            bits,
+                        )?;
+
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn randomize_bits_box_amounts(maps: &Maps, objects: &mut Objects, rng: &mut Xoshiro256StarStar) {
+    let (min, max) = match maps.bits_box_min <= maps.bits_box_max {
+        true => (maps.bits_box_min, maps.bits_box_max),
+        false => (maps.bits_box_max, maps.bits_box_min),
+    };
+    let range = (max - min) as u64 + 1;
+
+    for amount in &mut objects.bits_adds.modified {
+        *amount = min + (rng.next_u64() % range) as u32;
+    }
+}
+
+fn overwrite_conversation(
+    text_files: &mut HashMap<String, TextFileGroup>,
+    file_map: &[crate::mkpsxiso::File],
+    sector_offsets: &[u32],
+    talk_file: u16,
+    conversation: &mut usize,
+    key: u16,
+    texts: &[(Language, Vec<u8>)],
+    bits: bool,
+) -> anyhow::Result<()> {
+    let real_file = file_map
+        .iter()
+        .find(|x| x.offs == Some(sector_offsets[talk_file as usize]))
+        .context("failed to find real file")?;
+
+    let sname = &real_file.name[1..];
+
+    let group = text_files.get_mut(sname).context("failed to get mut")?;
+
+    let mapped = match bits {
+        true => &group.mapped_bits,
+        false => &group.mapped_items,
+    };
+
+    // already exists (rare)
+    if let Some(idx) = mapped.get(&key) {
+        *conversation = *idx as usize;
+
+        return Ok(());
+    }
+
+    let language = group
+        .files
+        .keys()
+        .next()
+        .copied()
+        .context("text file with no languages")?;
+
+    let append_idx = group
+        .files
+        .get(&language)
+        .context("missing lang")?
+        .file
+        .files
+        .len();
+
+    if group.overwritten.contains(&(*conversation as u32)) {
+        // index already overwritten
+        for (lang, talk_file) in &mut group.files {
+            let text = texts
+                .iter()
+                .find(|(text_lang, _)| text_lang == lang)
+                .context("missing text for lang")?
+                .1
+                .clone();
+
+            talk_file.file.files.push(text);
+        }
+
+        *conversation = append_idx;
+
+        let mapped = match bits {
+            true => &mut group.mapped_bits,
+            false => &mut group.mapped_items,
+        };
+
+        mapped.insert(key, append_idx as u16);
+    } else {
+        // index is safe for overwrite
+        for (lang, talk_file) in &mut group.files {
+            let text = texts
+                .iter()
+                .find(|(text_lang, _)| text_lang == lang)
+                .context("missing text for lang")?
+                .1
+                .clone();
+
+            talk_file.file.files[*conversation] = text;
+        }
+
+        group.overwritten.insert(*conversation as u32);
+
+        let mapped = match bits {
+            true => &mut group.mapped_bits,
+            false => &mut group.mapped_items,
+        };
+
+        mapped.insert(key, *conversation as u16);
     }
 
     Ok(())

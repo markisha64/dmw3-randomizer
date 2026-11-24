@@ -19,6 +19,8 @@ Support is added for all 3 versions, if you notice any problems, fill out an iss
 - Randomized map coloration
 - Randomized map backgrounds
 - Randomized item box items
+- Randomized item box odds that turn item boxes into bits boxes
+- Randomized bits box rewards
 - Randomized music
 - Randomized auction items and prices
 

@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-use crate::gui::{checkbox, help, theme};
+use crate::gui::{checkbox, help, number_field, slider, theme};
 use crate::json::{GroupStrategy, MusicPool, Preset, ShopItems};
 
 #[component]
@@ -14,6 +14,10 @@ pub fn maps() -> Element {
     let backgrounds = read_state.randomizer.maps.backgrounds;
     let fight_backgrounds = read_state.randomizer.maps.fight_backgrounds;
     let item_boxes = read_state.randomizer.maps.item_boxes;
+    let bits_box_odds = read_state.randomizer.maps.bits_box_odds;
+    let bits_box_randomization = read_state.randomizer.maps.bits_box_randomization;
+    let bits_box_min = read_state.randomizer.maps.bits_box_min;
+    let bits_box_max = read_state.randomizer.maps.bits_box_max;
     let ironmon_charisma = read_state.randomizer.maps.ironmon_charisma;
 
     let mobius_desert = read_state.randomizer.maps.mobius_desert;
@@ -129,7 +133,7 @@ pub fn maps() -> Element {
                 select {
                     id: "maps.item_boxes_items_only",
                     class: theme::SELECT,
-                    disabled: !enabled,
+                    disabled: !enabled || !item_boxes,
                     onchange: move |x: Event<FormData>| {
                         state.write().randomizer.maps.item_boxes_items_only = ShopItems::from(x.data.value().parse::<u8>().unwrap_or(0));
                     },
@@ -147,6 +151,61 @@ pub fn maps() -> Element {
                         value: "2",
                         selected: selected == ShopItems::Ironmon,
                         "Ironmon"
+                    }
+                }
+            }
+            div {
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                slider::slider {
+                    label: "Bits Box Odds",
+                    id: "maps.bits_box_odds",
+                    value: bits_box_odds as i64,
+                    min: 0,
+                    max: 100,
+                    disabled: !enabled || !item_boxes,
+                    tooltip: "Chance (in percent) for an item box to contain bits",
+                    oninput: move |x: Event<FormData>| {
+                        let odds = match x.data.value().parse::<i64>() {
+                            Ok(odds) => odds.clamp(0, 100),
+                            _ => bits_box_odds as i64
+                        };
+
+                        state.write().randomizer.maps.bits_box_odds = odds as u8;
+                    }
+                }
+            }
+            div {
+                class: "flex flex-wrap items-center gap-x-5 gap-y-2",
+                checkbox::checkbox {
+                    label: "Bits in boxes",
+                    id: "maps.bits_box_randomization",
+                    checked: bits_box_randomization,
+                    disabled: !enabled,
+                    tooltip: "Randomize the bits amount in the limited bits box slots",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.bits_box_randomization = x;
+                    }
+                }
+                number_field::number_field {
+                    label: "Min bits",
+                    id: "maps.bits_box_min",
+                    min: 0,
+                    max: 999_999,
+                    value: bits_box_min as i64,
+                    disabled: !enabled || !bits_box_randomization,
+                    onchange: move |x: i64| {
+                        state.write().randomizer.maps.bits_box_min = x as u32;
+                    }
+                }
+                number_field::number_field {
+                    label: "Max bits",
+                    id: "maps.bits_box_max",
+                    min: 0,
+                    max: 999_999,
+                    value: bits_box_max as i64,
+                    disabled: !enabled || !bits_box_randomization,
+                    onchange: move |x: i64| {
+                        state.write().randomizer.maps.bits_box_max = x as u32;
                     }
                 }
             }

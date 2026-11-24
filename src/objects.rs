@@ -84,6 +84,7 @@ pub struct TextFile {
 pub struct TextFileGroup {
     pub files: HashMap<Language, TextFile>,
     pub mapped_items: HashMap<u16, u16>,
+    pub mapped_bits: HashMap<u16, u16>,
     pub overwritten: HashSet<u32>,
 }
 
@@ -92,6 +93,7 @@ impl Default for TextFileGroup {
         TextFileGroup {
             files: HashMap::new(),
             mapped_items: HashMap::new(),
+            mapped_bits: HashMap::new(),
             overwritten: HashSet::new(),
         }
     }
@@ -1789,6 +1791,7 @@ pub async fn read_text_files(
         let group = TextFileGroup {
             files,
             mapped_items: HashMap::new(),
+            mapped_bits: HashMap::new(),
             overwritten: HashSet::new(),
         };
 
@@ -1824,6 +1827,7 @@ pub async fn read_items(rom_name: &str, executable: &Executable) -> anyhow::Resu
     Ok(TextFileGroup {
         files: item_files,
         mapped_items: HashMap::new(),
+        mapped_bits: HashMap::new(),
         overwritten: HashSet::new(),
     })
 }
