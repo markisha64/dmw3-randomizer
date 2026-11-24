@@ -55,6 +55,8 @@ pub fn patch(
 
     if maps.bits_box_randomization {
         randomize_bits_box_amounts(maps, objects, rng);
+
+        update_hidden_bits_text(objects)?;
     }
 
     if maps.item_boxes || maps.bits_box_randomization {
@@ -360,6 +362,46 @@ fn randomize_bits_box_amounts(maps: &Maps, objects: &mut Objects, rng: &mut Xosh
     for amount in &mut objects.bits_adds.modified {
         *amount = min + (rng.next_u64() % range) as u32;
     }
+}
+
+fn update_hidden_bits_conversation(
+    objects: &mut Objects,
+    group_name: &str,
+    conversation: usize,
+    bits_index: usize,
+    make_text: impl Fn(&Language, u32) -> Vec<u8>,
+) -> anyhow::Result<()> {
+    let amount = *objects
+        .bits_adds
+        .modified
+        .get(bits_index)
+        .with_context(|| format!("missing bits amount at index {bits_index}"))?;
+
+    let Some(group) = objects.text_files.get_mut(group_name) else {
+        return Ok(());
+    };
+
+    for (lang, text_file) in &mut group.files {
+        if let Some(text) = text_file.file.files.get_mut(conversation) {
+            *text = make_text(lang, amount);
+        }
+    }
+
+    Ok(())
+}
+
+fn update_hidden_bits_text(objects: &mut Objects) -> anyhow::Result<()> {
+    // Hidden bits #1: TALK05, conversation 6, amount at bits add index 1.
+    update_hidden_bits_conversation(objects, "STALK05.BIN", 6, 1, |lang, bits| {
+        lang.to_hidden_bits_1(bits)
+    })?;
+
+    // Hidden bits #2: TALK08, conversation 47, amount at bits add index 7.
+    update_hidden_bits_conversation(objects, "STALK08.BIN", 47, 7, |lang, bits| {
+        lang.to_hidden_bits_2(bits)
+    })?;
+
+    Ok(())
 }
 
 fn overwrite_conversation(

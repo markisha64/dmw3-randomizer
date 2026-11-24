@@ -212,6 +212,68 @@ impl Language {
         encode(text.as_str())
     }
 
+    pub fn to_hidden_bits_1(&self, bits: u32) -> Vec<u8> {
+        let text = match self {
+            Language::Japanese => format!(
+                "[name][player_name][name]あ!\nこんなとこに\nヘソクリがあるぞ![pause][clear]やった!\n「{}BIT」を\nてに，いれたぜ[pause]",
+                bits
+            ),
+            Language::US | Language::English => format!(
+                "[name][player_name][name]Hey!\nSomeone hid \nmoney here![pause][clear]Yeah! I got \n{} BIT![pause]",
+                bits
+            ),
+            Language::French => format!(
+                "[name][player_name][name]Hé !\nOn a caché de\nl''argent ici ![pause][clear]Ouais !i\n{} BIT ![pause]",
+                bits
+            ),
+            Language::Italian => format!(
+                "[name][player_name][name]Ehi!\nCi sono dei\nsoldi qui![pause][clear]Sì! Ho\n{} BIT![pause]",
+                bits
+            ),
+            Language::German => format!(
+                "[name][player_name][name]Hey! Hier\nhat jemand\nGeld versteckt[pause][clear]Yeah! Ich habe\n{} BIT![pause]",
+                bits
+            ),
+            Language::Spanish => format!(
+                "[name][player_name][name]¡Ey!\n¡Han escondido\ndinero aquí![pause][clear]¡Sí!¡Tengo\n{} BIT![pause]",
+                bits
+            ),
+        };
+
+        encode(text.as_str())
+    }
+
+    pub fn to_hidden_bits_2(&self, bits: u32) -> Vec<u8> {
+        let text = match self {
+            Language::Japanese => format!(
+                "[name][player_name][name]あ!\nこんなとこに\nヘソクリがあるぞ![pause][clear]やった!\n「{}BIT」を\nてに，いれたぜ[pause]",
+                bits
+            ),
+            Language::US | Language::English => format!(
+                "[name][player_name][name]Hey! There's\nsomething here! [pause][clear]Yes! I got\n{} BIT!![pause]",
+                bits
+            ),
+            Language::French => format!(
+                "[name][player_name][name]Hé ! Il y a\nquelque chose\nici ! [pause][clear]Ouais ! J'ai\n{} BIT !![pause]",
+                bits
+            ),
+            Language::Italian => format!(
+                "[name][player_name][name]Ehi, c'è\nqualcuno?[pause][clear]Sì! Ho \n{} BIT![pause]",
+                bits
+            ),
+            Language::German => format!(
+                "[name][player_name][name]Hey! Da ist\ndoch was! [pause][clear]Ja! Ich habe\n{} BIT!![pause]",
+                bits
+            ),
+            Language::Spanish => format!(
+                "[name][player_name][name]¡Oye, aquí\nhay algo![pause][clear]¡Sí! ¡Tengo\n{} BIT!![pause]",
+                bits
+            ),
+        };
+
+        encode(text.as_str())
+    }
+
     pub fn auction_intro_text(&self, item_name: &[u8], prices: &[u32; 5]) -> Packed {
         match self{
             Language::Japanese => packed(vec![
