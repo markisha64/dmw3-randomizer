@@ -102,6 +102,8 @@ pub struct Maps {
     pub bits_box_min: u32,
     #[serde(default = "default_max_bits_box")]
     pub bits_box_max: u32,
+    #[serde(default = "default_bool_false")]
+    pub hidden_bits: bool,
     #[serde(default = "default_bool_true")]
     pub fight_backgrounds: bool,
     #[serde(default = "GroupStrategy::default")]

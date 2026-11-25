@@ -14,6 +14,9 @@ use rand_xoshiro::Xoshiro256StarStar;
 
 use crate::json::Randomizer;
 
+const HIDDEN_BITS_1_INDEX: usize = 1;
+const HIDDEN_BITS_2_INDEX: usize = 7;
+
 pub fn type_script_add_item(condition_type: ScriptConditionType) -> bool {
     matches!(condition_type, dmw3_structs::ScriptConditionType::Item(_))
 }
@@ -56,7 +59,9 @@ pub fn patch(
     if maps.bits_box_randomization {
         randomize_bits_box_amounts(maps, objects, rng);
 
-        update_hidden_bits_text(objects)?;
+        if maps.hidden_bits {
+            update_hidden_bits_text(objects)?;
+        }
     }
 
     if maps.item_boxes || maps.bits_box_randomization {
@@ -363,9 +368,18 @@ fn randomize_bits_box_amounts(maps: &Maps, objects: &mut Objects, rng: &mut Xosh
     };
     let range = (max - min) as u64 + 1;
 
-    for amount in &mut objects.bits_adds.modified {
+    for (index, amount) in objects.bits_adds.modified.iter_mut().enumerate() {
+        // Hidden bits are only randomized when explicitly enabled.
+        if !maps.hidden_bits && is_hidden_bits_amount(index) {
+            continue;
+        }
+
         *amount = min + (rng.next_u64() % range) as u32;
     }
+}
+
+fn is_hidden_bits_amount(index: usize) -> bool {
+    matches!(index, HIDDEN_BITS_1_INDEX | HIDDEN_BITS_2_INDEX)
 }
 
 fn update_hidden_bits_conversation(
@@ -396,14 +410,22 @@ fn update_hidden_bits_conversation(
 
 fn update_hidden_bits_text(objects: &mut Objects) -> anyhow::Result<()> {
     // Hidden bits #1: TALK05, conversation 6, amount at bits add index 1.
-    update_hidden_bits_conversation(objects, "STALK05.BIN", 6, 1, |lang, bits| {
-        lang.to_hidden_bits_1(bits)
-    })?;
+    update_hidden_bits_conversation(
+        objects,
+        "STALK05.BIN",
+        6,
+        HIDDEN_BITS_1_INDEX,
+        |lang, bits| lang.to_hidden_bits_1(bits),
+    )?;
 
     // Hidden bits #2: TALK08, conversation 47, amount at bits add index 7.
-    update_hidden_bits_conversation(objects, "STALK08.BIN", 47, 7, |lang, bits| {
-        lang.to_hidden_bits_2(bits)
-    })?;
+    update_hidden_bits_conversation(
+        objects,
+        "STALK08.BIN",
+        47,
+        HIDDEN_BITS_2_INDEX,
+        |lang, bits| lang.to_hidden_bits_2(bits),
+    )?;
 
     Ok(())
 }

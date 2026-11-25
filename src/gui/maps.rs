@@ -18,6 +18,7 @@ pub fn maps() -> Element {
     let bits_box_randomization = read_state.randomizer.maps.bits_box_randomization;
     let bits_box_min = read_state.randomizer.maps.bits_box_min;
     let bits_box_max = read_state.randomizer.maps.bits_box_max;
+    let hidden_bits = read_state.randomizer.maps.hidden_bits;
     let ironmon_charisma = read_state.randomizer.maps.ironmon_charisma;
 
     let mobius_desert = read_state.randomizer.maps.mobius_desert;
@@ -206,6 +207,16 @@ pub fn maps() -> Element {
                     disabled: !enabled || !bits_box_randomization,
                     onchange: move |x: i64| {
                         state.write().randomizer.maps.bits_box_max = x as u32;
+                    }
+                }
+                checkbox::checkbox {
+                    label: "Hidden bits",
+                    id: "maps.hidden_bits",
+                    checked: hidden_bits,
+                    disabled: !enabled || !bits_box_randomization,
+                    tooltip: "Also randomize the two hidden bits amounts and their messages",
+                    onchange: move |x: bool| {
+                        state.write().randomizer.maps.hidden_bits = x;
                     }
                 }
             }
