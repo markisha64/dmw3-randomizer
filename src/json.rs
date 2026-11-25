@@ -56,11 +56,11 @@ pub struct PartyExpBits {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Models {
-    #[serde(default = "default_bool_true")]
+    #[serde(default = "default_bool_false")]
     pub enabled: bool,
-    #[serde(default = "default_bool_false")]
+    #[serde(default = "default_bool_true")]
     pub hue_enabled: bool,
-    #[serde(default = "default_bool_false")]
+    #[serde(default = "default_bool_true")]
     pub stage_hue_enabled: bool,
 }
 
@@ -96,13 +96,13 @@ pub struct Maps {
     pub item_boxes_items_only: ShopItems,
     #[serde(default = "default_bits_box_odds")]
     pub bits_box_odds: u8,
-    #[serde(default = "default_bool_false")]
+    #[serde(default = "default_bool_true")]
     pub bits_box_randomization: bool,
     #[serde(default = "default_min_bits_box")]
     pub bits_box_min: u32,
     #[serde(default = "default_max_bits_box")]
     pub bits_box_max: u32,
-    #[serde(default = "default_bool_false")]
+    #[serde(default = "default_bool_true")]
     pub hidden_bits: bool,
     #[serde(default = "default_bool_true")]
     pub fight_backgrounds: bool,
@@ -122,9 +122,9 @@ pub struct Maps {
     pub battle_music_pool: MusicPool,
     #[serde(default = "default_bool_true")]
     pub mobius_desert: bool,
-    #[serde(default = "default_bool_true")]
-    pub mobius_desert_single_exit: bool,
     #[serde(default = "default_bool_false")]
+    pub mobius_desert_single_exit: bool,
+    #[serde(default = "default_bool_true")]
     pub mobius_desert_mirror_servers: bool,
 }
 
@@ -277,7 +277,7 @@ fn default_shop_limit() -> u8 {
 }
 
 fn default_bits_box_odds() -> u8 {
-    10
+    25
 }
 
 fn default_min_bits_box() -> u32 {
@@ -285,7 +285,7 @@ fn default_min_bits_box() -> u32 {
 }
 
 fn default_max_bits_box() -> u32 {
-    8500
+    6000
 }
 
 fn default_randomizer() -> Randomizer {
